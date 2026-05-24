@@ -1,0 +1,3 @@
+# Web可视化仪表盘依赖（Streamlit + Flask 二选一）
+# pip install -r requirements-web.txt --break-system-packages
+
