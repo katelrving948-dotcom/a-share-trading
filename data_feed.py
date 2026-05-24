@@ -450,13 +450,136 @@ class DataFeed:
             return pd.DataFrame()
 
 
-if __name__ == "__main__":
-    df = DataFeed()
-    print("→ 获取股票列表中...")
-    stocks = df.get_stock_list()
-    print(f"共获取 {len(stocks)} 只股票")
-    print(stocks.head(10).to_string())
+    # ──────────── 资金流向 ────────────
+    def get_sector_fund_flow(self, top_n: int = 20) -> pd.DataFrame:
+        """获取行业板块资金流向排行"""
+        url = "https://push2.eastmoney.com/api/qt/clist/get"
+        params = {
+            "pn": 1, "pz": top_n, "po": 1, "np": 1,
+            "ut": "bd1d9ddb04089700cf9c27f6f7426281",
+            "fltt": 2, "invt": 2, "fid": "f62",
+            "fs": "m:90+t:2",
+            "fields": "f12,f14,f2,f3,f4,f62,f184,f204,f205,f62",
+        }
+        resp = self._request(url, params)
+        if not resp:
+            return pd.DataFrame()
+        try:
+            items = resp.json().get("data", {}).get("diff", [])
+            rows = []
+            for i in items:
+                if not i.get("f12"):
+                    continue
+                main_net = (i.get("f62") or 0) / 1e8
+                rows.append({
+                    "code": i["f12"],
+                    "name": i.get("f14", ""),
+                    "change_pct": round(i.get("f3") or 0, 2),
+                    "price": round(i.get("f2") or 0, 2),
+                    "main_net_inflow": round(main_net, 2),
+                    "main_net_pct": round(i.get("f184") or 0, 2),
+                    "rise_count": i.get("f204") or 0,
+                    "fall_count": i.get("f205") or 0,
+                })
+            return pd.DataFrame(rows)
+        except (json.JSONDecodeError, KeyError, TypeError):
+            return pd.DataFrame()
 
-    print("\n→ 获取贵州茅台K线...")
-    kline = df.get_kline("600519", count=30)
-    print(kline.tail(5).to_string())
+    def get_concept_fund_flow(self, top_n: int = 20) -> pd.DataFrame:
+        """获取概念板块资金流向排行"""
+        url = "https://push2.eastmoney.com/api/qt/clist/get"
+        params = {
+            "pn": 1, "pz": top_n, "po": 1, "np": 1,
+            "ut": "bd1d9ddb04089700cf9c27f6f7426281",
+            "fltt": 2, "invt": 2, "fid": "f62",
+            "fs": "m:90+t:3",
+            "fields": "f12,f14,f2,f3,f4,f62,f184,f204,f205",
+        }
+        resp = self._request(url, params)
+        if not resp:
+            return pd.DataFrame()
+        try:
+            items = resp.json().get("data", {}).get("diff", [])
+            rows = []
+            for i in items:
+                if not i.get("f12"):
+                    continue
+                main_net = (i.get("f62") or 0) / 1e8
+                rows.append({
+                    "code": i["f12"],
+                    "name": i.get("f14", ""),
+                    "change_pct": round(i.get("f3") or 0, 2),
+                    "main_net_inflow": round(main_net, 2),
+                    "main_net_pct": round(i.get("f184") or 0, 2),
+                })
+            return pd.DataFrame(rows)
+        except (json.JSONDecodeError, KeyError, TypeError):
+            return pd.DataFrame()
+
+    def get_market_metrics(self) -> dict:
+        """获取大盘情绪指标"""
+        url = "https://push2.eastmoney.com/api/qt/clist/get"
+        params = {
+            "pn": 1, "pz": 10, "po": 1, "np": 1,
+            "ut": "bd1d9ddb04089700cf9c27f6f7426281",
+            "fltt": 2, "invt": 2, "fid": "f3",
+            "fs": "m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23",
+            "fields": "f2,f3,f4,f12,f14,f20,f21,f37,f8,f10",
+        }
+        resp = self._request(url, params)
+        if not resp:
+            return {}
+        try:
+            items = resp.json().get("data", {}).get("diff", [])
+            up = sum(1 for i in items if (i.get("f3") or 0) > 0)
+            down = sum(1 for i in items if (i.get("f3") or 0) < 0)
+            limit_up = sum(1 for i in items if (i.get("f3") or 0) >= 9.8)
+            limit_down = sum(1 for i in items if (i.get("f3") or 0) <= -9.8)
+            return {
+                "total": len(items), "up": up, "down": down,
+                "limit_up": limit_up, "limit_down": limit_down,
+            }
+        except (json.JSONDecodeError, KeyError, TypeError):
+            return {}
+
+    def get_etf_list(self) -> pd.DataFrame:
+        """获取ETF基金列表"""
+        url = "https://push2.eastmoney.com/api/qt/clist/get"
+        params = {
+            "pn": 1, "pz": 100, "po": 1, "np": 1,
+            "ut": "bd1d9ddb04089700cf9c27f6f7426281",
+            "fltt": 2, "invt": 2, "fid": "f3",
+            "fs": "m:0+t:8+e:1",
+            "fields": "f12,f14,f2,f3,f4,f20,f8,f15,f16,f17,f18,f37,f62",
+        }
+        resp = self._request(url, params)
+        if not resp:
+            return pd.DataFrame()
+        try:
+            items = resp.json().get("data", {}).get("diff", [])
+            rows = []
+            for i in items:
+                amp = i.get("f17") or 0
+                if amp > 15:
+                    continue
+                rows.append({
+                    "code": i.get("f12", ""),
+                    "name": i.get("f14", ""),
+                    "price": round(i.get("f2") or 0, 3),
+                    "change_pct": round(i.get("f3") or 0, 2),
+                    "amount": round((i.get("f18") or 0) / 1e8, 2),
+                    "turnover": i.get("f37") or 0,
+                })
+            return pd.DataFrame(rows)
+        except (json.JSONDecodeError, KeyError, TypeError):
+            return pd.DataFrame()
+
+
+
+    def get_fund_flow(self, code: str) -> dict:
+        """获取个股资金流向"""
+        secid = self._get_secid(code)
+        if not secid:
+            return {}
+        url = "https://push2.eastmoney.com/api/qt/stock/fflow/kline/get"
+ 

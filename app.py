@@ -1,29 +1,16 @@
 #!/usr/bin/env python3
-"""
-A股短线交易系统 - Flask Web 可视化仪表盘
-=========================================
-启动: python app.py
-访问: http://localhost:5000
-"""
-
-import os
-import sys
-import json
-import traceback
-from datetime import datetime, timedelta
-from threading import Thread
-from functools import wraps
-
+"""A股短线交易系统 - Flask Web 可视化仪表盘"""
+import os, sys, json, traceback
+from datetime import datetime
 import pandas as pd
-from flask import Flask, jsonify, render_template, request, send_file
-
-from config import SCREEN, INDICATORS, STRATEGY, RISK, OUTPUT
+from flask import Flask, jsonify, render_template, request
+from config import SCREEN, INDICATORS, STRATEGY, RISK, OUTPUT, BACKTEST
 from data_feed import DataFeed
 from screener import StockScreener
 from strategy import StrategyEngine, SignalType
-from monitor import TradeManager, Monitor, Position
 from backtest import BacktestEngine
 from analysis import Analyzer
+from portfolio import portfolio
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -33,23 +20,17 @@ strategy_engine = StrategyEngine()
 analyzer = Analyzer()
 
 
-# ─── 首页 ───
-
 @app.route("/")
 def index():
     return render_template("index.html")
 
 
-# ─── API: 全市场概览 ───
-
 @app.route("/api/market-overview")
 def api_market_overview():
-    """市场概览数据"""
     try:
         stocks = df.get_stock_list()
         if stocks.empty:
             return jsonify({"error": "获取数据失败"})
-
         stats = {
             "total": len(stocks),
             "up": int((stocks["change_pct"] > 0).sum()),
@@ -60,234 +41,327 @@ def api_market_overview():
             "avg_change": round(stocks["change_pct"].mean(), 2),
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
-        # 涨幅榜前10
-        top_gainers = stocks.nlargest(10, "change_pct")[
-            ["code", "name", "price", "change_pct", "turnover_rate", "market_cap"]
+        top_gainers = stocks.nlargest(15, "change_pct")[
+            ["code","name","price","change_pct","turnover_rate","market_cap"]
         ].to_dict("records")
-        # 跌幅榜前10
-        top_losers = stocks.nsmallest(10, "change_pct")[
-            ["code", "name", "price", "change_pct", "turnover_rate", "market_cap"]
+        top_losers = stocks.nsmallest(15, "change_pct")[
+            ["code","name","price","change_pct","turnover_rate","market_cap"]
         ].to_dict("records")
-
+        for l in [top_gainers, top_losers]:
+            for s in l:
+                s["price"] = round(s["price"], 2) if s["price"] else 0
+                s["change_pct"] = round(s["change_pct"], 2) if s["change_pct"] else 0
+                s["market_cap"] = round(s["market_cap"], 1) if s["market_cap"] else 0
+                s["turnover_rate"] = round(s["turnover_rate"], 2) if s["turnover_rate"] else 0
         return jsonify({"stats": stats, "gainers": top_gainers, "losers": top_losers})
     except Exception as e:
-        return jsonify({"error": str(e), "traceback": traceback.format_exc()})
+        return jsonify({"error": str(e)})
 
 
-# ─── API: 选股 ───
+@app.route("/api/sector-flow")
+def api_sector_flow():
+    try:
+        sector = df.get_sector_fund_flow(30)
+        if sector.empty:
+            return jsonify({"sectors": []})
+        concept = df.get_concept_fund_flow(20)
+        return jsonify({
+            "sectors": sector.to_dict("records") if not sector.empty else [],
+            "concepts": concept.to_dict("records") if not concept.empty else [],
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+@app.route("/api/etf-list")
+def api_etf_list():
+    try:
+        etf = df.get_etf_list()
+        if etf.empty:
+            return jsonify({"etfs": []})
+        return jsonify({"etfs": etf.to_dict("records")})
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+@app.route("/api/market-mood")
+def api_market_mood():
+    try:
+        return jsonify(df.get_market_metrics())
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+@app.route("/api/fund-flow/<code>")
+def api_fund_flow(code):
+    return jsonify(df.get_fund_flow(code))
+
 
 @app.route("/api/screen")
 def api_screen():
-    """执行选股并返回结果"""
     try:
+        for k in ["market_cap_min","market_cap_max","turnover_min","turnover_max"]:
+            v = request.args.get(k)
+            if v: SCREEN[k] = float(v)
+        v = request.args.get("score_threshold")
+        if v: STRATEGY["score_threshold"] = float(v)
+
         screener = StockScreener()
         result = screener.screen()
         if result.empty:
             return jsonify({"stocks": [], "count": 0, "message": "无符合条件标的"})
-
-        stocks = result.to_dict("records")
         return jsonify({
-            "stocks": stocks,
-            "count": len(stocks),
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "stocks": result.to_dict("records"),
+            "count": len(result),
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         })
     except Exception as e:
-        return jsonify({"error": str(e), "traceback": traceback.format_exc()})
+        return jsonify({"error": str(e)})
 
 
-# ─── API: 股票K线 + 技术指标 ───
+@app.route("/api/screen-config")
+def api_screen_config():
+    return jsonify({
+        "market_cap_min": SCREEN["market_cap_min"],
+        "market_cap_max": SCREEN["market_cap_max"],
+        "price_min": SCREEN["price_min"],
+        "price_max": SCREEN["price_max"],
+        "turnover_min": SCREEN["turnover_min"],
+        "turnover_max": SCREEN["turnover_max"],
+        "avg_amount_min": SCREEN["avg_amount_min"],
+        "score_threshold": STRATEGY["score_threshold"],
+        "max_stocks": STRATEGY["max_stocks"],
+        "stop_loss": RISK["stop_loss"],
+        "take_profit": RISK["take_profit"],
+        "max_positions": RISK["max_positions"],
+    })
+
 
 @app.route("/api/kline/<code>")
-def api_kline(code: str):
-    """获取股票K线和指标"""
+def api_kline(code):
     try:
         period = request.args.get("period", "day")
         count = int(request.args.get("count", 120))
-
         kline = df.get_kline(code, period=period, count=count)
         if kline.empty:
             return jsonify({"error": "获取K线失败"})
-
-        # 获取股票基本信息
         stocks = df.get_stock_list()
         stock_info = {}
         if not stocks.empty:
-            match = stocks[stocks["code"] == code]
-            if not match.empty:
-                s = match.iloc[0]
+            m = stocks[stocks["code"] == code]
+            if not m.empty:
+                s = m.iloc[0]
                 stock_info = {
-                    "code": code,
-                    "name": s.get("name", ""),
-                    "price": s.get("price", 0),
-                    "change_pct": s.get("change_pct", 0),
-                    "market_cap": s.get("market_cap", 0),
-                    "turnover_rate": s.get("turnover_rate", 0),
-                    "pe": s.get("pe", 0),
+                    "code": code, "name": s.get("name",""),
+                    "price": round(s.get("price") or 0, 2),
+                    "change_pct": round(s.get("change_pct") or 0, 2),
+                    "market_cap": round(s.get("market_cap") or 0, 1),
+                    "turnover_rate": round(s.get("turnover_rate") or 0, 2),
+                    "pe": round(s.get("pe") or 0, 2),
                 }
-
-        # 转换K线数据为前端格式
         kline_data = []
         for _, row in kline.iterrows():
             item = {
-                "date": row["date"].strftime("%Y-%m-%d") if hasattr(row["date"], "strftime") else str(row["date"]),
-                "open": round(float(row["open"]), 2),
-                "close": round(float(row["close"]), 2),
-                "high": round(float(row["high"]), 2),
-                "low": round(float(row["low"]), 2),
+                "date": row["date"].strftime("%Y-%m-%d") if hasattr(row["date"],"strftime") else str(row["date"]),
+                "open": round(float(row["open"]),2), "close": round(float(row["close"]),2),
+                "high": round(float(row["high"]),2), "low": round(float(row["low"]),2),
                 "volume": float(row["volume"]),
             }
-            for col in ["MA5", "MA10", "MA20", "MA60",
-                        "MACD_DIF", "MACD_DEA", "MACD_BAR",
-                        "RSI", "KDJ_K", "KDJ_D", "KDJ_J",
-                        "BOLL_UP", "BOLL_MID", "BOLL_DN",
-                        "VOL_MA5", "VOL_MA10"]:
+            for col in ["MA5","MA10","MA20","MA60","MACD_DIF","MACD_DEA","MACD_BAR",
+                        "RSI","KDJ_K","KDJ_D","KDJ_J","BOLL_UP","BOLL_MID","BOLL_DN"]:
                 if col in kline.columns and not pd.isna(row.get(col)):
                     item[col] = round(float(row[col]), 2)
             kline_data.append(item)
 
-        # 生成买卖信号
-        signal = strategy_engine.generate_buy_signals(
-            kline, {"code": code, "name": stock_info.get("name", ""), "price": stock_info.get("price", 0)}
-        )
-
+        sig = strategy_engine.generate_buy_signals(kline, stock_info or {"code":code,"price":0})
+        fund_flow = df.get_fund_flow(code)
         return jsonify({
-            "stock": stock_info,
-            "kline": kline_data,
+            "stock": stock_info, "kline": kline_data, "fund_flow": fund_flow,
             "signal": {
-                "has_signal": signal is not None,
-                "type": signal.signal.value if signal else "",
-                "reason": signal.reason if signal else "",
-                "score": signal.score if signal else 0,
-                "stop_loss": signal.stop_loss if signal else 0,
-                "take_profit": signal.take_profit if signal else 0,
-            } if signal else {"has_signal": False},
+                "has_signal": sig is not None,
+                "type": sig.signal.value if sig else "",
+                "reason": sig.reason if sig else "",
+                "score": sig.score if sig else 0,
+                "stop_loss": sig.stop_loss if sig else 0,
+                "take_profit": sig.take_profit if sig else 0,
+            } if sig else {"has_signal": False},
         })
     except Exception as e:
-        return jsonify({"error": str(e), "traceback": traceback.format_exc()})
+        return jsonify({"error": str(e)})
 
-
-# ─── API: 回测 ───
 
 @app.route("/api/backtest", methods=["POST"])
 def api_backtest():
-    """执行回测"""
     try:
         data = request.get_json() or {}
         codes = data.get("codes", [])
         days = int(data.get("days", 120))
-
         if not codes:
             return jsonify({"error": "请提供股票代码"})
-
         bt = BacktestEngine()
         results = bt.run_multi(codes, days=days)
-
         if results.empty:
             return jsonify({"results": [], "message": "回测无结果"})
-
-        return jsonify({
-            "results": results.to_dict("records"),
-            "count": len(results),
-        })
+        return jsonify({"results": results.to_dict("records"), "count": len(results)})
     except Exception as e:
-        return jsonify({"error": str(e), "traceback": traceback.format_exc()})
+        return jsonify({"error": str(e)})
 
 
 @app.route("/api/backtest/<code>")
-def api_backtest_single(code: str):
-    """回测单只股票"""
+def api_backtest_single(code):
     try:
         days = int(request.args.get("days", 120))
-        bt = BacktestEngine()
-        result = bt.run(code, "", days=days)
-
+        result = BacktestEngine().run(code, "", days=days)
         if not result:
             return jsonify({"error": "回测失败"})
-
+        trades = result.get("trades", [])
+        for t in trades:
+            for k in ["买入价","卖出价","盈亏"]:
+                if k in t and t[k] is not None:
+                    t[k] = round(float(t[k]), 2) if not isinstance(t[k], str) else t[k]
         return jsonify({
-            "code": result["code"],
-            "name": result.get("name", ""),
-            "total_return": result["total_return"],
-            "annual_return": result["annual_return"],
-            "max_drawdown": result["max_drawdown"],
-            "win_rate": result["win_rate"],
-            "sharpe_ratio": result["sharpe_ratio"],
-            "trade_count": result["trade_count"],
+            "code": result["code"], "name": result.get("name",""),
+            "total_return": result["total_return"], "annual_return": result["annual_return"],
+            "max_drawdown": result["max_drawdown"], "win_rate": result["win_rate"],
+            "sharpe_ratio": result["sharpe_ratio"], "trade_count": result["trade_count"],
             "profit_loss_ratio": result["profit_loss_ratio"],
-            "trades": result.get("trades", []),
-            "equity_curve": result.get("equity_curve", []),
+            "trades": trades, "equity_curve": result.get("equity_curve",[]),
         })
-    except Exception as e:
-        return jsonify({"error": str(e), "traceback": traceback.format_exc()})
-
-
-# ─── API: 实时行情 ───
-
-@app.route("/api/realtime")
-def api_realtime():
-    """获取实时行情"""
-    try:
-        codes_str = request.args.get("codes", "")
-        if not codes_str:
-            return jsonify({"error": "请提供股票代码"})
-        codes = [c.strip() for c in codes_str.split(",")]
-
-        quotes = df.get_realtime_quotes(codes)
-        if quotes.empty:
-            return jsonify({"error": "获取行情失败", "quotes": []})
-
-        return jsonify({"quotes": quotes.to_dict("records")})
     except Exception as e:
         return jsonify({"error": str(e)})
 
-
-# ─── API: 搜索股票 ───
 
 @app.route("/api/search")
 def api_search():
-    """搜索股票"""
     try:
-        keyword = request.args.get("q", "").strip().upper()
-        if not keyword:
-            return jsonify({"stocks": []})
-
+        q = request.args.get("q","").strip().upper()
+        if not q:
+            return jsonify({"stocks":[]})
         stocks = df.get_stock_list()
         if stocks.empty:
-            return jsonify({"stocks": []})
+            return jsonify({"stocks":[]})
+        result = stocks[stocks["code"].str.contains(q) | stocks["name"].str.contains(q,na=False)].head(20)
+        return jsonify({"stocks": result[["code","name","price","change_pct","board"]].to_dict("records")})
+    except Exception as e:
+        return jsonify({"error":str(e)})
 
-        result = stocks[
-            stocks["code"].str.contains(keyword) |
-            stocks["name"].str.contains(keyword, na=False)
-        ].head(20)
 
+@app.route("/api/analyze", methods=["POST"])
+def api_analyze():
+    try:
+        text = request.get_data(as_text=True)
+        if not text.strip():
+            return jsonify({"error":"请输入交易记录"})
+        from io import StringIO
+        df_t = pd.read_csv(StringIO(text))
+        if df_t.empty:
+            return jsonify({"error":"无有效数据"})
+        analysis = analyzer.analyze_trades(df_t.to_dict("records"))
+        if "error" in analysis:
+            return jsonify(analysis)
         return jsonify({
-            "stocks": result[["code", "name", "price", "change_pct", "board"]].to_dict("records")
+            "总交易次数": analysis["总交易次数"], "胜率": analysis["胜率"],
+            "总盈亏": analysis["总盈亏%"], "盈亏比": analysis["盈亏比"],
+            "平均盈利": analysis["平均盈利%"], "平均亏损": analysis["平均亏损%"],
+            "最大回撤": analysis["最大回撤%"],
+            "策略分析": analysis.get("策略分析", {}),
         })
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": f"解析失败: {str(e)}"})
 
 
-# ─── 启动 ───
+# === 模拟交易 ===
 
-def print_startup_info():
-    print("""
-╔═══════════════════════════════════════════╗
-║      📊 A股短线交易系统 · Web仪表盘       ║
-║                                           ║
-║  访问地址: http://localhost:5000           ║
-║                                           ║
-║  盘前选股 | 盘中监控 | 回测分析 | 复盘     ║
-╚═══════════════════════════════════════════╝
-    """)
+@app.route("/api/portfolio/summary")
+def api_portfolio_summary():
+    return jsonify(portfolio.summary())
+
+
+@app.route("/api/portfolio/positions")
+def api_portfolio_positions():
+    return jsonify({"positions": portfolio.get_positions()})
+
+
+@app.route("/api/portfolio/trades")
+def api_portfolio_trades():
+    limit = int(request.args.get("limit", 50))
+    return jsonify({"trades": portfolio.get_trades(limit)})
+
+
+@app.route("/api/portfolio/buy", methods=["POST"])
+def api_portfolio_buy():
+    try:
+        d = request.get_json()
+        ok, msg = portfolio.buy(d["code"].strip(), d.get("name",d["code"]),
+                                float(d["price"]), int(d["qty"]), d.get("strategy","手动买入"))
+        return jsonify({"success": ok, "message": msg})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+
+@app.route("/api/portfolio/sell", methods=["POST"])
+def api_portfolio_sell():
+    try:
+        d = request.get_json()
+        ok, msg = portfolio.sell(d["code"].strip(), float(d["price"]),
+                                 int(d.get("qty",0)) or None, d.get("reason","手动卖出"))
+        return jsonify({"success": ok, "message": msg})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+
+@app.route("/api/portfolio/reset", methods=["POST"])
+def api_portfolio_reset():
+    d = request.get_json() or {}
+    portfolio.reset(float(d.get("capital", BACKTEST["initial_capital"])))
+    return jsonify({"success": True})
+
+
+# === 自选股 ===
+
+@app.route("/api/watchlist")
+def api_get_watchlist():
+    return jsonify({"codes": portfolio.watchlist})
+
+
+@app.route("/api/watchlist/add", methods=["POST"])
+def api_add_watchlist():
+    portfolio.add_watchlist(request.get_json()["code"].strip())
+    return jsonify({"success": True})
+
+
+@app.route("/api/watchlist/remove", methods=["POST"])
+def api_remove_watchlist():
+    portfolio.remove_watchlist(request.get_json()["code"].strip())
+    return jsonify({"success": True})
+
+
+@app.route("/api/watchlist/quotes")
+def api_watchlist_quotes():
+    codes = portfolio.watchlist
+    if not codes:
+        return jsonify({"quotes": []})
+    quotes = df.get_realtime_quotes(codes)
+    return jsonify({"quotes": quotes.to_dict("records") if not quotes.empty else []})
+
+
+@app.route("/api/realtime")
+def api_realtime():
+    codes_str = request.args.get("codes","")
+    if not codes_str:
+        return jsonify({"error":"请提供股票代码"})
+    quotes = df.get_realtime_quotes([c.strip() for c in codes_str.split(",")])
+    if quotes.empty:
+        return jsonify({"error":"获取行情失败","quotes":[]})
+    return jsonify({"quotes": quotes.to_dict("records")})
+
+
+@app.route("/api/status")
+def api_status():
+    return jsonify({"status":"ok","time":datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "watchlist":len(portfolio.watchlist),"positions":len(portfolio.positions)})
 
 
 if __name__ == "__main__":
-    import webbrowser
-    from threading import Timer
-
-    def open_browser():
-        webbrowser.open("http://localhost:5000")
-
-    print_startup_info()
-    Timer(1.5, open_browser).start()
-    app.run(host="0.0.0.0", port=5000, debug=True, threaded=True)
+    print("\\n  📊 A股量化交易系统 v2.0  http://localhost:5000\\n")
+    app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
