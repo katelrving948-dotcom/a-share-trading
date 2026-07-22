@@ -1,0 +1,35 @@
+name: Daily stock selection email
+
+on:
+  schedule:
+    # GitHub Actions uses UTC. 02:00 UTC = 10:00 Asia/Shanghai.
+    - cron: "0 2 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  send-digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      MAIL_SMTP_HOST: smtp.gmail.com
+      MAIL_SMTP_PORT: "465"
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      MAIL_TO: ${{ secrets.MAIL_TO }}
+      EMAIL_UNIVERSE_LIMIT: ${{ vars.EMAIL_UNIVERSE_LIMIT || '500' }}
+      EMAIL_STOCK_COUNT: ${{ vars.EMAIL_STOCK_COUNT || '10' }}
+      SITE_URL: https://a-share-trading.onrender.com
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Generate and send email
+        run: python email_digest.py

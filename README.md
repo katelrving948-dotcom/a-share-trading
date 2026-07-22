@@ -36,6 +36,15 @@ streamlit run streamlit_app.py
 
 公开部署不要配置国信真实交易 AK/SK，也不要启用 `GUOSEN_ENABLE_LIVE_TRADING`。免费实例的本地文件是临时存储，持仓、自选股和预期计划可能在重启或重新部署后恢复为仓库初始内容。
 
+### 每日邮件选股
+
+仓库内置 GitHub Actions 定时任务：每个工作日北京时间 10:00 运行现有中长期选股流程，并邮件发送前 10 名候选。默认扫描按流动性排序的前 500 只股票；可在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中配置：
+
+- Secrets：`MAIL_USERNAME`（Gmail 地址）、`MAIL_PASSWORD`（Google 应用专用密码）、`MAIL_TO`（收件地址）。
+- Variables（可选）：`EMAIL_UNIVERSE_LIMIT`（扫描数量，默认 500）、`EMAIL_STOCK_COUNT`（邮件候选数，默认 10）。
+
+Google 普通登录密码不可用于 SMTP；需先为账号开启两步验证，再生成应用专用密码。配置完成后可在 **Actions → Daily stock selection email → Run workflow** 手动测试。定时任务可能因 GitHub 调度繁忙而延迟数分钟，法定节假日如仍触发，邮件内容应结合当日是否开市复核。
+
 ## 选股逻辑
 
 选股页采用以下可复核流程：
