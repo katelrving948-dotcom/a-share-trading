@@ -30,6 +30,12 @@ python server.py
 streamlit run streamlit_app.py
 ```
 
+## 完整网页部署（与本地界面一致）
+
+仓库根目录提供 `render.yaml`，用于部署 `server.py` 完整网页版本。连接 Render 后选择 **New > Blueprint**，导入本仓库即可；健康检查使用 `/api/status`，服务会自动读取平台提供的 `PORT`。
+
+公开部署不要配置国信真实交易 AK/SK，也不要启用 `GUOSEN_ENABLE_LIVE_TRADING`。免费实例的本地文件是临时存储，持仓、自选股和预期计划可能在重启或重新部署后恢复为仓库初始内容。
+
 ## 选股逻辑
 
 选股页采用以下可复核流程：
