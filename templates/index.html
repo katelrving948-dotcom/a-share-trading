@@ -6,44 +6,57 @@
 <title>A股中长期研究与交易系统</title>
 <style>
 :root {
-  --bg: #0b0e13;
-  --surface: #10141c;
-  --panel: #161b24;
-  --panel-soft: #111722;
-  --panel-raised: #1b212d;
-  --border: #29313e;
-  --border-strong: #3a4657;
-  --text: #dce3ef;
-  --text-secondary: #8e99aa;
+  --bg: #080b10;
+  --surface: #0d1219;
+  --panel: #131a23;
+  --panel-soft: #0e151e;
+  --panel-raised: #19222e;
+  --border: #263140;
+  --border-strong: #3b4a5f;
+  --text: #e5ebf4;
+  --text-secondary: #91a0b5;
   --green: #14b86f;
   --red: #f05c57;
-  --blue: #3b82f6;
-  --gold: #e4a72f;
+  --blue: #2f7df4;
+  --gold: #dca943;
   --hover: #202836;
   --cyan: #2dd4bf;
-  --focus: #6aa5ff;
-  --shadow: 0 16px 36px rgba(0, 0, 0, .24);
+  --focus: #67a4ff;
+  --shadow: 0 18px 44px rgba(0, 0, 0, .22);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { color-scheme: dark; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.5;
+  background:
+    radial-gradient(circle at 72% -10%, rgba(47, 125, 244, .09), transparent 34rem),
+    var(--bg);
+  color: var(--text); min-height: 100vh; line-height: 1.5;
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
 a { color: #74a9ff; text-decoration: none; }
 a:hover { color: #9fc3ff; }
 
 .header {
-  background: rgba(13, 17, 25, .96); border-bottom: 1px solid var(--border);
-  padding: 0 28px; display: flex; align-items: center; min-height: 62px;
+  background: rgba(9, 13, 19, .9); border-bottom: 1px solid rgba(77, 94, 117, .36);
+  padding: 0 24px; display: flex; align-items: center; min-height: 68px;
   position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px);
 }
-.header h1 { font-size: 18px; font-weight: 700; letter-spacing: 0; color: #f5f8ff; }
-.header-label { margin-left: 18px; padding-left: 18px; border-left: 1px solid var(--border); font-size: 11px; color: var(--text-secondary); letter-spacing: .08em; }
-.app-shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: calc(100vh - 62px); }
-.sidebar { background: #0f131b; border-right: 1px solid var(--border); padding: 16px 10px; }
-.sidebar-inner { position: sticky; top: 82px; }
+.brand { display: flex; align-items: center; gap: 11px; min-width: 220px; }
+.brand-mark {
+  width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px;
+  background: linear-gradient(145deg, #2877ed, #12478e); color: #fff; font: 800 14px/1 ui-monospace, monospace;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 8px 24px rgba(29, 104, 214, .25);
+}
+.brand-copy { display: flex; flex-direction: column; line-height: 1.25; }
+.brand-copy strong { font-size: 15px; letter-spacing: .01em; color: #f7f9fd; }
+.brand-copy span { font-size: 9px; color: #718096; letter-spacing: .16em; }
+.header-context { margin-left: 24px; padding-left: 24px; border-left: 1px solid var(--border); }
+.header-context-label { display: block; font-size: 10px; color: #718096; letter-spacing: .1em; text-transform: uppercase; }
+.header-context-title { display: block; margin-top: 2px; font-size: 13px; color: #dbe5f2; font-weight: 650; }
+.app-shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: calc(100vh - 68px); }
+.sidebar { background: rgba(12, 17, 24, .92); border-right: 1px solid var(--border); padding: 18px 10px; }
+.sidebar-inner { position: sticky; top: 88px; }
 .sidebar-title { padding: 0 12px 10px; font-size: 11px; letter-spacing: .08em; color: #9aa6b8; }
 .sidebar-note { margin: 18px 6px 0; padding: 12px; border-radius: 8px; background: #141a24; border: 1px solid var(--border); font-size: 11px; line-height: 1.75; color: var(--text-secondary); }
 .nav { display: flex; flex-direction: column; gap: 5px; }
@@ -201,11 +214,13 @@ tr:hover td { background: var(--hover); }
 .gauge-label { font-size: 13px; color: var(--text-secondary); }
 .gauge-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
 .hero {
-  display: flex; justify-content: space-between; gap: 18px; align-items: center;
-  border: 1px solid var(--border); background: #131923;
-  border-radius: 8px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow);
+  position: relative; display: flex; justify-content: space-between; gap: 18px; align-items: center;
+  border: 1px solid #2b3a4d;
+  background: linear-gradient(118deg, rgba(23, 34, 48, .98), rgba(13, 20, 29, .98));
+  border-radius: 10px; padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); overflow: hidden;
 }
-.hero-title { color: #f7f9fc; font-size: 18px; font-weight: 700; margin-bottom: 7px; }
+.hero::after { content: ""; position: absolute; inset: 0 0 0 auto; width: 34%; background: radial-gradient(circle at 70% 50%, rgba(45, 212, 191, .09), transparent 58%); pointer-events: none; }
+.hero-title { color: #f7f9fc; font-size: 20px; font-weight: 720; margin-bottom: 7px; letter-spacing: -.01em; }
 .hero-sub { font-size: 12px; color: var(--text-secondary); line-height: 1.75; max-width: 880px; }
 .hero-tags { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .hero-tag { border: 1px solid #334052; background: #0f151f; padding: 7px 10px; border-radius: 999px; color: #bdc9da; font-size: 12px; }
@@ -229,9 +244,23 @@ tr:hover td { background: var(--hover); }
 .log-line.error { color: var(--red); }
 .trial-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin-top: 12px; }
 .trial-card { padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-soft); font-size: 12px; line-height: 1.55; }
+.workflow-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+.workflow-card {
+  position: relative; min-height: 112px; padding: 16px; border: 1px solid var(--border); border-radius: 9px;
+  background: linear-gradient(145deg, rgba(20, 28, 39, .96), rgba(13, 19, 27, .96)); color: inherit;
+  text-align: left; cursor: pointer; transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+.workflow-card:hover { transform: translateY(-2px); border-color: #496584; background: linear-gradient(145deg, #182536, #101923); }
+.workflow-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.workflow-step { color: var(--cyan); font: 700 10px/1 ui-monospace, monospace; letter-spacing: .12em; }
+.workflow-title { margin-top: 12px; color: #f4f7fb; font-size: 14px; font-weight: 700; }
+.workflow-copy { margin-top: 5px; color: var(--text-secondary); font-size: 11px; line-height: 1.55; }
+.workflow-arrow { position: absolute; top: 14px; right: 14px; color: #53657a; font-size: 16px; }
+.status-cluster { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 999px; background: rgba(14, 20, 29, .8); }
 
 @media (max-width: 1180px) {
   .two-col, .three-col, .backtest-setup { grid-template-columns: 1fr; }
+  .workflow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero { align-items: flex-start; flex-wrap: wrap; }
   .hero-tags { justify-content: flex-start; }
 }
@@ -239,21 +268,23 @@ tr:hover td { background: var(--hover); }
 @media (max-width: 1024px) {
   .two-col, .three-col, .backtest-setup { grid-template-columns: 1fr; }
   .app-shell { display: block; }
-  .sidebar { padding: 8px; position: sticky; top: 62px; z-index: 90; border-bottom: 1px solid var(--border); border-right: none; }
+  .sidebar { padding: 8px; position: sticky; top: 68px; z-index: 90; border-bottom: 1px solid var(--border); border-right: none; }
   .sidebar-inner { position: static; }
   .sidebar-title, .sidebar-note { display: none; }
   .nav { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 2px; }
   .nav-group-label { display: none; }
   .nav button { min-width: max-content; min-height: 34px; padding: 6px 10px; font-size: 12px; }
   .nav button.active { box-shadow: inset 0 -2px 0 var(--focus); }
-  .header { padding: 0 12px; min-height: 62px; }
-  .header-label { display: none; }
+  .header { padding: 0 12px; min-height: 68px; }
+  .header-context { display: none; }
   .container { padding: 16px 14px 26px; }
 }
 
 @media (max-width: 768px) {
   .strategy-param-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
-  .header h1 { font-size: 16px; }
+  .brand { min-width: 0; }
+  .brand-copy span { display: none; }
+  .workflow-grid { grid-template-columns: 1fr; }
   .status-bar { gap: 8px; font-size: 12px; }
   .container { padding: 14px 12px 24px; }
   .card, .hero, .setting-section { padding: 14px; }
@@ -269,11 +300,16 @@ tr:hover td { background: var(--hover); }
 <body>
 
 <header class="header">
-  <h1>QTRADE · A股研究终端</h1>
-  <span class="header-label">FUNDAMENTALS / EXECUTION / REVIEW</span>
+  <div class="brand">
+    <span class="brand-mark">QT</span>
+    <span class="brand-copy"><strong>QTRADE 投研终端</strong><span>A-SHARE RESEARCH SYSTEM</span></span>
+  </div>
+  <div class="header-context">
+    <span class="header-context-label">当前模块</span>
+    <span class="header-context-title" id="headerContextTitle">市场概览</span>
+  </div>
   <div class="status-bar">
-    <span class="status-dot" id="statusDot"></span>
-    <span id="statusTime">--</span>
+    <span class="status-cluster"><span class="status-dot" id="statusDot"></span><span id="statusTime">正在连接</span></span>
   </div>
 </header>
 
@@ -303,6 +339,24 @@ tr:hover td { background: var(--hover); }
         <span class="hero-tag">风险校验</span>
         <span class="hero-tag">复盘诊断</span>
       </div>
+    </div>
+    <div class="workflow-grid" aria-label="投研工作流">
+      <button class="workflow-card" onclick="switchTab('overview')">
+        <span class="workflow-step">STEP 01</span><span class="workflow-arrow">↗</span>
+        <div class="workflow-title">判断市场环境</div><div class="workflow-copy">先看市场广度、涨跌停与板块资金，确认今天适不适合出手。</div>
+      </button>
+      <button class="workflow-card" onclick="switchTab('screener')">
+        <span class="workflow-step">STEP 02</span><span class="workflow-arrow">↗</span>
+        <div class="workflow-title">建立研究候选</div><div class="workflow-copy">用基本面、技术面和资金热度筛出可复核的中长期观察池。</div>
+      </button>
+      <button class="workflow-card" onclick="switchTab('expectation')">
+        <span class="workflow-step">STEP 03</span><span class="workflow-arrow">↗</span>
+        <div class="workflow-title">写下交易计划</div><div class="workflow-copy">明确触发、失效、仓位与止盈止损，避免临盘冲动决策。</div>
+      </button>
+      <button class="workflow-card" onclick="switchTab('risk')">
+        <span class="workflow-step">STEP 04</span><span class="workflow-arrow">↗</span>
+        <div class="workflow-title">执行风险复核</div><div class="workflow-copy">基于真实账户数据检查集中度、回撤与可卖边界，再决定行动。</div>
+      </button>
     </div>
     <div class="card">
       <div class="card-title">市场概览</div>
@@ -1034,10 +1088,17 @@ tabMeta.forEach((meta) => {
 });
 
 function switchTab(tab) {
+  if (!tabs.includes(tab)) tab = 'overview';
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.querySelector(`.nav button[data-tab="${tab}"]`).classList.add('active');
+  const meta = tabMeta.find(item => item.id === tab);
+  document.getElementById('headerContextTitle').textContent = meta ? meta.name : '市场概览';
+  document.title = `${meta ? meta.name : '市场概览'} · QTRADE A股研究终端`;
+  localStorage.setItem('qtrade_active_tab', tab);
+  if (location.hash !== `#${tab}`) history.replaceState(null, '', `#${tab}`);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   if (tab === 'overview') loadMarketOverview();
   if (tab === 'screener') loadScreenConfig();
   if (tab === 'backtest') initBacktestPanel();
@@ -2603,9 +2664,10 @@ async function analyzePortfolio() {
   }
 }
 
-loadMarketOverview();
 initAiStatus();
-switchTab('overview');
+const initialTab = location.hash.slice(1) || localStorage.getItem('qtrade_active_tab') || 'overview';
+switchTab(initialTab);
+window.addEventListener('hashchange', () => switchTab(location.hash.slice(1) || 'overview'));
 </script>
 </body>
 </html>
