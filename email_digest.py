@@ -100,7 +100,7 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
 
 
 def send_email(message: EmailMessage) -> None:
-    host = os.getenv("MAIL_SMTP_HOST", "smtp.gmail.com")
+    host = os.getenv("MAIL_SMTP_HOST", "smtp.qq.com")
     port = int(os.getenv("MAIL_SMTP_PORT", "465"))
     username = os.environ["MAIL_USERNAME"]
     password = os.environ["MAIL_PASSWORD"]

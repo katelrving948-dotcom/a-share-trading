@@ -13,8 +13,8 @@ jobs:
     permissions:
       contents: read
     env:
-      MAIL_SMTP_HOST: smtp.gmail.com
-      MAIL_SMTP_PORT: "465"
+      MAIL_SMTP_HOST: ${{ vars.MAIL_SMTP_HOST || 'smtp.qq.com' }}
+      MAIL_SMTP_PORT: ${{ vars.MAIL_SMTP_PORT || '465' }}
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       MAIL_TO: ${{ secrets.MAIL_TO }}

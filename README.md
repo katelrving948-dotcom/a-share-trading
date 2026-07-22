@@ -40,10 +40,10 @@ streamlit run streamlit_app.py
 
 仓库内置 GitHub Actions 定时任务：每个工作日北京时间 10:00 运行现有中长期选股流程，并邮件发送前 10 名候选。默认扫描按流动性排序的前 500 只股票；可在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中配置：
 
-- Secrets：`MAIL_USERNAME`（Gmail 地址）、`MAIL_PASSWORD`（Google 应用专用密码）、`MAIL_TO`（一个或多个收件地址；多个地址用英文逗号分隔）。
-- Variables（可选）：`EMAIL_UNIVERSE_LIMIT`（扫描数量，默认 500）、`EMAIL_STOCK_COUNT`（邮件候选数，默认 10）。
+- Secrets：`MAIL_USERNAME`（QQ 邮箱完整地址）、`MAIL_PASSWORD`（QQ 邮箱 SMTP 授权码，不是 QQ 密码）、`MAIL_TO`（一个或多个收件地址；多个地址用英文逗号分隔）。
+- Variables（可选）：`MAIL_SMTP_HOST`（默认 `smtp.qq.com`）、`MAIL_SMTP_PORT`（默认 `465`）、`EMAIL_UNIVERSE_LIMIT`（扫描数量，默认 500）、`EMAIL_STOCK_COUNT`（邮件候选数，默认 10）。
 
-Google 普通登录密码不可用于 SMTP；需先为账号开启两步验证，再生成应用专用密码。配置完成后可在 **Actions → Daily stock selection email → Run workflow** 手动测试。定时任务可能因 GitHub 调度繁忙而延迟数分钟，法定节假日如仍触发，邮件内容应结合当日是否开市复核。
+先在 QQ 邮箱的 **设置 → 账号与安全 → 安全设置** 中开启 POP3/SMTP 或 IMAP/SMTP 服务并生成授权码。QQ 密码不能用于 SMTP。配置完成后可在 **Actions → Daily stock selection email → Run workflow** 手动测试。定时任务可能因 GitHub 调度繁忙而延迟数分钟，法定节假日如仍触发，邮件内容应结合当日是否开市复核。
 
 ## 选股逻辑
 
