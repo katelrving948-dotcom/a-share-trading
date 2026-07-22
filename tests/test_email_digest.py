@@ -1,8 +1,9 @@
 import unittest
 from datetime import datetime
+from unittest.mock import MagicMock, patch
 from zoneinfo import ZoneInfo
 
-from email_digest import build_email
+from email_digest import build_email, send_email
 
 
 class EmailDigestTest(unittest.TestCase):
@@ -35,6 +36,29 @@ class EmailDigestTest(unittest.TestCase):
             datetime(2026, 7, 22, 18, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
         )
         self.assertIn("未返回有效候选", message.get_body(preferencelist=("plain",)).get_content())
+
+    @patch("email_digest.smtplib.SMTP_SSL")
+    @patch.dict("os.environ", {
+        "MAIL_USERNAME": "sender@gmail.com",
+        "MAIL_PASSWORD": "app-password",
+        "MAIL_TO": "first@example.com, second@example.com;third@example.com",
+    }, clear=True)
+    def test_send_email_supports_multiple_recipients(self, smtp_ssl):
+        smtp = MagicMock()
+        smtp_ssl.return_value.__enter__.return_value = smtp
+        message = build_email(
+            [], {},
+            datetime(2026, 7, 22, 10, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
+        )
+
+        send_email(message)
+
+        self.assertEqual(
+            message["To"],
+            "first@example.com, second@example.com, third@example.com",
+        )
+        smtp.login.assert_called_once_with("sender@gmail.com", "app-password")
+        smtp.send_message.assert_called_once_with(message)
 
 
 if __name__ == "__main__":

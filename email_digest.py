@@ -104,11 +104,17 @@ def send_email(message: EmailMessage) -> None:
     port = int(os.getenv("MAIL_SMTP_PORT", "465"))
     username = os.environ["MAIL_USERNAME"]
     password = os.environ["MAIL_PASSWORD"]
-    recipient = os.environ["MAIL_TO"]
+    recipients = [
+        address.strip()
+        for address in os.environ["MAIL_TO"].replace(";", ",").split(",")
+        if address.strip()
+    ]
+    if not recipients:
+        raise ValueError("MAIL_TO 未配置有效的收件邮箱")
     sender = os.getenv("MAIL_FROM", username)
 
     message["From"] = sender
-    message["To"] = recipient
+    message["To"] = ", ".join(recipients)
     if port == 465:
         with smtplib.SMTP_SSL(host, port, timeout=30) as smtp:
             smtp.login(username, password)
