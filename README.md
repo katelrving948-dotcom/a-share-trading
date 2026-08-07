@@ -47,7 +47,7 @@ streamlit run streamlit_app.py
 
 `CRON_SECRET` 和邮箱授权码不得写入仓库或添加到请求 URL。
 
-仓库内置 GitHub Actions 定时任务：每个工作日北京时间 12:25 首次运行现有中长期选股流程，并邮件发送前 10 名候选。若 GitHub 调度延迟或任务失败，会在 13:25、14:25、15:25 自动补偿；当日首次发送成功后，后续任务通过日期标记自动跳过，避免重复邮件。默认扫描按流动性排序的前 500 只股票；可在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中配置：
+GitHub Actions 工作流保留为手动备用，不再设置自动时段，避免与 cron-job.org 重复发送。默认扫描按流动性排序的前 500 只股票；如需手动备用，可在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中配置：
 
 - Secrets：`MAIL_USERNAME`（QQ 邮箱完整地址）、`MAIL_PASSWORD`（QQ 邮箱 SMTP 授权码，不是 QQ 密码）、`MAIL_TO`（一个或多个收件地址；多个地址用英文逗号分隔）。
 - Variables（可选）：`MAIL_SMTP_HOST`（默认 `smtp.qq.com`）、`MAIL_SMTP_PORT`（默认 `465`）、`EMAIL_UNIVERSE_LIMIT`（扫描数量，默认 500）、`EMAIL_STOCK_COUNT`（邮件候选数，默认 10）。

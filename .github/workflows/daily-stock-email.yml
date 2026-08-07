@@ -1,10 +1,6 @@
 name: Daily stock selection email
 
 on:
-  schedule:
-    # GitHub Actions uses UTC. Try at 12:25, 13:25, 14:25 and 15:25
-    # Asia/Shanghai. Later attempts are automatic fallbacks.
-    - cron: "25 4-7 * * 1-5"
   workflow_dispatch:
 
 concurrency:
