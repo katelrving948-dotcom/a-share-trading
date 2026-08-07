@@ -2,9 +2,9 @@ name: Daily stock selection email
 
 on:
   schedule:
-    # GitHub Actions uses UTC. 02:15 UTC = 10:15 Asia/Shanghai.
+    # GitHub Actions uses UTC. 04:15 UTC = 12:15 Asia/Shanghai.
     # Avoid the exact-hour scheduling peak that can delay or drop runs.
-    - cron: "15 2 * * 1-5"
+    - cron: "15 4 * * 1-5"
   workflow_dispatch:
 
 jobs:
