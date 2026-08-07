@@ -2,10 +2,14 @@ name: Daily stock selection email
 
 on:
   schedule:
-    # GitHub Actions uses UTC. 04:25 UTC = 12:25 Asia/Shanghai.
-    # Avoid the exact-hour scheduling peak that can delay or drop runs.
-    - cron: "25 4 * * 1-5"
+    # GitHub Actions uses UTC. Try at 12:25, 13:25, 14:25 and 15:25
+    # Asia/Shanghai. Later attempts are automatic fallbacks.
+    - cron: "25 4-7 * * 1-5"
   workflow_dispatch:
+
+concurrency:
+  group: daily-stock-email
+  cancel-in-progress: false
 
 jobs:
   send-digest:
@@ -26,11 +30,39 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Determine Beijing date
+        id: beijing_date
+        shell: bash
+        run: echo "date=$(TZ=Asia/Shanghai date +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore daily send marker
+        id: sent_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .email-sent-marker
+          key: daily-stock-email-${{ steps.beijing_date.outputs.date }}
+
       - uses: actions/setup-python@v5
+        if: github.event_name != 'schedule' || steps.sent_cache.outputs.cache-hit != 'true'
         with:
           python-version: "3.13"
           cache: pip
       - name: Install dependencies
+        if: github.event_name != 'schedule' || steps.sent_cache.outputs.cache-hit != 'true'
         run: pip install -r requirements.txt
       - name: Generate and send email
+        if: github.event_name != 'schedule' || steps.sent_cache.outputs.cache-hit != 'true'
         run: python email_digest.py
+      - name: Record successful send
+        if: success() && steps.sent_cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p .email-sent-marker
+          echo "${{ steps.beijing_date.outputs.date }}" > .email-sent-marker/date
+      - name: Save daily send marker
+        if: success() && steps.sent_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .email-sent-marker
+          key: daily-stock-email-${{ steps.beijing_date.outputs.date }}
