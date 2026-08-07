@@ -744,7 +744,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             global _fundamental_result
             try:
                 _fundamental_result = fundamental_screener.screen(
-                    universe_limit=universe_limit
+                    universe_limit=universe_limit,
+                    ai_advisor=ai_advisor if ai_advisor.is_configured else None,
                 )
             except Exception as exc:
                 _fundamental_result = {"error": str(exc)}
@@ -1101,10 +1102,15 @@ class ApiHandler(BaseHTTPRequestHandler):
                 "timestamp": timestamp,
             })
 
-        mode = "规则精选建议"
+        rotation_analysis = fundamental_screener.summary.get("rotation_analysis", {})
+        rotation_ai_used = bool(rotation_analysis.get("available"))
+        mode = "AI轮动 + 规则精选" if rotation_ai_used else "规则精选建议"
         if data.get("use_ai", True) and ai_advisor.is_configured:
             candidates = ai_advisor.explain_long_term_candidates(candidates)
-            mode = "DeepSeek摘要 + 规则精选"
+            mode = (
+                "DeepSeek摘要 + AI轮动 + 规则精选"
+                if rotation_ai_used else "DeepSeek摘要 + 规则精选"
+            )
 
         position = round(min(
             RISK["position_pct"] * 100,
@@ -1136,19 +1142,39 @@ class ApiHandler(BaseHTTPRequestHandler):
         for board in fundamental_screener.summary.get("rotation_boards", [])[:3]:
             net = board.get("recent_main_net_inflow", board.get("main_net_inflow"))
             flow = f"，净流入{float(net):+.2f}亿" if net is not None else ""
+            ai_signal = ""
+            if board.get("ai_state"):
+                ai_signal = (
+                    f"；AI研判{board['ai_state']}（{board.get('ai_confidence', '低')}置信）"
+                    f"，轮动分{board.get('rotation_score', board.get('flow_score', 0))}"
+                )
             sectors.append({
                 "name": board.get("name", "-"),
                 "weight": round(position * len(candidates) / 3, 1),
-                "reason": f"资金热点匹配{flow}",
+                "reason": f"资金热点匹配{flow}{ai_signal}",
             })
+        for risk in rotation_analysis.get("risks", []):
+            if risk and risk not in risk_alerts:
+                risk_alerts.append(f"板块轮动：{risk}")
+        market_stage = rotation_analysis.get("market_stage", "以资金与风险阈值为准")
+        rotation_summary = rotation_analysis.get("market_stage_reason", "")
+        summary_text = (
+            f"当前市场阶段：{market_stage}。{rotation_summary} "
+            if rotation_ai_used else ""
+        )
+        summary_text += (
+            f"基于全面选股结果，列出 {len(stocks)} 只小资金策略观察标的；"
+            "入场仍须满足单一策略信号。"
+        )
         self._send_json({
-            "summary": f"基于全面选股结果，列出 {len(stocks)} 只小资金策略观察标的；入场仍须满足单一策略信号。",
-            "market_mood": "以资金与风险阈值为准",
+            "summary": summary_text,
+            "market_mood": market_stage,
             "sectors": sectors,
             "stocks": stocks,
             "risk_alerts": risk_alerts[:10] or ["仍需核验公告、成交容量与止损执行条件。"],
             "total_position": round(position * len(stocks), 1),
             "analysis_mode": mode,
+            "rotation_analysis": rotation_analysis,
             "timestamp": timestamp,
         })
 

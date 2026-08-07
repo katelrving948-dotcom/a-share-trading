@@ -88,7 +88,10 @@ class AIAdvisor:
 
         user_prompt = self._build_market_prompt(context, news)
         messages = [
-            {"role": "system", "content": self.system_prompt},
+            {
+                "role": "system",
+                "content": AI_CONFIG.get("rotation_system_prompt") or self.system_prompt,
+            },
             {"role": "user", "content": user_prompt},
         ]
         response = self._call_ai(messages)
@@ -100,6 +103,151 @@ class AIAdvisor:
                 "hot_concepts": [c["name"] for c in context.get("hot_concepts", [])[:5]],
                 "news_count": len(news),
             },
+        }
+
+    def analyze_sector_rotation(self, context: dict = None, news: list = None,
+                                boards: list = None) -> dict:
+        """返回可用于板块排序的结构化轮动研判；失败时由规则评分接管。"""
+        if not self.is_configured:
+            return {
+                "available": False,
+                "mode": "rule_only",
+                "reason": "未配置 DeepSeek API Key，使用板块资金规则评分。",
+                "boards": [],
+            }
+
+        context = context if context is not None else self.df.get_market_context()
+        if news is None:
+            news = self.df.get_financial_news(AI_CONFIG.get("news_count", 30))
+        boards = boards or []
+        board_rows = []
+        allowed_names = set()
+        for board in boards:
+            name = str(board.get("name", "")).strip()
+            if not name:
+                continue
+            allowed_names.add(name)
+            recent_flow = board.get("recent_main_net_inflow")
+            recent_text = (
+                f"近{board.get('history_days', 5)}日净流入{recent_flow:+.2f}亿，"
+                f"其中{board.get('positive_days', 0)}日为正"
+                if recent_flow is not None else "近期连续资金数据不可用"
+            )
+            board_rows.append(
+                f"{name}({board.get('type', '板块')}) | "
+                f"当日涨幅{float(board.get('change_pct') or 0):+.2f}% | "
+                f"当日主力净流入{float(board.get('main_net_inflow') or 0):+.2f}亿 | "
+                f"规则资金分{float(board.get('flow_score') or 0):.0f} | {recent_text}"
+            )
+        path_source_names = set(allowed_names)
+        for key in ("sector_flow", "sector_outflow", "hot_concepts", "concept_outflow"):
+            for item in context.get(key, []):
+                name = str(item.get("name", "")).strip()
+                if name:
+                    path_source_names.add(name)
+
+        prompt = self._build_market_prompt(context, news)
+        prompt += f"""
+
+=== 可参与轮动评分的候选板块 ===
+{chr(10).join(board_rows) if board_rows else '无候选板块'}
+
+为了接入板块轮动排序，请严格只输出一个 JSON 对象，不要输出 Markdown 或额外文字：
+{{
+  "market_stage":"趋势延续/震荡分歧/退潮/超跌反弹/潜在反转之一",
+  "market_stage_reason":"仅依据已提供数据的简要理由",
+  "short_term_outlook":"未来1-3个交易日判断",
+  "medium_term_outlook":"未来3-10个交易日判断",
+  "rotation_path":[{{"from":"净流出榜或候选板块原名","to":"候选板块原名","driver":"资金/国内政策/国际环境及依据","confidence":"高/中/低"}}],
+  "boards":[{{"name":"候选板块原名","state":"延续/分歧/退潮/反弹线索/反转待确认","rotation_score":0,"confidence":"高/中/低","horizon":"1-3日或3-10日","reason":"评分依据","trigger":"确认条件","invalidation":"失效条件"}}],
+  "risks":["主要风险或待验证项"]
+}}
+
+boards 只能使用上方候选板块的原名；rotation_score 为0-100。没有连续资金证据时，state 不得写成已经确认的反转。"""
+        response = self._call_ai([
+            {
+                "role": "system",
+                "content": AI_CONFIG.get("rotation_system_prompt") or self.system_prompt,
+            },
+            {"role": "user", "content": prompt},
+        ], temperature=0.2)
+        if response.startswith("❌"):
+            return {
+                "available": False,
+                "mode": "rule_fallback",
+                "reason": response,
+                "boards": [],
+            }
+
+        match = re.search(r"\{[\s\S]*\}", response)
+        if not match:
+            return {
+                "available": False,
+                "mode": "rule_fallback",
+                "reason": "AI未返回可解析的板块轮动JSON，使用规则评分。",
+                "boards": [],
+            }
+        try:
+            payload = json.loads(match.group(0))
+        except json.JSONDecodeError:
+            return {
+                "available": False,
+                "mode": "rule_fallback",
+                "reason": "AI板块轮动JSON解析失败，使用规则评分。",
+                "boards": [],
+            }
+
+        normalized_boards = []
+        for item in payload.get("boards", []):
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name", "")).strip()
+            if name not in allowed_names:
+                continue
+            try:
+                score = max(0.0, min(100.0, float(item.get("rotation_score", 50))))
+            except (TypeError, ValueError):
+                score = 50.0
+            confidence = str(item.get("confidence", "低")).strip()
+            if confidence not in {"高", "中", "低"}:
+                confidence = "低"
+            normalized_boards.append({
+                "name": name,
+                "state": str(item.get("state", "待确认")).strip()[:20],
+                "rotation_score": round(score),
+                "confidence": confidence,
+                "horizon": str(item.get("horizon", "")).strip()[:20],
+                "reason": str(item.get("reason", "")).strip()[:160],
+                "trigger": str(item.get("trigger", "")).strip()[:120],
+                "invalidation": str(item.get("invalidation", "")).strip()[:120],
+            })
+
+        rotation_path = []
+        for item in payload.get("rotation_path", []):
+            if not isinstance(item, dict):
+                continue
+            source = str(item.get("from", "")).strip()
+            target = str(item.get("to", "")).strip()
+            if source not in path_source_names or target not in allowed_names:
+                continue
+            confidence = str(item.get("confidence", "低")).strip()
+            rotation_path.append({
+                "from": source,
+                "to": target,
+                "driver": str(item.get("driver", "")).strip()[:160],
+                "confidence": confidence if confidence in {"高", "中", "低"} else "低",
+            })
+
+        return {
+            "available": True,
+            "mode": "ai_assisted",
+            "market_stage": str(payload.get("market_stage", "待判断")).strip()[:30],
+            "market_stage_reason": str(payload.get("market_stage_reason", "")).strip()[:240],
+            "short_term_outlook": str(payload.get("short_term_outlook", "")).strip()[:240],
+            "medium_term_outlook": str(payload.get("medium_term_outlook", "")).strip()[:240],
+            "rotation_path": rotation_path[:6],
+            "boards": normalized_boards,
+            "risks": [str(risk).strip()[:160] for risk in payload.get("risks", [])[:8]],
         }
 
     def chat_with_context(self, user_message: str) -> dict:
@@ -306,25 +454,56 @@ ROE: {stock_info.get('roe', 'N/A')}%（年化参考 {stock_info.get('annualized_
 
         prompt += "\n=== 热门概念板块（资金+涨幅综合） ===\n"
         for c in context.get("hot_concepts", []):
-            prompt += f"  {c['name']}: 涨幅{c['change_pct']:+.2f}% 主力净流入{c['main_net_inflow']:.2f}亿\n"
+            prompt += (
+                f"  {c['name']}: 涨幅{c['change_pct']:+.2f}% "
+                f"主力净流入{c['main_net_inflow']:.2f}亿 "
+                f"净流入占比{c.get('main_net_pct', 0):+.2f}%\n"
+            )
 
         prompt += "\n=== 行业板块资金流向 TOP10 ===\n"
         for s in context.get("sector_flow", []):
-            prompt += f"  {s['name']}: 涨幅{s['change_pct']:+.2f}% 净流入{s['main_net_inflow']:.2f}亿\n"
+            prompt += (
+                f"  {s['name']}: 涨幅{s['change_pct']:+.2f}% "
+                f"主力净流入{s['main_net_inflow']:.2f}亿 "
+                f"净流入占比{s.get('main_net_pct', 0):+.2f}% "
+                f"上涨/下跌家数{s.get('rise_count', 0):.0f}/{s.get('fall_count', 0):.0f}\n"
+            )
+
+        prompt += "\n=== 行业板块主力净流出（轮动起点与退潮参照） ===\n"
+        for s in context.get("sector_outflow", []):
+            prompt += (
+                f"  {s['name']}: 涨幅{s['change_pct']:+.2f}% "
+                f"主力净流入{s['main_net_inflow']:.2f}亿 "
+                f"净流入占比{s.get('main_net_pct', 0):+.2f}% "
+                f"上涨/下跌家数{s.get('rise_count', 0):.0f}/{s.get('fall_count', 0):.0f}\n"
+            )
+
+        prompt += "\n=== 概念板块主力净流出（题材退潮参照） ===\n"
+        for c in context.get("concept_outflow", []):
+            prompt += (
+                f"  {c['name']}: 涨幅{c['change_pct']:+.2f}% "
+                f"主力净流入{c['main_net_inflow']:.2f}亿 "
+                f"净流入占比{c.get('main_net_pct', 0):+.2f}%\n"
+            )
+
+        prompt += "\n=== 跌幅榜 TOP10（反弹与风险参照） ===\n"
+        for s in context.get("top_losers", []):
+            prompt += f"  {s['code']} {s['name']} {s['change_pct']:+.2f}% [{s['board']}]\n"
 
         if news:
             prompt += f"\n=== 最新财经新闻（{len(news)}条） ===\n"
             for n in news[:15]:
                 prompt += f"  [{n['time']}] {n['title']}\n"
 
-        prompt += """\n请基于以上数据，从以下角度给出选股建议：
-1. 大盘情绪判断（偏多/偏空/中性，依据涨跌比和涨停数）
-2. 当前市场主线热点题材是什么？（从涨停股和概念板块中归纳）
-3. 资金在往哪些方向流动？持续性如何？
-4. 结合新闻事件，预判接下来可能轮动的题材方向
-5. 给出3-5只值得关注的标的（含股票代码 + 简要逻辑）
+        prompt += """\n请完成A股板块轮动研判：
+1. 市场状态：结合上涨/下跌家数、涨跌停数量和平均涨跌幅，判断当前是趋势延续、震荡分歧、退潮、超跌反弹还是潜在反转。
+2. 每日资金强度：综合板块涨跌幅、主力净流入额、净流入占比和上涨/下跌家数，评估资金强度与板块内部扩散度；不要只按绝对净流入额排序。
+3. 轮动路径：指出资金可能流出的板块、正在承接的板块和下一阶段候选板块，并说明国际环境、国内政策或新闻事件如何影响该路径。
+4. 反弹与反转：单日上涨、单日流入或消息刺激只能判为线索。只有资金持续性、板块扩散度、市场宽度和后续催化共同确认时，才可判为反转；当前数据无法验证连续性时必须标注“待后续交易日确认”。
+5. 预测窗口：分别给出未来1-3个交易日和3-10个交易日的判断，用高/中/低表示信号强度，并列出触发条件与失效条件。
+6. 标的映射：只从已提供的股票中列出3-5只观察标的，说明其对应板块逻辑；不得编造个股资金或基本面数据。
 
-请用中文回复，分析务实、有数据支撑，避免空泛喊单。"""
+请按“市场阶段—资金强弱排行—板块轮动路径—反弹/反转判断—观察标的—风险与待验证项”的顺序用中文输出。明确区分事实、推断和待验证事项，避免空泛喊单或确定性预测。"""
         return prompt
 
     def _build_context_injection(self, context: dict, news: list) -> str:

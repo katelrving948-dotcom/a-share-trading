@@ -822,10 +822,11 @@ class DataFeed:
 
 
     # ──────────── 资金流向 ────────────
-    def get_sector_fund_flow(self, top_n: int = 20) -> pd.DataFrame:
-        """获取行业板块资金流向排行"""
+    def get_sector_fund_flow(self, top_n: int = 20,
+                             ascending: bool = False) -> pd.DataFrame:
+        """获取行业板块资金流向排行；ascending=True 时返回净流出侧。"""
         params = {
-            "pn": 1, "pz": top_n, "po": 1, "np": 1,
+            "pn": 1, "pz": top_n, "po": 0 if ascending else 1, "np": 1,
             "ut": "bd1d9ddb04089700cf9c27f6f7426281",
             "fltt": 2, "invt": 2, "fid": "f62",
             "fs": "m:90+t:2",
@@ -855,10 +856,11 @@ class DataFeed:
         except (json.JSONDecodeError, KeyError, TypeError):
             return pd.DataFrame()
 
-    def get_concept_fund_flow(self, top_n: int = 20) -> pd.DataFrame:
-        """获取概念板块资金流向排行"""
+    def get_concept_fund_flow(self, top_n: int = 20,
+                              ascending: bool = False) -> pd.DataFrame:
+        """获取概念板块资金流向排行；ascending=True 时返回净流出侧。"""
         params = {
-            "pn": 1, "pz": top_n, "po": 1, "np": 1,
+            "pn": 1, "pz": top_n, "po": 0 if ascending else 1, "np": 1,
             "ut": "bd1d9ddb04089700cf9c27f6f7426281",
             "fltt": 2, "invt": 2, "fid": "f62",
             "fs": "m:90+t:3",
@@ -996,6 +998,7 @@ class DataFeed:
                 "main_net_inflow": round(flow, 2),
                 "recent_main_net_inflow": history["recent_main_net_inflow"],
                 "positive_days": history["positive_days"],
+                "history_days": history["days"],
                 "flow_score": round(max(0.0, min(100.0, score))),
             }
             members = self.get_board_constituents(board["code"])
@@ -1333,6 +1336,8 @@ class DataFeed:
             "top_losers": [],
             "hot_concepts": self.get_hot_concepts(15),
             "sector_flow": [],
+            "sector_outflow": [],
+            "concept_outflow": [],
         }
 
         cols = ["code", "name", "price", "change_pct", "turnover_rate", "market_cap", "board"]
@@ -1358,6 +1363,31 @@ class DataFeed:
                     "name": row.get("name", ""),
                     "change_pct": round(float(row.get("change_pct") or 0), 2),
                     "main_net_inflow": round(float(row.get("main_net_inflow") or 0), 2),
+                    "main_net_pct": round(float(row.get("main_net_pct") or 0), 2),
+                    "rise_count": int(float(row.get("rise_count") or 0)),
+                    "fall_count": int(float(row.get("fall_count") or 0)),
+                })
+
+        sector_outflow = self.get_sector_fund_flow(10, ascending=True)
+        if not sector_outflow.empty:
+            for _, row in sector_outflow.iterrows():
+                context["sector_outflow"].append({
+                    "name": row.get("name", ""),
+                    "change_pct": round(float(row.get("change_pct") or 0), 2),
+                    "main_net_inflow": round(float(row.get("main_net_inflow") or 0), 2),
+                    "main_net_pct": round(float(row.get("main_net_pct") or 0), 2),
+                    "rise_count": int(float(row.get("rise_count") or 0)),
+                    "fall_count": int(float(row.get("fall_count") or 0)),
+                })
+
+        concept_outflow = self.get_concept_fund_flow(10, ascending=True)
+        if not concept_outflow.empty:
+            for _, row in concept_outflow.iterrows():
+                context["concept_outflow"].append({
+                    "name": row.get("name", ""),
+                    "change_pct": round(float(row.get("change_pct") or 0), 2),
+                    "main_net_inflow": round(float(row.get("main_net_inflow") or 0), 2),
+                    "main_net_pct": round(float(row.get("main_net_pct") or 0), 2),
                 })
 
         return context

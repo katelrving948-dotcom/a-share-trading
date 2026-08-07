@@ -128,7 +128,9 @@ class LongTermFundamentalScreener:
             "total": len(fundamental_ranked),
             "message": "结合近期热点与板块资金流精选十股",
         })
-        selected, rotation_boards = self._select_recommendations(fundamental_ranked)
+        selected, rotation_boards, rotation_analysis = self._select_recommendations(
+            fundamental_ranked, ai_advisor=ai_advisor
+        )
         self.recommendations = selected[:LONG_TERM["recommendation_count"]]
         recommendation_codes = {
             item["code"]: rank for rank, item in enumerate(self.recommendations, start=1)
@@ -149,6 +151,7 @@ class LongTermFundamentalScreener:
             "composite_weights": dict(LONG_TERM["composite_weights"]),
             "selection_weights": dict(LONG_TERM["selection_weights"]),
             "rotation_boards": rotation_boards[:8],
+            "rotation_analysis": rotation_analysis,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
         self._progress.update({"state": "done", "done": len(codes), "total": len(codes)})
@@ -350,9 +353,14 @@ class LongTermFundamentalScreener:
             float(item.get("technical_score", 0)) * weights["technical"]
         )
 
-    def _select_recommendations(self, ranked: list) -> tuple:
+    def _select_recommendations(self, ranked: list, ai_advisor=None) -> tuple:
         if not ranked:
-            return [], []
+            return [], [], {
+                "available": False,
+                "mode": "rule_only",
+                "reason": "没有通过综合评分的候选股票。",
+                "boards": [],
+            }
         rotation = self.df.get_rotation_matches(
             [item["code"] for item in ranked],
             top_n=LONG_TERM["theme_board_limit"],
@@ -360,16 +368,70 @@ class LongTermFundamentalScreener:
         matches = rotation.get("matches", {})
         boards = rotation.get("boards", [])
         market_data_available = bool(boards)
+        rotation_analysis = {
+            "available": False,
+            "mode": "rule_only",
+            "reason": "未配置AI，板块轮动使用资金规则评分。",
+            "boards": [],
+        }
+        if ai_advisor is not None and ai_advisor.is_configured and boards:
+            self._progress.update({
+                "state": "rotation_ai",
+                "message": "结合每日资金、国际环境与政策研判板块轮动",
+            })
+            try:
+                context = self.df.get_market_context()
+                news = self.df.get_financial_news()
+                rotation_analysis = ai_advisor.analyze_sector_rotation(
+                    context=context,
+                    news=news,
+                    boards=boards,
+                )
+            except Exception as exc:
+                rotation_analysis = {
+                    "available": False,
+                    "mode": "rule_fallback",
+                    "reason": f"AI板块轮动分析失败，已回退规则评分：{exc}",
+                    "boards": [],
+                }
+
+        ai_boards = {
+            board["name"]: board
+            for board in rotation_analysis.get("boards", [])
+            if isinstance(board, dict) and board.get("name")
+        }
+        ai_weight = float(LONG_TERM.get("rotation_ai_weight", 0.25))
+        for board in boards:
+            rule_score = float(board.get("flow_score") or 0)
+            board["rule_flow_score"] = round(rule_score)
+            ai_board = ai_boards.get(board.get("name"))
+            if rotation_analysis.get("available") and ai_board:
+                ai_score = float(ai_board.get("rotation_score") or 0)
+                board["ai_rotation_score"] = round(ai_score)
+                board["ai_state"] = ai_board.get("state", "待确认")
+                board["ai_confidence"] = ai_board.get("confidence", "低")
+                board["ai_reason"] = ai_board.get("reason", "")
+                board["ai_trigger"] = ai_board.get("trigger", "")
+                board["ai_invalidation"] = ai_board.get("invalidation", "")
+                board["rotation_score"] = round(
+                    rule_score * (1 - ai_weight) + ai_score * ai_weight
+                )
+            else:
+                board["rotation_score"] = round(rule_score)
+        boards.sort(key=lambda board: board.get("rotation_score", 0), reverse=True)
+
         weights = LONG_TERM["selection_weights"]
         for item in ranked:
             stock_matches = sorted(
                 matches.get(item["code"], []),
-                key=lambda board: board.get("flow_score", 0),
+                key=lambda board: board.get("rotation_score", board.get("flow_score", 0)),
                 reverse=True,
             )
             individual_score = _clip(50 + float(item.get("main_net_pct") or 0) * 3)
             if stock_matches:
-                theme_score = float(stock_matches[0].get("flow_score") or 0)
+                theme_score = float(
+                    stock_matches[0].get("rotation_score", stock_matches[0].get("flow_score", 0))
+                )
                 market_score = theme_score * 0.8 + individual_score * 0.2
             elif market_data_available:
                 market_score = individual_score * 0.3
@@ -384,8 +446,11 @@ class LongTermFundamentalScreener:
                     if recent_flow is not None else
                     f"当日净流入{board.get('main_net_inflow', 0):+.2f}亿"
                 )
+                ai_text = ""
+                if board.get("ai_state"):
+                    ai_text = f"，AI:{board['ai_state']}/{board.get('ai_confidence', '低')}"
                 item["matched_themes"].append(
-                    f"{board['name']}({board['type']}, {recent_text})"
+                    f"{board['name']}({board['type']}, {recent_text}{ai_text})"
                 )
             item["selection_score"] = round(
                 item["composite_score"] * weights["composite"] +
@@ -396,4 +461,4 @@ class LongTermFundamentalScreener:
             key=lambda item: (item["selection_score"], item["composite_score"]),
             reverse=True,
         )
-        return selected, boards
+        return selected, boards, rotation_analysis

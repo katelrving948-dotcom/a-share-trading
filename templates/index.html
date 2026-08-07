@@ -431,7 +431,22 @@ tr:hover td { background: var(--hover); }
     </div>
     <div class="card">
       <div class="card-title">综合分析与精选规则</div>
-      <div class="card-subtitle">基本面合格后追加 K 线趋势、MACD、RSI、KDJ 与量价评分，基本面/技术面按 70%/30% 合成为综合分；综合分再结合行业与概念板块近期资金流、个股资金流，以 80%/20% 得到精选分并选出 10 只。</div>
+      <div class="card-subtitle">基本面合格后追加 K 线趋势、MACD、RSI、KDJ 与量价评分，基本面/技术面按 70%/30% 合成为综合分；综合分再结合行业与概念板块近期资金流、个股资金流，以 80%/20% 得到精选分并选出 10 只。配置 DeepSeek 后，板块资金分会叠加 25% 的受控 AI 轮动研判，未配置或解析失败时自动回退规则分。</div>
+    </div>
+    <div class="card" id="rotationAnalysisCard" style="display:none">
+      <div class="flex-between" style="margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:0">板块轮动研判</div>
+        <span class="chip" id="rotationMode">规则评分</span>
+      </div>
+      <div id="rotationStage" style="font-size:14px;color:#fff;margin-bottom:6px"></div>
+      <div id="rotationReason" class="card-subtitle" style="margin-bottom:12px"></div>
+      <div class="two-col" style="margin-bottom:12px">
+        <div style="background:#0f1117;border-radius:8px;padding:12px"><div class="muted" style="font-size:11px;margin-bottom:5px">未来1-3个交易日</div><div id="rotationShort"></div></div>
+        <div style="background:#0f1117;border-radius:8px;padding:12px"><div class="muted" style="font-size:11px;margin-bottom:5px">未来3-10个交易日</div><div id="rotationMedium"></div></div>
+      </div>
+      <div class="muted" style="font-size:11px;margin-bottom:6px">资金强度与AI轮动评分</div>
+      <div id="rotationBoards"></div>
+      <div id="rotationPaths" style="margin-top:10px"></div>
     </div>
     <div class="card">
       <div class="card-title">研究结果</div>
@@ -1196,12 +1211,13 @@ async function pollLongTermStatus() {
   const btn = document.getElementById('fundScreenBtn');
   try {
     const r = await API.get('/api/long-term-screen/status');
-    if (['running', 'fundamentals', 'scoring', 'technical', 'market'].includes(r.state)) {
+    if (['running', 'fundamentals', 'scoring', 'technical', 'market', 'rotation_ai'].includes(r.state)) {
       let pct = 2;
       if (r.state === 'fundamentals' && r.total > 0) pct = Math.round(r.done / r.total * 65);
       if (r.state === 'scoring') pct = 66;
       if (r.state === 'technical' && r.total > 0) pct = 68 + Math.round(r.done / r.total * 20);
       if (r.state === 'market') pct = 92;
+      if (r.state === 'rotation_ai') pct = 96;
       document.getElementById('screenProgressBar').style.width = `${pct}%`;
       document.getElementById('screenProgressText').textContent = `${pct}%`;
       document.getElementById('screenCount').textContent =
@@ -1224,6 +1240,7 @@ async function pollLongTermStatus() {
       `${summary.scan_scope || '全量'} ${summary.pool_count || 0} 只 · 有效财报 ${summary.financial_success_count || 0} 只 · 综合候选 ${summary.fundamental_qualified_count || 0} 只 · 精选 ${summary.selected_count || 0} 只`;
     document.getElementById('screenProgressDetail').textContent =
       `${summary.data_source || ''} · ${summary.generated_at || r.timestamp || ''}`;
+    renderRotationAnalysis(summary.rotation_analysis || {}, summary.rotation_boards || []);
     renderLongTermResults(r.results || []);
     btn.disabled = false;
     btn.textContent = '运行全面选股';
@@ -1237,6 +1254,56 @@ async function pollLongTermStatus() {
     btn.disabled = false;
     btn.textContent = '运行全面选股';
   }
+}
+
+function renderRotationAnalysis(analysis, ruleBoards) {
+  const card = document.getElementById('rotationAnalysisCard');
+  card.style.display = 'block';
+  const available = Boolean(analysis.available);
+  const mode = document.getElementById('rotationMode');
+  mode.textContent = available ? 'AI辅助轮动' : '规则评分';
+  mode.className = `chip ${available ? 'chip-green' : 'chip-gold'}`;
+  document.getElementById('rotationStage').textContent = available
+    ? `市场阶段：${analysis.market_stage || '待判断'}`
+    : '板块轮动：规则资金评分';
+  document.getElementById('rotationReason').textContent =
+    analysis.market_stage_reason || analysis.reason || '依据板块资金流与近期资金轨迹排序。';
+  document.getElementById('rotationShort').textContent =
+    analysis.short_term_outlook || '未启用AI预测，关注当日资金强度与后续确认。';
+  document.getElementById('rotationMedium').textContent =
+    analysis.medium_term_outlook || '未启用AI预测，等待连续资金与政策催化验证。';
+
+  const boardContainer = document.getElementById('rotationBoards');
+  boardContainer.replaceChildren();
+  (ruleBoards || []).slice(0, 8).forEach(board => {
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:7px 0;border-bottom:1px solid var(--border);font-size:13px';
+    const title = document.createElement('span');
+    title.style.cssText = 'color:var(--gold);font-weight:600';
+    title.textContent = `${board.name || '-'} · ${board.rotation_score ?? board.flow_score ?? 0}分`;
+    const detail = document.createElement('span');
+    detail.style.cssText = 'float:right;color:var(--text-secondary);font-size:12px';
+    detail.textContent = board.ai_state
+      ? `${board.ai_state} / ${board.ai_confidence || '低'}置信`
+      : `规则资金分 ${board.rule_flow_score ?? board.flow_score ?? 0}`;
+    row.append(title, detail);
+    if (board.ai_reason) {
+      const reason = document.createElement('div');
+      reason.style.cssText = 'font-size:11px;color:var(--text-secondary);margin-top:3px';
+      reason.textContent = board.ai_reason;
+      row.appendChild(reason);
+    }
+    boardContainer.appendChild(row);
+  });
+
+  const paths = document.getElementById('rotationPaths');
+  paths.replaceChildren();
+  (analysis.rotation_path || []).forEach(path => {
+    const row = document.createElement('div');
+    row.style.cssText = 'font-size:12px;padding:4px 0;color:var(--text-secondary)';
+    row.textContent = `轮动线索：${path.from} → ${path.to}（${path.confidence || '低'}）${path.driver ? ` · ${path.driver}` : ''}`;
+    paths.appendChild(row);
+  });
 }
 
 function renderLongTermResults(results) {
