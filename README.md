@@ -38,6 +38,15 @@ streamlit run streamlit_app.py
 
 ### 每日邮件选股
 
+推荐使用免费的 cron-job.org 调用 Render 上的受保护接口，绕过 GitHub Actions 定时调度可能出现的延迟或丢失：
+
+1. 在 Render 的 **Environment** 中配置 `CRON_SECRET`（自行生成的长随机字符串）、`MAIL_USERNAME`、`MAIL_PASSWORD`、`MAIL_TO`。可选项为 `MAIL_SMTP_HOST`、`MAIL_SMTP_PORT`、`EMAIL_UNIVERSE_LIMIT`、`EMAIL_STOCK_COUNT`。
+2. 在 cron-job.org 新建任务，请求地址填写 `https://a-share-trading.onrender.com/api/cron/daily-email`，方法选择 `POST`。
+3. 添加请求头 `Authorization: Bearer 你的CRON_SECRET`，按北京时间设置工作日执行。接口会立即返回 `202`，选股和发信在 Render 后台继续执行。
+4. 可用同一个请求头访问 `GET /api/cron/daily-email/status`，查看当前进度和最近一次结果。Render 免费实例重启或休眠后该状态会重置，收件箱仍是最终送达凭证。
+
+`CRON_SECRET` 和邮箱授权码不得写入仓库或添加到请求 URL。
+
 仓库内置 GitHub Actions 定时任务：每个工作日北京时间 12:25 首次运行现有中长期选股流程，并邮件发送前 10 名候选。若 GitHub 调度延迟或任务失败，会在 13:25、14:25、15:25 自动补偿；当日首次发送成功后，后续任务通过日期标记自动跳过，避免重复邮件。默认扫描按流动性排序的前 500 只股票；可在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中配置：
 
 - Secrets：`MAIL_USERNAME`（QQ 邮箱完整地址）、`MAIL_PASSWORD`（QQ 邮箱 SMTP 授权码，不是 QQ 密码）、`MAIL_TO`（一个或多个收件地址；多个地址用英文逗号分隔）。

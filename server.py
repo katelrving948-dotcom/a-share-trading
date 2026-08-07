@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """A股量化交易系统 - 内置HTTP服务器 (无需Flask)"""
+import hmac
 import math
 import mimetypes
 import os, sys, json, traceback, threading, time
@@ -23,6 +24,7 @@ from risk_control import RealAccountRiskAnalyzer
 from screener_tail import TailEndScreener
 from portfolio_manager import PortfolioManager
 from expectation_planner import ExpectationPlanner
+from email_digest import main as send_daily_email_digest
 
 df = DataFeed()
 screener = StockScreener(data_feed=df)
@@ -49,6 +51,56 @@ _optimization_state = {
     "logs": [],
     "trials": [],
 }
+_daily_email_lock = threading.Lock()
+_daily_email_state_lock = threading.Lock()
+_daily_email_state = {
+    "state": "idle",
+    "started_at": None,
+    "completed_at": None,
+    "error": None,
+}
+
+
+def _daily_email_snapshot():
+    with _daily_email_state_lock:
+        return dict(_daily_email_state)
+
+
+def _set_daily_email_state(**updates):
+    with _daily_email_state_lock:
+        _daily_email_state.update(updates)
+
+
+def _run_daily_email():
+    try:
+        send_daily_email_digest()
+        _set_daily_email_state(
+            state="success",
+            completed_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            error=None,
+        )
+    except Exception as exc:
+        traceback.print_exc()
+        _set_daily_email_state(
+            state="error",
+            completed_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            error=str(exc),
+        )
+    finally:
+        _daily_email_lock.release()
+
+
+def _start_daily_email():
+    if not _daily_email_lock.acquire(blocking=False):
+        return False
+    _set_daily_email_state(
+        state="running",
+        started_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        completed_at=None,
+        error=None,
+    )
+    threading.Thread(target=_run_daily_email, daemon=True).start()
+    return True
 
 
 def _json_safe(value):
@@ -307,6 +359,17 @@ class ApiHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         return parsed.path, parse_qs(parsed.query)
 
+    def _cron_authorized(self):
+        secret = os.getenv("CRON_SECRET", "").strip()
+        if not secret:
+            self._send_error("CRON_SECRET is not configured", 503)
+            return False
+        supplied = self.headers.get("Authorization", "")
+        if not hmac.compare_digest(supplied, f"Bearer {secret}"):
+            self._send_error("Unauthorized", 401)
+            return False
+        return True
+
     def do_GET(self):
         path, params = self._parse_path()
         try:
@@ -367,6 +430,9 @@ class ApiHandler(BaseHTTPRequestHandler):
                                  "watchlist": len(watchlist.codes),
                                  "broker_account_configured": guosen_client.public_status()["account_query_configured"],
                                  "data_sources": df.get_source_status()})
+            elif path == '/api/cron/daily-email/status':
+                if self._cron_authorized():
+                    self._send_json(_daily_email_snapshot())
             elif path == '/api/ai/status':
                 self._send_json({"configured": ai_advisor.is_configured,
                                  "model": ai_advisor.model})
@@ -391,6 +457,15 @@ class ApiHandler(BaseHTTPRequestHandler):
         try:
             if path == '/api/backtest/run':
                 self._run_configured_backtest(body)
+            elif path == '/api/cron/daily-email':
+                if not self._cron_authorized():
+                    return
+                started = _start_daily_email()
+                self._send_json({
+                    "accepted": True,
+                    "started": started,
+                    "state": _daily_email_snapshot(),
+                }, 202)
             elif path == '/api/backtest/core':
                 self._run_core_backtest(body)
             elif path == '/api/backtest/optimize':
