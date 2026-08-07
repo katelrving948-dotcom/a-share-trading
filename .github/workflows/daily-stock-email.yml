@@ -5,6 +5,8 @@ on:
     # GitHub Actions uses UTC. Try at 12:25, 13:25, 14:25 and 15:25
     # Asia/Shanghai. Later attempts are automatic fallbacks.
     - cron: "25 4-7 * * 1-5"
+    # Temporary schedule-only validation window: 15:35-15:55 Asia/Shanghai.
+    - cron: "35,40,45,50,55 7 * * 1-5"
   workflow_dispatch:
 
 concurrency:
