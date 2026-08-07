@@ -6,10 +6,6 @@ on:
     # Avoid the exact-hour scheduling peak that can delay or drop runs.
     - cron: "25 4 * * 1-5"
   workflow_dispatch:
-  # Temporary one-time verification: this commit should start an automatic run.
-  push:
-    branches:
-      - main
 
 jobs:
   send-digest:
