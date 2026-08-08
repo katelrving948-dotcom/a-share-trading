@@ -42,8 +42,9 @@ streamlit run streamlit_app.py
 
 1. 在 Render 的 **Environment** 中配置 `CRON_SECRET`（自行生成的长随机字符串）、`MAIL_USERNAME`、`MAIL_PASSWORD`、`MAIL_TO`。可选项为 `MAIL_SMTP_HOST`、`MAIL_SMTP_PORT`、`EMAIL_UNIVERSE_LIMIT`、`EMAIL_STOCK_COUNT`。
 2. 在 cron-job.org 新建任务，请求地址填写 `https://a-share-trading.onrender.com/api/cron/daily-email`，方法选择 `POST`。
-3. 添加请求头 `Authorization: Bearer 你的CRON_SECRET`，按北京时间设置工作日执行。接口会立即返回 `202`，选股和发信在 Render 后台继续执行。
-4. 可用同一个请求头访问 `GET /api/cron/daily-email/status`，查看当前进度和最近一次结果。Render 免费实例重启或休眠后该状态会重置，收件箱仍是最终送达凭证。
+3. 添加请求头 `Authorization: Bearer 你的CRON_SECRET`，按北京时间设置工作日执行。接口会立即返回无正文的 `204`，选股和发信在 Render 后台继续执行。
+4. 如使用 Render 免费实例，可提前调用 `GET /api/cron/wake` 唤醒服务；该接口同样返回无正文的 `204`。
+5. 可用同一个请求头访问 `GET /api/cron/daily-email/status`，查看当前进度和最近一次结果。Render 免费实例重启或休眠后该状态会重置，收件箱仍是最终送达凭证。
 
 `CRON_SECRET` 和邮箱授权码不得写入仓库或添加到请求 URL。
 

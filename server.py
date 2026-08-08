@@ -346,6 +346,12 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_no_content(self):
+        self.send_response(204)
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
     def _send_error(self, msg, status=500):
         self._send_json({"error": msg}, status)
 
@@ -430,6 +436,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                                  "watchlist": len(watchlist.codes),
                                  "broker_account_configured": guosen_client.public_status()["account_query_configured"],
                                  "data_sources": df.get_source_status()})
+            elif path == '/api/cron/wake':
+                self._send_no_content()
             elif path == '/api/cron/daily-email/status':
                 if self._cron_authorized():
                     self._send_json(_daily_email_snapshot())
@@ -460,12 +468,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             elif path == '/api/cron/daily-email':
                 if not self._cron_authorized():
                     return
-                started = _start_daily_email()
-                self._send_json({
-                    "accepted": True,
-                    "started": started,
-                    "state": _daily_email_snapshot(),
-                }, 202)
+                _start_daily_email()
+                self._send_no_content()
             elif path == '/api/backtest/core':
                 self._run_core_backtest(body)
             elif path == '/api/backtest/optimize':

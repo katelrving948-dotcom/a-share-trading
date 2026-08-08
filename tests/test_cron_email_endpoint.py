@@ -34,6 +34,11 @@ class CronEmailEndpointTest(unittest.TestCase):
         )
         return urlopen(request, timeout=3)
 
+    def test_wake_endpoint_returns_no_content(self):
+        with urlopen(f"{self.base_url}/api/cron/wake", timeout=3) as response:
+            self.assertEqual(response.status, 204)
+            self.assertEqual(response.read(), b"")
+
     @patch.dict("os.environ", {"CRON_SECRET": "test-secret"}, clear=False)
     def test_rejects_invalid_secret(self):
         with self.assertRaises(HTTPError) as context:
@@ -44,11 +49,11 @@ class CronEmailEndpointTest(unittest.TestCase):
     @patch.dict("os.environ", {"CRON_SECRET": "test-secret"}, clear=False)
     def test_accepts_valid_secret_and_starts_email(self, send_digest):
         with self._post("Bearer test-secret") as response:
-            payload = json.loads(response.read().decode("utf-8"))
+            body = response.read().decode("utf-8")
+            payload = json.loads(body) if body else {}
 
-        self.assertEqual(response.status, 202)
-        self.assertTrue(payload["accepted"])
-        self.assertTrue(payload["started"])
+        self.assertEqual(response.status, 204)
+        self.assertEqual(payload, {})
         for _ in range(20):
             if send_digest.called:
                 break
