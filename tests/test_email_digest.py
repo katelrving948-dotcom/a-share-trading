@@ -35,8 +35,8 @@ class EmailDigestTest(unittest.TestCase):
         self.assertIn("平安银行(000001)", message.get_body(preferencelist=("plain",)).get_content())
         html_body = message.get_body(preferencelist=("html",)).get_content()
         self.assertIn("银行(行业, 近5日净流入+2.30亿)", html_body)
-        self.assertIn("进场10.40-10.50", html_body)
-        self.assertIn("止损10.05-10.10", html_body)
+        self.assertIn("进 10.40–10.50", html_body)
+        self.assertIn("止 10.05–10.10", html_body)
         self.assertIn("不构成投资建议", html_body)
 
     def test_build_email_handles_empty_result(self):
@@ -84,7 +84,7 @@ class EmailDigestTest(unittest.TestCase):
         html_body = message.get_body(preferencelist=("html",)).get_content()
         self.assertIn("资金流动与板块轮动", plain_body)
         self.assertIn("医药 → 半导体", plain_body)
-        self.assertIn("当日主力净流入", html_body)
+        self.assertIn("当日 / 近5日主力净流入", html_body)
         self.assertIn("20.50亿", html_body)
         self.assertIn("反转待确认 / 中", html_body)
 
