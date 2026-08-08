@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import html
+import json
 import os
 import smtplib
 from datetime import datetime
 from email.message import EmailMessage
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from data_feed import DataFeed
@@ -99,16 +102,57 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
     return message
 
 
-def send_email(message: EmailMessage) -> None:
-    host = os.getenv("MAIL_SMTP_HOST", "smtp.qq.com")
-    port = int(os.getenv("MAIL_SMTP_PORT", "465"))
-    username = os.environ["MAIL_USERNAME"]
-    password = os.environ["MAIL_PASSWORD"]
-    recipients = [
+def _recipients() -> list[str]:
+    return [
         address.strip()
         for address in os.environ["MAIL_TO"].replace(";", ",").split(",")
         if address.strip()
     ]
+
+
+def _send_email_via_brevo(message: EmailMessage, api_key: str) -> None:
+    username = os.environ["MAIL_USERNAME"]
+    recipients = _recipients()
+    if not recipients:
+        raise ValueError("MAIL_TO 未配置有效的收件邮箱")
+    sender = os.getenv("BREVO_SENDER_EMAIL", os.getenv("MAIL_FROM", username))
+    plain_part = message.get_body(preferencelist=("plain",))
+    html_part = message.get_body(preferencelist=("html",))
+    payload = {
+        "sender": {
+            "name": os.getenv("MAIL_FROM_NAME", "A股日报"),
+            "email": sender,
+        },
+        "to": [{"email": address} for address in recipients],
+        "subject": str(message["Subject"]),
+        "textContent": plain_part.get_content() if plain_part else "",
+        "htmlContent": html_part.get_content() if html_part else "",
+    }
+    request = Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={
+            "accept": "application/json",
+            "api-key": api_key,
+            "content-type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=30) as response:
+            if response.status not in (200, 201, 202):
+                raise RuntimeError(f"Brevo API 返回 HTTP {response.status}")
+    except HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")[:500]
+        raise RuntimeError(f"Brevo API 返回 HTTP {exc.code}: {detail}") from exc
+
+
+def _send_email_via_smtp(message: EmailMessage) -> None:
+    host = os.getenv("MAIL_SMTP_HOST", "smtp.qq.com")
+    port = int(os.getenv("MAIL_SMTP_PORT", "465"))
+    username = os.environ["MAIL_USERNAME"]
+    password = os.environ["MAIL_PASSWORD"]
+    recipients = _recipients()
     if not recipients:
         raise ValueError("MAIL_TO 未配置有效的收件邮箱")
     sender = os.getenv("MAIL_FROM", username)
@@ -124,6 +168,14 @@ def send_email(message: EmailMessage) -> None:
             smtp.starttls()
             smtp.login(username, password)
             smtp.send_message(message)
+
+
+def send_email(message: EmailMessage) -> None:
+    api_key = os.getenv("BREVO_API_KEY", "").strip()
+    if api_key:
+        _send_email_via_brevo(message, api_key)
+    else:
+        _send_email_via_smtp(message)
 
 
 def main() -> None:

@@ -48,6 +48,8 @@ streamlit run streamlit_app.py
 
 `CRON_SECRET` 和邮箱授权码不得写入仓库或添加到请求 URL。
 
+Render 免费服务会阻止 SMTP 端口，因此线上自动邮件应配置 Brevo HTTPS API：在 Brevo 中验证发件邮箱并创建 API Key，然后在 Render 添加 `BREVO_API_KEY` 和 `BREVO_SENDER_EMAIL`。配置 `BREVO_API_KEY` 后程序自动使用 Brevo；未配置时仍保留 SMTP 作为本地或其他运行环境的备用方式。
+
 GitHub Actions 工作流保留为手动备用，不再设置自动时段，避免与 cron-job.org 重复发送。默认扫描按流动性排序的前 500 只股票；如需手动备用，可在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中配置：
 
 - Secrets：`MAIL_USERNAME`（QQ 邮箱完整地址）、`MAIL_PASSWORD`（QQ 邮箱 SMTP 授权码，不是 QQ 密码）、`MAIL_TO`（一个或多个收件地址；多个地址用英文逗号分隔）。

@@ -1,4 +1,5 @@
 import unittest
+import json
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 from zoneinfo import ZoneInfo
@@ -59,6 +60,35 @@ class EmailDigestTest(unittest.TestCase):
         )
         smtp.login.assert_called_once_with("sender@gmail.com", "app-password")
         smtp.send_message.assert_called_once_with(message)
+
+    @patch("email_digest.urlopen")
+    @patch("email_digest.smtplib.SMTP_SSL")
+    @patch.dict("os.environ", {
+        "BREVO_API_KEY": "api-key",
+        "BREVO_SENDER_EMAIL": "sender@qq.com",
+        "MAIL_USERNAME": "sender@qq.com",
+        "MAIL_TO": "first@example.com,second@example.com",
+    }, clear=True)
+    def test_send_email_uses_brevo_api_when_configured(self, smtp_ssl, urlopen):
+        response = MagicMock()
+        response.status = 201
+        urlopen.return_value.__enter__.return_value = response
+        message = build_email(
+            [], {},
+            datetime(2026, 7, 22, 10, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
+        )
+
+        send_email(message)
+
+        request = urlopen.call_args.args[0]
+        payload = json.loads(request.data.decode("utf-8"))
+        self.assertEqual(request.full_url, "https://api.brevo.com/v3/smtp/email")
+        self.assertEqual(payload["sender"]["email"], "sender@qq.com")
+        self.assertEqual(
+            [recipient["email"] for recipient in payload["to"]],
+            ["first@example.com", "second@example.com"],
+        )
+        smtp_ssl.assert_not_called()
 
 
 if __name__ == "__main__":
