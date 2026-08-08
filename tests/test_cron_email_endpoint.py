@@ -45,9 +45,9 @@ class CronEmailEndpointTest(unittest.TestCase):
             self._post("Bearer wrong-secret")
         self.assertEqual(context.exception.code, 401)
 
-    @patch("server.send_daily_email_digest")
+    @patch("server._dispatch_daily_email_workflow")
     @patch.dict("os.environ", {"CRON_SECRET": "test-secret"}, clear=False)
-    def test_accepts_valid_secret_and_starts_email(self, send_digest):
+    def test_accepts_valid_secret_and_dispatches_workflow(self, dispatch_workflow):
         with self._post("Bearer test-secret") as response:
             body = response.read().decode("utf-8")
             payload = json.loads(body) if body else {}
@@ -55,10 +55,10 @@ class CronEmailEndpointTest(unittest.TestCase):
         self.assertEqual(response.status, 204)
         self.assertEqual(payload, {})
         for _ in range(20):
-            if send_digest.called:
+            if dispatch_workflow.called:
                 break
             time.sleep(0.05)
-        send_digest.assert_called_once_with()
+        dispatch_workflow.assert_called_once_with()
 
 
 if __name__ == "__main__":

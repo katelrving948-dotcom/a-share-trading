@@ -40,15 +40,13 @@ streamlit run streamlit_app.py
 
 推荐使用免费的 cron-job.org 调用 Render 上的受保护接口，绕过 GitHub Actions 定时调度可能出现的延迟或丢失：
 
-1. 在 Render 的 **Environment** 中配置 `CRON_SECRET`（自行生成的长随机字符串）、`MAIL_USERNAME`、`MAIL_PASSWORD`、`MAIL_TO`。可选项为 `MAIL_SMTP_HOST`、`MAIL_SMTP_PORT`、`EMAIL_UNIVERSE_LIMIT`、`EMAIL_STOCK_COUNT`。
+1. 在 Render 的 **Environment** 中保留 `CRON_SECRET`，并添加 `GITHUB_ACTIONS_TOKEN`（仅授权本仓库 Actions 读写的 Fine-grained Token）。
 2. 在 cron-job.org 新建任务，请求地址填写 `https://a-share-trading.onrender.com/api/cron/daily-email`，方法选择 `POST`。
-3. 添加请求头 `Authorization: Bearer 你的CRON_SECRET`，按北京时间设置工作日执行。接口会立即返回无正文的 `204`，选股和发信在 Render 后台继续执行。
+3. 添加请求头 `Authorization: Bearer 你的CRON_SECRET`，按北京时间设置工作日执行。接口会立即返回无正文的 `204` 并触发 GitHub Actions，由 GitHub 运行选股并通过 QQ SMTP 发信。
 4. 如使用 Render 免费实例，可提前调用 `GET /api/cron/wake` 唤醒服务；该接口同样返回无正文的 `204`。
 5. 可用同一个请求头访问 `GET /api/cron/daily-email/status`，查看当前进度和最近一次结果。Render 免费实例重启或休眠后该状态会重置，收件箱仍是最终送达凭证。
 
-`CRON_SECRET` 和邮箱授权码不得写入仓库或添加到请求 URL。
-
-Render 免费服务会阻止 SMTP 端口，因此线上自动邮件应配置 Brevo HTTPS API：在 Brevo 中验证发件邮箱并创建 API Key，然后在 Render 添加 `BREVO_API_KEY` 和 `BREVO_SENDER_EMAIL`。配置 `BREVO_API_KEY` 后程序自动使用 Brevo；未配置时仍保留 SMTP 作为本地或其他运行环境的备用方式。
+`CRON_SECRET`、`GITHUB_ACTIONS_TOKEN` 和邮箱授权码不得写入仓库或添加到请求 URL。Render 免费服务会阻止 SMTP 端口，因此 Render 只负责触发工作流，不直接发送邮件。
 
 GitHub Actions 工作流保留为手动备用，不再设置自动时段，避免与 cron-job.org 重复发送。默认扫描按流动性排序的前 500 只股票；如需手动备用，可在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中配置：
 

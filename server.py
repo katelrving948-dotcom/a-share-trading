@@ -8,6 +8,7 @@ from datetime import date, datetime
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from io import StringIO
 from urllib.parse import urlparse, parse_qs, unquote
+from urllib.request import Request, urlopen
 import pandas as pd
 
 from config import SCREEN, STRATEGY, RISK, BACKTEST, LONG_TERM
@@ -24,7 +25,6 @@ from risk_control import RealAccountRiskAnalyzer
 from screener_tail import TailEndScreener
 from portfolio_manager import PortfolioManager
 from expectation_planner import ExpectationPlanner
-from email_digest import main as send_daily_email_digest
 
 df = DataFeed()
 screener = StockScreener(data_feed=df)
@@ -71,9 +71,35 @@ def _set_daily_email_state(**updates):
         _daily_email_state.update(updates)
 
 
+def _dispatch_daily_email_workflow():
+    token = os.getenv("GITHUB_ACTIONS_TOKEN", "").strip()
+    if not token:
+        raise RuntimeError("GITHUB_ACTIONS_TOKEN is not configured")
+    repository = os.getenv(
+        "GITHUB_ACTIONS_REPOSITORY",
+        "katelrving948-dotcom/a-share-trading",
+    ).strip()
+    workflow = os.getenv("GITHUB_ACTIONS_WORKFLOW", "daily-stock-email.yml").strip()
+    ref = os.getenv("GITHUB_ACTIONS_REF", "main").strip()
+    request = Request(
+        f"https://api.github.com/repos/{repository}/actions/workflows/{workflow}/dispatches",
+        data=json.dumps({"ref": ref}).encode("utf-8"),
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        method="POST",
+    )
+    with urlopen(request, timeout=30) as response:
+        if response.status != 204:
+            raise RuntimeError(f"GitHub Actions dispatch returned HTTP {response.status}")
+
+
 def _run_daily_email():
     try:
-        send_daily_email_digest()
+        _dispatch_daily_email_workflow()
         _set_daily_email_state(
             state="success",
             completed_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
