@@ -45,9 +45,9 @@ def select_candidates(universe_limit: int, count: int) -> tuple[list, dict]:
     return recommended[:count], screener.summary
 
 
-def _build_rotation_digest(summary: dict) -> tuple[str, str]:
+def _build_rotation_digest(summary: dict) -> tuple[str, str, str]:
     analysis = summary.get("rotation_analysis") or {}
-    boards = (summary.get("rotation_boards") or [])[:3]
+    boards = summary.get("rotation_boards") or []
     ai_used = bool(analysis.get("available"))
     mode = "AI辅助轮动" if ai_used else "资金规则轮动"
     market_stage = analysis.get("market_stage") or (
@@ -117,8 +117,7 @@ def _build_rotation_digest(summary: dict) -> tuple[str, str]:
 
     path_html = "".join(f"<li>{html.escape(path)}</li>" for path in paths)
     risk_html = "".join(f"<li>{html.escape(risk)}</li>" for risk in risks)
-    html_section = f"""
-      <div style="margin-top:18px;margin-bottom:8px;font-size:16px;font-weight:700;color:#172033">资金与板块轮动</div>
+    overview_html = f"""
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:10px">
         <tr>
           <td width="33%" style="padding:10px;background:#eef4ff;border-radius:8px;vertical-align:top">
@@ -137,6 +136,14 @@ def _build_rotation_digest(summary: dict) -> tuple[str, str]:
           </td>
         </tr>
       </table>
+      {f'<div style="margin:6px 2px 9px;font-size:12px;color:#475569"><strong>阶段依据：</strong>{html.escape(str(stage_reason))}</div>' if stage_reason else ''}
+    """
+    detail_html = f"""
+      <div style="margin-top:24px;padding-top:16px;border-top:2px solid #172033">
+        <div style="font-size:11px;letter-spacing:1px;color:#2563eb;font-weight:700">SECTOR ROTATION</div>
+        <div style="margin-top:3px;margin-bottom:5px;font-size:20px;font-weight:800;color:#172033">板块轮动深度解读</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:10px">完整保留资金强度、轮动评分、状态、触发条件和失效条件</div>
+      </div>
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e7ebf3;border-radius:8px;border-collapse:separate;font-size:13px">
         <thead><tr style="background:#f8fafc;color:#64748b;font-size:11px">
           <th style="padding:8px;text-align:left">#</th><th style="padding:8px;text-align:left">板块</th>
@@ -148,14 +155,14 @@ def _build_rotation_digest(summary: dict) -> tuple[str, str]:
       {f'<div style="margin-top:8px;font-size:12px;color:#475569"><strong>轮动路径：</strong>{"；".join(html.escape(path) for path in paths)}</div>' if path_html else ''}
       {f'<div style="margin-top:5px;font-size:12px;color:#b45309"><strong>待验证：</strong>{"；".join(html.escape(risk) for risk in risks)}</div>' if risk_html else ''}
     """
-    return "\n".join(plain_lines), html_section
+    return "\n".join(plain_lines), overview_html, detail_html
 
 
 def build_email(candidates: list, summary: dict, generated_at: datetime) -> EmailMessage:
     date_text = generated_at.astimezone(SHANGHAI).strftime("%Y-%m-%d")
     rows = []
+    ranking_rows = []
     plain_rows = []
-    compact_candidates = []
     for rank, item in enumerate(candidates, start=1):
         matched_themes = item.get("matched_themes") or []
         themes = "、".join(matched_themes) or "--"
@@ -187,55 +194,78 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
             f"综合{_number(item.get('selection_score'), 0)}分，"
             f"现价{_number(item.get('price'), 2)}；{plan_text}；{risk}"
         )
-        if rank <= 5:
-            rows.append(
-                '<tr><td style="padding:10px 11px;border-top:1px solid #e7ebf3">'
-                '<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
-                f'<td style="vertical-align:top"><span style="display:inline-block;width:22px;height:22px;line-height:22px;'
-                f'text-align:center;background:#e8efff;color:#2563eb;border-radius:11px;font-weight:700;font-size:11px">{rank}</span> '
-                f'<strong style="font-size:14px">{html.escape(str(item.get("name", "")))}</strong> '
-                f'<span style="font-size:11px;color:#64748b">{html.escape(str(item.get("code", "")))} · '
-                f'{_number(item.get("price"), 2)}元</span></td>'
-                f'<td style="text-align:right;vertical-align:top"><strong style="font-size:18px">{_number(item.get("selection_score"), 0)}</strong>'
-                f'<span style="font-size:10px;color:#64748b"> 分</span><div style="font-size:10px;color:#64748b">'
-                f'基{_number(item.get("fundamental_score"), 0)} · 技{_number(item.get("technical_score"), 0)}</div></td>'
-                '</tr></table>'
-                f'<div style="margin-top:6px;font-size:12px"><span title="{html.escape(themes)}" style="color:#2563eb">{html.escape(theme_names)}</span> · '
-                f'<strong>{html.escape(plan_short)}</strong></div>'
-                f'<div style="margin-top:3px;font-size:11px;color:#b45309">风险：{html.escape(str(risk))}</div>'
-                '</td></tr>'
-            )
-        else:
-            compact_candidates.append(
-                f'<span style="display:inline-block;margin:3px 6px 3px 0;padding:6px 9px;'
-                f'background:#f8fafc;border:1px solid #e7ebf3;border-radius:14px;font-size:12px">'
-                f'{rank}. {html.escape(str(item.get("name", "")))} '
-                f'<strong>{_number(item.get("selection_score"), 0)}分</strong></span>'
-            )
+        ranking_rows.append(
+            '<tr style="border-top:1px solid #edf0f5">'
+            f'<td style="padding:8px 6px;color:#64748b;text-align:center">{rank}</td>'
+            f'<td style="padding:8px 6px"><strong>{html.escape(str(item.get("name", "")))}</strong>'
+            f'<div style="font-size:10px;color:#64748b">{html.escape(str(item.get("code", "")))} · {_number(item.get("price"), 2)}元</div></td>'
+            f'<td style="padding:8px 6px;text-align:center"><strong style="font-size:16px">{_number(item.get("selection_score"), 0)}</strong>'
+            f'<div style="font-size:9px;color:#64748b">基{_number(item.get("fundamental_score"), 0)}/技{_number(item.get("technical_score"), 0)}</div></td>'
+            f'<td style="padding:8px 6px;font-size:11px;color:#2563eb">{html.escape(theme_names)}</td>'
+            f'<td style="padding:8px 6px;font-size:11px">{html.escape(plan.get("status") or ("可执行" if plan.get("actionable") else "等待确认"))}</td>'
+            '</tr>'
+        )
+        rows.append(
+            '<tr><td style="padding:9px 11px;border-top:1px solid #e7ebf3">'
+            '<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
+            f'<td style="vertical-align:top"><span style="display:inline-block;width:22px;height:22px;line-height:22px;'
+            f'text-align:center;background:#e8efff;color:#2563eb;border-radius:11px;font-weight:700;font-size:11px">{rank}</span> '
+            f'<strong style="font-size:14px">{html.escape(str(item.get("name", "")))}</strong> '
+            f'<span style="font-size:11px;color:#64748b">{html.escape(str(item.get("code", "")))} · '
+            f'{_number(item.get("price"), 2)}元</span></td>'
+            f'<td style="text-align:right;vertical-align:top"><strong style="font-size:18px">{_number(item.get("selection_score"), 0)}</strong>'
+            f'<span style="font-size:10px;color:#64748b"> 分</span><div style="font-size:10px;color:#64748b">'
+            f'基本{_number(item.get("fundamental_score"), 0)} · 技术{_number(item.get("technical_score"), 0)}</div></td>'
+            '</tr></table>'
+            f'<div style="margin-top:5px;font-size:12px"><span style="color:#2563eb">{html.escape(theme_names)}</span> · '
+            f'<strong>{html.escape(plan_short)}</strong></div>'
+            f'<div style="margin-top:3px;font-size:10px;color:#64748b">资金主题：{html.escape(themes)}</div>'
+            f'<div style="margin-top:2px;font-size:11px;color:#b45309">风险：{html.escape(str(risk))}</div>'
+            '</td></tr>'
+        )
 
     if not rows:
         rows.append('<tr><td colspan="5" style="padding:14px">本次数据源未返回有效候选，请登录网站复核。</td></tr>')
+        ranking_rows.append('<tr><td colspan="5" style="padding:14px">本次未返回有效候选。</td></tr>')
         plain_rows.append("本次数据源未返回有效候选，请登录网站复核。")
 
     scope = html.escape(str(summary.get("scan_scope", "自动任务")))
     generated_text = generated_at.astimezone(SHANGHAI).strftime("%Y-%m-%d %H:%M:%S")
     site_url = os.getenv("SITE_URL", "https://a-share-trading.onrender.com")
-    rotation_plain, rotation_html = _build_rotation_digest(summary)
+    rotation_plain, rotation_overview_html, rotation_detail_html = _build_rotation_digest(summary)
     body_html = f"""
     <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
     <body style="margin:0;padding:0;background:#f3f6fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',Arial,sans-serif;color:#172033">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:16px 8px">
         <table role="presentation" width="720" cellspacing="0" cellpadding="0" style="width:100%;max-width:720px;background:#ffffff;border-radius:12px;box-shadow:0 4px 18px rgba(23,32,51,.08)">
           <tr><td style="padding:20px 22px 14px">
-            <div style="font-size:12px;color:#64748b">A股中长期研究 · {generated_text}</div>
-            <div style="font-size:24px;font-weight:800;margin-top:4px">{date_text} 选股日报</div>
-            <div style="font-size:12px;color:#64748b;margin-top:5px">{scope} · 精选 {len(candidates)} 只</div>
-            {rotation_html}
-            <div style="margin-top:18px;margin-bottom:8px;font-size:16px;font-weight:700">重点观察前5只</div>
+            <div style="font-size:11px;letter-spacing:1px;color:#2563eb;font-weight:700">A-SHARE DAILY BRIEFING</div>
+            <div style="font-size:27px;font-weight:850;line-height:1.25;margin-top:5px">{date_text} A股选股日报</div>
+            <div style="font-size:13px;color:#475569;margin-top:7px;line-height:1.6">先看市场与推荐榜，再读板块轮动和个股执行分析。<br>{scope} · 精选 {len(candidates)} 只 · {generated_text}</div>
+            <div style="margin-top:18px;margin-bottom:8px;font-size:16px;font-weight:800">今日市场速览</div>
+            {rotation_overview_html}
+            <div style="margin-top:18px;padding:12px 14px;background:#172033;color:#fff;border-radius:8px 8px 0 0">
+              <div style="font-size:10px;letter-spacing:1px;color:#93c5fd">TOP PICKS</div>
+              <div style="font-size:18px;font-weight:800;margin-top:2px">今日10只推荐榜</div>
+              <div style="font-size:11px;color:#cbd5e1;margin-top:3px">先快速查看排名、分数、主题与执行状态</div>
+            </div>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #dce2ec;border-top:0;border-radius:0 0 8px 8px;border-collapse:separate;font-size:12px">
+              <thead><tr style="background:#f8fafc;color:#64748b;font-size:10px">
+                <th style="padding:7px 5px">#</th><th style="padding:7px 5px;text-align:left">标的</th>
+                <th style="padding:7px 5px">评分</th><th style="padding:7px 5px;text-align:left">主线</th>
+                <th style="padding:7px 5px;text-align:left">状态</th>
+              </tr></thead>
+              <tbody>{''.join(ranking_rows)}</tbody>
+            </table>
+            {rotation_detail_html}
+            <div style="margin-top:24px;padding-top:16px;border-top:2px solid #172033">
+              <div style="font-size:11px;letter-spacing:1px;color:#2563eb;font-weight:700">STOCK ANALYSIS</div>
+              <div style="margin-top:3px;font-size:20px;font-weight:800">10只个股详细分析</div>
+              <div style="font-size:12px;color:#64748b;margin:4px 0 10px">完整资金主题、基本/技术分、进场区间、突破价、止损与风险</div>
+            </div>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e7ebf3;border-radius:8px;border-collapse:separate;font-size:13px">
               <tbody>{''.join(rows)}</tbody>
             </table>
-            {f'<div style="margin-top:10px"><strong style="font-size:12px">其余候选：</strong>{"".join(compact_candidates)}</div>' if compact_candidates else ''}
             <div style="text-align:center;margin:18px 0 10px">
               <a href="{html.escape(site_url)}" style="display:inline-block;padding:10px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:7px;font-size:13px;font-weight:700">查看完整10只与详细数据</a>
             </div>

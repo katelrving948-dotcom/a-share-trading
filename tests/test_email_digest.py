@@ -47,6 +47,36 @@ class EmailDigestTest(unittest.TestCase):
         )
         self.assertIn("未返回有效候选", message.get_body(preferencelist=("plain",)).get_content())
 
+    def test_build_email_keeps_full_details_for_candidates_after_top_five(self):
+        candidates = []
+        for rank in range(1, 7):
+            candidates.append({
+                "code": f"00000{rank}",
+                "name": f"候选{rank}",
+                "price": 10 + rank,
+                "selection_score": 90 - rank,
+                "fundamental_score": 80,
+                "technical_score": 81,
+                "matched_themes": [f"板块{rank}(行业, 近5日净流入+{rank}.00亿)"],
+                "risk": f"风险提示{rank}",
+                "opening_plan": {
+                    "actionable": False,
+                    "status": "等待确认",
+                    "reason": f"承接条件{rank}未满足",
+                },
+            })
+
+        message = build_email(
+            candidates, {},
+            datetime(2026, 8, 8, 10, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
+        )
+        html_body = message.get_body(preferencelist=("html",)).get_content()
+
+        self.assertIn("候选6", html_body)
+        self.assertIn("板块6(行业, 近5日净流入+6.00亿)", html_body)
+        self.assertIn("承接条件6未满足", html_body)
+        self.assertIn("风险提示6", html_body)
+
     def test_build_email_contains_fund_flow_and_sector_rotation(self):
         summary = {
             "rotation_boards": [{
