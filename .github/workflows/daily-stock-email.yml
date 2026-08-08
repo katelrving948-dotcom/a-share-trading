@@ -19,6 +19,7 @@ jobs:
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       MAIL_TO: ${{ secrets.MAIL_TO }}
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       EMAIL_UNIVERSE_LIMIT: ${{ vars.EMAIL_UNIVERSE_LIMIT || '500' }}
       EMAIL_STOCK_COUNT: ${{ vars.EMAIL_STOCK_COUNT || '10' }}
       SITE_URL: https://a-share-trading.onrender.com

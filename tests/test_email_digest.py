@@ -47,6 +47,47 @@ class EmailDigestTest(unittest.TestCase):
         )
         self.assertIn("未返回有效候选", message.get_body(preferencelist=("plain",)).get_content())
 
+    def test_build_email_contains_fund_flow_and_sector_rotation(self):
+        summary = {
+            "rotation_boards": [{
+                "name": "半导体",
+                "type": "行业",
+                "change_pct": 2.1,
+                "main_net_inflow": 20.5,
+                "recent_main_net_inflow": 30.0,
+                "rotation_score": 85,
+                "ai_state": "反转待确认",
+                "ai_confidence": "中",
+                "ai_trigger": "连续流入",
+                "ai_invalidation": "资金转负",
+            }],
+            "rotation_analysis": {
+                "available": True,
+                "market_stage": "潜在反转",
+                "market_stage_reason": "市场宽度改善",
+                "short_term_outlook": "关注资金延续",
+                "medium_term_outlook": "等待政策验证",
+                "rotation_path": [{
+                    "from": "医药", "to": "半导体",
+                    "driver": "政策预期", "confidence": "中",
+                }],
+                "risks": ["单日信号可能失真"],
+            },
+        }
+
+        message = build_email(
+            [], summary,
+            datetime(2026, 8, 8, 10, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
+        )
+
+        plain_body = message.get_body(preferencelist=("plain",)).get_content()
+        html_body = message.get_body(preferencelist=("html",)).get_content()
+        self.assertIn("资金流动与板块轮动", plain_body)
+        self.assertIn("医药 → 半导体", plain_body)
+        self.assertIn("当日主力净流入", html_body)
+        self.assertIn("20.50亿", html_body)
+        self.assertIn("反转待确认 / 中", html_body)
+
     @patch("email_digest.smtplib.SMTP_SSL")
     @patch.dict("os.environ", {
         "MAIL_USERNAME": "sender@gmail.com",
