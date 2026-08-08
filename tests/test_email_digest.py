@@ -19,6 +19,13 @@ class EmailDigestTest(unittest.TestCase):
                 "technical_score": 88,
                 "matched_themes": ["银行(行业, 近5日净流入+2.30亿)"],
                 "risk": "估值指标偏高",
+                "opening_plan": {
+                    "actionable": True,
+                    "status": "强势回踩",
+                    "entry_zone": {"low": 10.40, "high": 10.50},
+                    "breakout_trigger": 10.70,
+                    "stop_zone": {"low": 10.05, "high": 10.10},
+                },
             }],
             {"scan_scope": "诊断限制 500 只"},
             datetime(2026, 7, 22, 18, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
@@ -28,6 +35,8 @@ class EmailDigestTest(unittest.TestCase):
         self.assertIn("平安银行(000001)", message.get_body(preferencelist=("plain",)).get_content())
         html_body = message.get_body(preferencelist=("html",)).get_content()
         self.assertIn("银行(行业, 近5日净流入+2.30亿)", html_body)
+        self.assertIn("进场10.40-10.50", html_body)
+        self.assertIn("止损10.05-10.10", html_body)
         self.assertIn("不构成投资建议", html_body)
 
     def test_build_email_handles_empty_result(self):

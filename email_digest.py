@@ -47,10 +47,21 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
     for rank, item in enumerate(candidates, start=1):
         themes = "、".join(item.get("matched_themes") or []) or "--"
         risk = item.get("risk") or "请核验最新公告"
+        plan = item.get("opening_plan") or {}
+        entry = plan.get("entry_zone") or {}
+        stop = plan.get("stop_zone") or {}
+        if plan.get("actionable"):
+            plan_text = (
+                f"进场{_number(entry.get('low'), 2)}-{_number(entry.get('high'), 2)}，"
+                f"突破确认{_number(plan.get('breakout_trigger'), 2)}，"
+                f"止损{_number(stop.get('low'), 2)}-{_number(stop.get('high'), 2)}"
+            )
+        else:
+            plan_text = f"{plan.get('status') or '等待10:00'}：{plan.get('reason') or '首30分钟计划未形成'}"
         plain_rows.append(
             f"{rank}. {item.get('name', '')}({item.get('code', '')}) "
             f"综合{_number(item.get('selection_score'), 0)}分，"
-            f"现价{_number(item.get('price'), 2)}；{risk}"
+            f"现价{_number(item.get('price'), 2)}；{plan_text}；{risk}"
         )
         rows.append(
             "<tr>"
@@ -62,12 +73,13 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
             f"<td>{_number(item.get('fundamental_score'), 0)} / "
             f"{_number(item.get('technical_score'), 0)}</td>"
             f"<td>{html.escape(themes)}</td>"
+            f"<td>{html.escape(plan_text)}</td>"
             f"<td>{html.escape(str(risk))}</td>"
             "</tr>"
         )
 
     if not rows:
-        rows.append('<tr><td colspan="7">本次数据源未返回有效候选，请登录网站复核。</td></tr>')
+        rows.append('<tr><td colspan="8">本次数据源未返回有效候选，请登录网站复核。</td></tr>')
         plain_rows.append("本次数据源未返回有效候选，请登录网站复核。")
 
     scope = html.escape(str(summary.get("scan_scope", "自动任务")))
@@ -80,7 +92,7 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
       <table style="border-collapse:collapse;width:100%;font-size:14px" border="1" cellpadding="8">
         <thead style="background:#eef3ff"><tr>
           <th>排名</th><th>标的</th><th>现价</th><th>精选分</th>
-          <th>基本/技术</th><th>资金主题</th><th>风险提示</th>
+          <th>基本/技术</th><th>资金主题</th><th>10:00进场与止损</th><th>风险提示</th>
         </tr></thead>
         <tbody>{''.join(rows)}</tbody>
       </table>

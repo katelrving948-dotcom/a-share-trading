@@ -1179,7 +1179,7 @@ async function fundamentalScreen() {
   document.getElementById('screenResultHead').innerHTML = `<tr>
     <th>综合排名 / 股票</th><th style="color:#f2a900">综合分</th><th>基本面 / 技术</th><th>精选分 / 资金热点</th>
     <th>报告期</th><th>ROE年化参考</th><th>营收 / 净利同比</th><th>PE / PB</th>
-    <th>趋势与依据 / 风险</th><th>操作</th>
+    <th>首30分钟进场 / 止损</th><th>趋势与依据 / 风险</th><th>操作</th>
   </tr>`;
 
   const btn = document.getElementById('fundScreenBtn');
@@ -1211,18 +1211,20 @@ async function pollLongTermStatus() {
   const btn = document.getElementById('fundScreenBtn');
   try {
     const r = await API.get('/api/long-term-screen/status');
-    if (['running', 'fundamentals', 'scoring', 'technical', 'market', 'rotation_ai'].includes(r.state)) {
+    if (['running', 'fundamentals', 'scoring', 'technical', 'market', 'rotation_ai', 'opening_plan'].includes(r.state)) {
       let pct = 2;
       if (r.state === 'fundamentals' && r.total > 0) pct = Math.round(r.done / r.total * 65);
       if (r.state === 'scoring') pct = 66;
       if (r.state === 'technical' && r.total > 0) pct = 68 + Math.round(r.done / r.total * 20);
       if (r.state === 'market') pct = 92;
       if (r.state === 'rotation_ai') pct = 96;
+      if (r.state === 'opening_plan' && r.total > 0) pct = 97 + Math.round(r.done / r.total * 2);
       document.getElementById('screenProgressBar').style.width = `${pct}%`;
       document.getElementById('screenProgressText').textContent = `${pct}%`;
       document.getElementById('screenCount').textContent =
         r.state === 'fundamentals' ? `全量财务API已完成 ${r.done || 0}/${r.total || 0} 只` :
-        r.state === 'technical' ? `综合评分已完成 ${r.done || 0}/${r.total || 0} 只` : (r.message || '整理研究结果...');
+        r.state === 'technical' ? `综合评分已完成 ${r.done || 0}/${r.total || 0} 只` :
+        r.state === 'opening_plan' ? `首30分钟计划已完成 ${r.done || 0}/${r.total || 0} 只` : (r.message || '整理研究结果...');
       document.getElementById('screenProgressDetail').textContent =
         r.current_code ? `当前标的 ${r.current_code}` : (r.message || '');
       setTimeout(pollLongTermStatus, 800);
@@ -1237,7 +1239,7 @@ async function pollLongTermStatus() {
     document.getElementById('screenProgressText').textContent = '完成';
     const summary = r.summary || {};
     document.getElementById('screenCount').textContent =
-      `${summary.scan_scope || '全量'} ${summary.pool_count || 0} 只 · 有效财报 ${summary.financial_success_count || 0} 只 · 综合候选 ${summary.fundamental_qualified_count || 0} 只 · 精选 ${summary.selected_count || 0} 只`;
+      `${summary.scan_scope || '全量'} ${summary.pool_count || 0} 只 · 有效财报 ${summary.financial_success_count || 0} 只 · 综合候选 ${summary.fundamental_qualified_count || 0} 只 · 精选 ${summary.selected_count || 0} 只 · 可执行进场计划 ${summary.entry_plan_ready_count || 0} 只`;
     document.getElementById('screenProgressDetail').textContent =
       `${summary.data_source || ''} · ${summary.generated_at || r.timestamp || ''}`;
     renderRotationAnalysis(summary.rotation_analysis || {}, summary.rotation_boards || []);
@@ -1321,6 +1323,17 @@ function renderLongTermResults(results) {
     const risk = s.ai_risk_note || s.risk || '';
     const selected = s.recommendation_rank ? `<span class="chip chip-gold">精选#${s.recommendation_rank}</span>` : '';
     const themes = (s.matched_themes || []).join('；') || '未匹配到资金领先板块';
+    const plan = s.opening_plan || {};
+    const entry = plan.entry_zone || {};
+    const stop = plan.stop_zone || {};
+    const opening = plan.opening || {};
+    const planHtml = plan.actionable
+      ? `<span class="chip chip-green">${plan.status || '可观察'}</span><br>
+         <strong>回踩 ${Number(entry.low || 0).toFixed(2)}-${Number(entry.high || 0).toFixed(2)}</strong><br>
+         突破确认 ${Number(plan.breakout_trigger || 0).toFixed(2)} · 禁追 ${Number(plan.max_chase_price || 0).toFixed(2)}以上<br>
+         <span style="color:var(--red)">止损 ${Number(stop.low || 0).toFixed(2)}-${Number(stop.high || 0).toFixed(2)}</span><br>
+         <span class="muted">首30分钟 O/H/L/VWAP ${Number(opening.open || 0).toFixed(2)} / ${Number(opening.high || 0).toFixed(2)} / ${Number(opening.low || 0).toFixed(2)} / ${Number(opening.vwap || 0).toFixed(2)}</span>`
+      : `<span class="chip chip-gold">${plan.status || '等待10:00'}</span><br><span class="muted">${plan.reason || '首30分钟完成后生成计划'}</span>`;
     return `<tr>
       <td><span class="muted">${i + 1}.</span> <a href="javascript:void(0)" onclick="switchTab('kline');showKline('${s.code}')">${s.code}</a><br>${s.name || '-'} ${selected}</td>
       <td style="font-size:18px;font-weight:700;color:${badgeColor}">${score}</td>
@@ -1330,6 +1343,7 @@ function renderLongTermResults(results) {
       <td>${Number(s.annualized_roe || 0).toFixed(1)}%</td>
       <td class="${Number(s.profit_growth || 0) >= 0 ? 'up' : 'down'}">${Number(s.revenue_growth || 0).toFixed(1)}% / ${Number(s.profit_growth || 0).toFixed(1)}%</td>
       <td>${Number(s.pe || 0).toFixed(1)} / ${Number(s.pb || 0).toFixed(1)}</td>
+      <td style="min-width:250px;font-size:12px">${planHtml}</td>
       <td style="max-width:270px;font-size:12px">${s.trend_confirmation || '-'}<br>${summary}<br><span style="color:var(--red)">${risk}</span></td>
       <td><button class="btn-outline btn-sm" onclick="addWatchlistQuick('${s.code}')">自选</button>
           <button class="btn-outline btn-sm" onclick="prepareBrokerOrder('${s.code}', ${Number(s.price || 0)})">预检下单</button></td>

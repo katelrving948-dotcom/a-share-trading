@@ -1149,11 +1149,22 @@ class ApiHandler(BaseHTTPRequestHandler):
         stocks = []
         risk_alerts = []
         for item in candidates:
+            opening_plan = item.get("opening_plan") or {}
+            entry_zone = opening_plan.get("entry_zone") or {}
+            stop_zone = opening_plan.get("stop_zone") or {}
+            execution_text = (
+                f"首30分钟计划: 进场{entry_zone.get('low')}-{entry_zone.get('high')}，"
+                f"突破确认{opening_plan.get('breakout_trigger')}，"
+                f"止损{stop_zone.get('low')}-{stop_zone.get('high')}"
+                if opening_plan.get("actionable") else
+                f"首30分钟计划: {opening_plan.get('status', '等待确认')}"
+            )
             reason = "；".join(part for part in (
                 item.get("fundamental_reason", ""),
                 item.get("technical_reason", ""),
                 "资金匹配: " + "、".join(item.get("matched_themes", []))
                 if item.get("matched_themes") else "",
+                execution_text,
                 item.get("ai_summary", ""),
             ) if part)
             stocks.append({
@@ -1163,6 +1174,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 "score": item.get("selection_score", item.get("composite_score", 0)),
                 "weight": position,
                 "reason": reason or "通过综合规则筛选，等待入场信号确认。",
+                "opening_plan": opening_plan,
             })
             risk = item.get("ai_risk_note") or item.get("risk")
             if risk and risk not in risk_alerts:

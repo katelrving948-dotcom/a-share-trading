@@ -1097,6 +1097,78 @@ class DataFeed:
 
         return {}
 
+    @staticmethod
+    def _minute_hhmm(value) -> int:
+        digits = "".join(char for char in str(value) if char.isdigit())
+        if len(digits) < 4:
+            return -1
+        try:
+            return int(digits[-4:])
+        except ValueError:
+            return -1
+
+    @classmethod
+    def _summarize_opening_window(cls, rows: list) -> dict:
+        """Summarise the fixed 09:30-10:00 opening observation window."""
+        timed_rows = [
+            (cls._minute_hhmm(row.get("time")), row)
+            for row in rows
+        ]
+        timed_rows = [(hhmm, row) for hhmm, row in timed_rows if hhmm >= 0]
+        latest_hhmm = max((hhmm for hhmm, _ in timed_rows), default=-1)
+        opening_rows = [row for hhmm, row in timed_rows if 930 <= hhmm <= 1000]
+        completed = latest_hhmm >= 1000 and len(opening_rows) >= 8
+        if not opening_rows:
+            return {
+                "available": False,
+                "completed": False,
+                "status": "无09:30-10:00分时数据",
+            }
+
+        prices = [float(row["price"]) for row in opening_rows]
+        volumes = [max(0.0, float(row.get("volume") or 0)) for row in opening_rows]
+        open_price = prices[0]
+        close_price = prices[-1]
+        high = max(prices)
+        low = min(prices)
+        price_range = high - low
+        total_volume = sum(volumes)
+        calculated_vwap = (
+            sum(price * volume for price, volume in zip(prices, volumes)) / total_volume
+            if total_volume > 0 else sum(prices) / len(prices)
+        )
+        reported_vwap = float(opening_rows[-1].get("avg_price") or 0)
+        vwap = reported_vwap if reported_vwap > 0 else calculated_vwap
+        up_minutes = sum(
+            1 for index in range(1, len(prices))
+            if prices[index] >= prices[index - 1]
+        )
+        close_position = (
+            (close_price - low) / price_range if price_range > 0 else 0.5
+        )
+        above_vwap = sum(
+            1 for row in opening_rows
+            if float(row["price"]) >= float(row.get("avg_price") or vwap)
+        )
+        return {
+            "available": completed,
+            "completed": completed,
+            "status": "首30分钟已完成" if completed else "等待10:00完成首30分钟",
+            "sample_count": len(opening_rows),
+            "last_time": str(opening_rows[-1].get("time", "")),
+            "open": round(open_price, 2),
+            "high": round(high, 2),
+            "low": round(low, 2),
+            "close": round(close_price, 2),
+            "vwap": round(vwap, 2),
+            "change_pct": round((close_price / max(open_price, 0.01) - 1) * 100, 2),
+            "range_pct": round(price_range / max(open_price, 0.01) * 100, 2),
+            "up_minute_ratio": round(up_minutes / max(1, len(prices) - 1), 4),
+            "close_position": round(close_position, 4),
+            "above_vwap_ratio": round(above_vwap / len(opening_rows), 4),
+            "volume": round(total_volume, 2),
+        }
+
     def get_intraday_minute(self, code: str) -> dict:
         """获取今日分时分钟数据（腾讯财经），返回分时趋势摘要。"""
         code = str(code).zfill(6)
@@ -1139,6 +1211,8 @@ class DataFeed:
 
         if not rows:
             return {"available": False, "error": "分时数据解析后为空"}
+
+        opening_30m = self._summarize_opening_window(rows)
 
         # 计算分时趋势指标
         prices = [r["price"] for r in rows]
@@ -1197,6 +1271,7 @@ class DataFeed:
             "tail_trend": tail_trend,
             "volume_concentration": volume_concentration,
             "above_avg_ratio": above_avg_ratio,
+            "opening_30m": opening_30m,
         }
 
     def get_intraday_stock_fund_flow(self, code: str) -> dict:

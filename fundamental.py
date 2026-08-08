@@ -31,6 +31,112 @@ def _growth_score(value: float) -> float:
     return 80
 
 
+def build_opening_entry_plan(intraday: dict) -> dict:
+    """Turn the completed 09:30-10:00 window into a bounded execution plan."""
+    window = (intraday or {}).get("opening_30m") or {}
+    base = {
+        "window": "09:30-10:00",
+        "actionable": False,
+        "status": window.get("status") or "首30分钟数据不可用",
+        "entry_zone": None,
+        "breakout_trigger": None,
+        "max_chase_price": None,
+        "stop_zone": None,
+        "risk_pct": None,
+        "reason": "等待首30分钟形成完整价格区间。",
+        "opening": window,
+    }
+    if not window.get("completed"):
+        return base
+
+    try:
+        open_price = float(window["open"])
+        high = float(window["high"])
+        low = float(window["low"])
+        close = float(window["close"])
+        vwap = float(window["vwap"])
+        change_pct = float(window.get("change_pct") or 0)
+        range_pct = float(window.get("range_pct") or 0)
+        up_ratio = float(window.get("up_minute_ratio") or 0)
+        close_position = float(window.get("close_position") or 0)
+        above_vwap_ratio = float(window.get("above_vwap_ratio") or 0)
+    except (KeyError, TypeError, ValueError):
+        base.update(status="首30分钟数据不完整", reason="缺少开盘区间或分时均价。")
+        return base
+
+    if min(open_price, high, low, close, vwap) <= 0 or high < low:
+        base.update(status="首30分钟数据异常", reason="价格字段无效，不能计算进场计划。")
+        return base
+
+    if range_pct > 4.5 or change_pct > 3.5:
+        base.update(
+            status="暂不追涨",
+            reason=(
+                f"首30分钟涨幅{change_pct:+.2f}%、振幅{range_pct:.2f}%，"
+                "波动或涨幅过大；等待回落重新形成支撑。"
+            ),
+        )
+        return base
+
+    if (close < vwap * 0.995 or close_position < 0.35
+            or above_vwap_ratio < 0.40 or change_pct < -1.5):
+        base.update(
+            status="暂不进场",
+            reason=(
+                f"10:00价格相对区间位置{close_position:.0%}，"
+                f"位于分时均价上方的时间占比{above_vwap_ratio:.0%}；"
+                "首30分钟承接不足。"
+            ),
+        )
+        return base
+
+    strong = (
+        close >= vwap
+        and close_position >= 0.65
+        and up_ratio >= 0.50
+        and above_vwap_ratio >= 0.55
+    )
+    entry_low_factor = 0.995 if strong else 0.990
+    entry_high_factor = 1.005 if strong else 1.002
+    entry_low = max(low, vwap * entry_low_factor)
+    entry_high = min(high, vwap * entry_high_factor)
+    if entry_high < entry_low:
+        entry_high = min(high, entry_low * 1.005)
+    if entry_high < entry_low:
+        base.update(status="暂不进场", reason="分时均价与开盘区间无法形成有效回踩区间。")
+        return base
+
+    entry_mid = (entry_low + entry_high) / 2
+    risk_fraction = min(0.05, max(0.02, range_pct / 100 * 0.8))
+    stop_reference = max(low * 0.995, entry_low * (1 - risk_fraction))
+    stop_low = stop_reference * 0.995
+    stop_high = min(stop_reference * 1.002, entry_low * 0.995)
+    actual_risk = max(0.0, (entry_mid - stop_high) / entry_mid * 100)
+    plan_type = "强势回踩" if strong else "均价承接确认"
+    base.update({
+        "actionable": True,
+        "status": plan_type,
+        "entry_zone": {
+            "low": round(entry_low, 2),
+            "high": round(entry_high, 2),
+            "label": "回踩分时均价附近分批观察",
+        },
+        "breakout_trigger": round(high * 1.002, 2),
+        "max_chase_price": round(high * 1.015, 2),
+        "stop_zone": {
+            "low": round(stop_low, 2),
+            "high": round(stop_high, 2),
+            "label": "跌入区间视为首30分钟结构失效",
+        },
+        "risk_pct": round(actual_risk, 2),
+        "reason": (
+            f"首30分钟收盘{close:.2f}，分时均价{vwap:.2f}，"
+            f"收在区间{close_position:.0%}位置，上涨分钟占比{up_ratio:.0%}。"
+        ),
+    })
+    return base
+
+
 class LongTermFundamentalScreener:
     """面向一周以上持仓周期的可复核综合选股流程。"""
 
@@ -132,6 +238,7 @@ class LongTermFundamentalScreener:
             fundamental_ranked, ai_advisor=ai_advisor
         )
         self.recommendations = selected[:LONG_TERM["recommendation_count"]]
+        self._attach_opening_plans(self.recommendations)
         recommendation_codes = {
             item["code"]: rank for rank, item in enumerate(self.recommendations, start=1)
         }
@@ -144,6 +251,10 @@ class LongTermFundamentalScreener:
             "financial_success_count": successful,
             "fundamental_qualified_count": len(fundamental_ranked),
             "selected_count": len(self.recommendations),
+            "entry_plan_ready_count": sum(
+                1 for item in self.recommendations
+                if (item.get("opening_plan") or {}).get("actionable")
+            ),
             "comprehensive_count": min(len(fundamental_ranked), LONG_TERM["result_limit"]),
             "scan_scope": "全部初筛股票" if not limit else f"诊断限制 {limit} 只",
             "data_source": "东方财富财务指标 API / K线指标 / 板块资金流",
@@ -156,6 +267,38 @@ class LongTermFundamentalScreener:
         }
         self._progress.update({"state": "done", "done": len(codes), "total": len(codes)})
         return fundamental_ranked[:LONG_TERM["result_limit"]]
+
+    def _attach_opening_plans(self, candidates: list) -> None:
+        if not candidates:
+            return
+        self._progress.update({
+            "state": "opening_plan",
+            "done": 0,
+            "total": len(candidates),
+            "message": "根据09:30-10:00分时生成进场与止损区间",
+        })
+        with ThreadPoolExecutor(max_workers=min(6, len(candidates))) as executor:
+            futures = {
+                executor.submit(self.df.get_intraday_minute, item["code"]): item
+                for item in candidates
+            }
+            for index, future in enumerate(as_completed(futures), start=1):
+                item = futures[future]
+                try:
+                    item["opening_plan"] = build_opening_entry_plan(future.result())
+                except Exception as exc:
+                    item["opening_plan"] = {
+                        "window": "09:30-10:00",
+                        "actionable": False,
+                        "status": "首30分钟计划失败",
+                        "reason": str(exc),
+                        "entry_zone": None,
+                        "stop_zone": None,
+                    }
+                self._progress.update({
+                    "done": index,
+                    "current_code": item["code"],
+                })
 
     def _candidate_pool(self, stocks: pd.DataFrame) -> pd.DataFrame:
         """过滤不可执行标的；排序只控制请求批次，不参与财务评分。"""
