@@ -962,6 +962,52 @@ class DataFeed:
         except (ValueError, TypeError, json.JSONDecodeError, AttributeError):
             return set()
 
+    def _rank_board_leaders(self, member_codes: set, limit: int = 2) -> list:
+        """按板块内市值、成交额、涨势和主力资金识别龙头与次龙头。"""
+        stocks = getattr(self, "_stock_list_cache", None)
+        if stocks is None or stocks.empty or not member_codes:
+            return []
+        members = stocks[stocks["code"].isin(member_codes)].copy()
+        if members.empty:
+            return []
+        members = members[
+            (~members["is_st"]) &
+            (members["board"] != "北交所") &
+            (members["price"] >= 3) &
+            (members["market_cap"] > 0) &
+            (members["amount"] > 0)
+        ].copy()
+        if members.empty:
+            return []
+
+        cap_rank = members["market_cap"].rank(pct=True) * 100
+        amount_rank = members["amount"].rank(pct=True) * 100
+        momentum = (50 + members["change_pct"] * 5).clip(0, 100)
+        money = (50 + members["main_net_pct"] * 3).clip(0, 100)
+        members["leadership_score"] = (
+            cap_rank * 0.35 + amount_rank * 0.35 +
+            momentum * 0.15 + money * 0.15
+        ).round()
+        members = members.sort_values(
+            ["leadership_score", "amount", "market_cap"], ascending=False
+        ).head(max(1, int(limit)))
+        leaders = []
+        for rank, (_, row) in enumerate(members.iterrows(), start=1):
+            leaders.append({
+                "code": str(row.get("code", "")).zfill(6),
+                "name": str(row.get("name", "")),
+                "role": "龙头" if rank == 1 else "次龙头",
+                "board_rank": rank,
+                "leadership_score": int(row.get("leadership_score") or 0),
+                "price": round(float(row.get("price") or 0), 2),
+                "change_pct": round(float(row.get("change_pct") or 0), 2),
+                "market_cap": round(float(row.get("market_cap") or 0), 2),
+                "amount": round(float(row.get("amount") or 0), 2),
+                "main_net": round(float(row.get("main_net") or 0) / 1e8, 2),
+                "main_net_pct": round(float(row.get("main_net_pct") or 0), 2),
+            })
+        return leaders
+
     def get_board_flow_history(self, board_code: str, days: int = 5) -> dict:
         """获取板块近期主力资金轨迹，数值单位标准化为亿元。"""
         unavailable = {
@@ -1092,6 +1138,7 @@ class DataFeed:
                 ).items()
             })
             members = self.get_board_constituents(board["code"])
+            board["leaders"] = self._rank_board_leaders(members, limit=2)
             return board, members
 
         boards = []

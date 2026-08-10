@@ -267,6 +267,8 @@ class LongTermFundamentalScreener:
         self._progress = {"state": "idle", "done": 0, "total": 0}
         self.summary = {}
         self.recommendations = []
+        self.hot_core_candidates = []
+        self._selection_news = []
 
     @property
     def progress(self) -> dict:
@@ -360,7 +362,20 @@ class LongTermFundamentalScreener:
             fundamental_ranked, ai_advisor=ai_advisor
         )
         self.recommendations = selected[:LONG_TERM["recommendation_count"]]
-        self._attach_opening_plans(self.recommendations)
+        self.hot_core_candidates = self._build_hot_core_candidates(rotation_boards)
+        plan_candidates = list(self.recommendations)
+        regular_codes = {item["code"] for item in plan_candidates}
+        plan_candidates.extend(
+            item for item in self.hot_core_candidates if item["code"] not in regular_codes
+        )
+        self._attach_opening_plans(plan_candidates)
+        plan_by_code = {
+            item["code"]: item.get("opening_plan") for item in plan_candidates
+            if item.get("opening_plan")
+        }
+        for item in self.hot_core_candidates:
+            if not item.get("opening_plan") and plan_by_code.get(item["code"]):
+                item["opening_plan"] = plan_by_code[item["code"]]
         recommendation_codes = {
             item["code"]: rank for rank, item in enumerate(self.recommendations, start=1)
         }
@@ -373,8 +388,18 @@ class LongTermFundamentalScreener:
             "financial_success_count": successful,
             "fundamental_qualified_count": len(fundamental_ranked),
             "selected_count": len(self.recommendations),
+            "hot_core_count": len(self.hot_core_candidates),
+            "hot_core_candidates": self.hot_core_candidates,
+            "hot_core_rule": (
+                "强势行业/概念板块内，按市值35%+成交额35%+当日涨势15%+"
+                "主力资金15%识别龙头和次龙头；不受200元价格上限和基本面50分硬门槛限制"
+            ),
             "entry_plan_ready_count": sum(
                 1 for item in self.recommendations
+                if (item.get("opening_plan") or {}).get("actionable")
+            ),
+            "hot_core_entry_plan_ready_count": sum(
+                1 for item in self.hot_core_candidates
                 if (item.get("opening_plan") or {}).get("actionable")
             ),
             "comprehensive_count": min(len(fundamental_ranked), LONG_TERM["result_limit"]),
@@ -621,13 +646,6 @@ class LongTermFundamentalScreener:
         )
 
     def _select_recommendations(self, ranked: list, ai_advisor=None) -> tuple:
-        if not ranked:
-            return [], [], {
-                "available": False,
-                "mode": "rule_only",
-                "reason": "没有通过综合评分的候选股票。",
-                "boards": [],
-            }
         news = self.df.get_financial_news()
         external_news = (
             self.df.get_external_news()
@@ -640,6 +658,7 @@ class LongTermFundamentalScreener:
             if key and key not in seen_news:
                 seen_news.add(key)
                 combined_news.append(item)
+        self._selection_news = combined_news
         external_context = {}
         if hasattr(self.df, "get_external_market_context"):
             external_context = self.df.get_external_market_context(news=external_news)
@@ -776,3 +795,104 @@ class LongTermFundamentalScreener:
             reverse=True,
         )
         return selected, boards, rotation_analysis
+
+    def _build_hot_core_candidates(self, boards: list) -> list:
+        """从强势板块龙头/次龙头形成独立候选，不复用基本面硬淘汰。"""
+        eligible_boards = [
+            board for board in boards
+            if float(board.get("rotation_score") or 0)
+            >= LONG_TERM["hot_core_minimum_board_score"]
+            and float(board.get("main_net_inflow") or 0) > 0
+            and board.get("leaders")
+        ][:LONG_TERM["hot_core_board_limit"]]
+        by_code = {}
+        for board in eligible_boards:
+            for leader in board.get("leaders", [])[:2]:
+                raw_code = str(leader.get("code") or "").strip()
+                if not raw_code:
+                    continue
+                code = raw_code.zfill(6)
+                entry = by_code.setdefault(code, {
+                    **leader,
+                    "core_boards": [],
+                    "leadership_role": leader.get("role", "核心票"),
+                })
+                if leader.get("role") == "龙头":
+                    entry["leadership_role"] = "龙头"
+                entry["leadership_score"] = max(
+                    float(entry.get("leadership_score") or 0),
+                    float(leader.get("leadership_score") or 0),
+                )
+                entry["core_boards"].append({
+                    "name": board.get("name", ""),
+                    "type": board.get("type", ""),
+                    "role": leader.get("role", ""),
+                    "rotation_score": board.get("rotation_score", 0),
+                    "main_net_inflow": board.get("main_net_inflow", 0),
+                    "external_reasons": board.get("external_reasons", []),
+                })
+        if not by_code:
+            return []
+
+        financials = self.df.get_financials_batch(list(by_code))
+        results = []
+        for code, leader in by_code.items():
+            financial = financials.get(code, {})
+            if financial.get("available"):
+                item = self._evaluate(financial)
+                item["fundamental_available"] = True
+            else:
+                item = {
+                    **leader,
+                    "code": code,
+                    "fundamental_available": False,
+                    "fundamental_score": 0,
+                    "risk": "财务指标暂不可用，须核验最新公告",
+                }
+            item.update(self._technical_analysis(code))
+            item.update({
+                "candidate_channel": "hot_core",
+                "leadership_role": leader["leadership_role"],
+                "leadership_score": round(leader["leadership_score"]),
+                "core_boards": leader["core_boards"],
+                "matched_themes": [
+                    f"{board['name']}({board['type']}, {board['role']}, 轮动{board['rotation_score']}分)"
+                    for board in leader["core_boards"]
+                ],
+            })
+            strongest = max(
+                leader["core_boards"], key=lambda board: board["rotation_score"]
+            )
+            item["hot_board"] = strongest["name"]
+            item["board_rotation_score"] = strongest["rotation_score"]
+            item["related_news"] = self._match_stock_news(item)
+            item["hot_core_score"] = round(
+                item["leadership_score"] * 0.40 +
+                float(item["board_rotation_score"]) * 0.25 +
+                float(item.get("technical_score") or 0) * 0.20 +
+                float(item.get("fundamental_score") or 0) * 0.15
+            )
+            results.append(item)
+        results.sort(
+            key=lambda item: (item["hot_core_score"], item["leadership_score"]),
+            reverse=True,
+        )
+        results = results[:LONG_TERM["hot_core_count"]]
+        for rank, item in enumerate(results, start=1):
+            item["hot_core_rank"] = rank
+        return results
+
+    def _match_stock_news(self, item: dict) -> list:
+        code = str(item.get("code") or "")
+        name = str(item.get("name") or "")
+        matches = []
+        for news in self._selection_news:
+            text = f"{news.get('title', '')} {news.get('summary', '')}"
+            if (name and name in text) or (code and code in text):
+                matches.append({
+                    "title": news.get("title", ""),
+                    "time": news.get("time", ""),
+                    "source": news.get("source", ""),
+                    "url": news.get("url", ""),
+                })
+        return matches[:3]

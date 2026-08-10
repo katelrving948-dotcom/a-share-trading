@@ -404,9 +404,9 @@ tr:hover td { background: var(--hover); }
     <div class="hero">
       <div>
         <div class="hero-title">选股</div>
-        <div class="hero-sub">目标持仓至少一周，重点观察 1 至 6 个月。对全部初步筛选后的股票逐只分析财务指标，再在基本面合格池上追加技术评分形成综合排名，最后结合近期热点与板块资金流精选 10 只并交由 DeepSeek 生成投资建议。</div>
+        <div class="hero-sub">目标持仓至少一周，重点观察 1 至 6 个月。主榜按基本面、技术面和资金轮动精选 10 只；另设热门核心通道，从强势板块独立识别龙头与次龙头，不受主榜价格和基本面硬门槛限制。</div>
       </div>
-      <div class="hero-tags"><span class="hero-tag">全量基本面</span><span class="hero-tag">综合评分</span><span class="hero-tag">资金精选十股</span></div>
+      <div class="hero-tags"><span class="hero-tag">全量基本面</span><span class="hero-tag">资金精选十股</span><span class="hero-tag">热门板块龙头</span></div>
     </div>
     <div class="card">
       <div class="card-title">全面选股任务</div>
@@ -431,7 +431,15 @@ tr:hover td { background: var(--hover); }
     </div>
     <div class="card">
       <div class="card-title">综合分析与精选规则</div>
-      <div class="card-subtitle">基本面合格后追加 K 线趋势、MACD、RSI、KDJ 与量价评分，基本面/技术面按 70%/30% 合成为综合分；综合分再结合行业与概念板块近期资金流、个股资金流，以 80%/20% 得到精选分并选出 10 只。轮动规则分在数据可用时叠加 20% 外盘/事件结构分；配置 DeepSeek 后再叠加 25% 的受控 AI 研判，任一数据源不可用时逐层降级。</div>
+      <div class="card-subtitle">基本面主榜维持原有 10 只精选逻辑。热门核心通道从强势行业/概念中各取龙头、次龙头，板块内按市值35%+成交额35%+当日涨势15%+主力资金15%排序，再补齐基本面、技术面、个股新闻和首30分钟进出场计划。两条通道分别展示，不用热门度掩盖财务风险。</div>
+    </div>
+    <div class="card" id="hotCoreCard" style="display:none">
+      <div class="card-title">热门核心票 · 板块龙头与次龙头</div>
+      <div class="card-subtitle" id="hotCoreRule"></div>
+      <div class="scroll-x"><table><thead><tr>
+        <th>排名 / 股票</th><th>强势板块 / 地位</th><th>核心分</th><th>龙头 / 板块</th>
+        <th>基本 / 技术</th><th>进场 / 止盈止损</th><th>相关新闻 / 风险</th>
+      </tr></thead><tbody id="hotCoreTable"></tbody></table></div>
     </div>
     <div class="card" id="rotationAnalysisCard" style="display:none">
       <div class="flex-between" style="margin-bottom:12px">
@@ -1245,10 +1253,11 @@ async function pollLongTermStatus() {
     document.getElementById('screenProgressText').textContent = '完成';
     const summary = r.summary || {};
     document.getElementById('screenCount').textContent =
-      `${summary.scan_scope || '全量'} ${summary.pool_count || 0} 只 · 有效财报 ${summary.financial_success_count || 0} 只 · 综合候选 ${summary.fundamental_qualified_count || 0} 只 · 精选 ${summary.selected_count || 0} 只 · 可执行进场计划 ${summary.entry_plan_ready_count || 0} 只`;
+      `${summary.scan_scope || '全量'} ${summary.pool_count || 0} 只 · 有效财报 ${summary.financial_success_count || 0} 只 · 综合候选 ${summary.fundamental_qualified_count || 0} 只 · 基本面精选 ${summary.selected_count || 0} 只 · 热门核心 ${summary.hot_core_count || 0} 只`;
     document.getElementById('screenProgressDetail').textContent =
       `${summary.data_source || ''} · ${summary.generated_at || r.timestamp || ''}`;
     renderRotationAnalysis(summary.rotation_analysis || {}, summary.rotation_boards || []);
+    renderHotCoreCandidates(summary.hot_core_candidates || [], summary.hot_core_rule || '');
     renderLongTermResults(r.results || []);
     btn.disabled = false;
     btn.textContent = '运行全面选股';
@@ -1262,6 +1271,43 @@ async function pollLongTermStatus() {
     btn.disabled = false;
     btn.textContent = '运行全面选股';
   }
+}
+
+function escapeHotCoreHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[char]);
+}
+
+function renderHotCoreCandidates(candidates, rule) {
+  const card = document.getElementById('hotCoreCard');
+  const tbody = document.getElementById('hotCoreTable');
+  document.getElementById('hotCoreRule').textContent = rule || '从强势板块中识别龙头和次龙头。';
+  card.style.display = candidates.length ? 'block' : 'none';
+  tbody.innerHTML = candidates.map(item => {
+    const plan = item.opening_plan || {};
+    const entry = plan.entry_zone || {};
+    const stop = plan.stop_zone || {};
+    const targets = plan.take_profit_zones || [];
+    const first = targets[0] || {};
+    const planText = (plan.levels_available || plan.actionable)
+      ? `进 ${Number(entry.low || 0).toFixed(2)}-${Number(entry.high || 0).toFixed(2)}<br><span class="up">盈 ${Number(first.low || 0).toFixed(2)}</span> · <span class="down">止 ${Number(stop.high || 0).toFixed(2)}</span><br><span class="muted">${escapeHotCoreHtml(plan.execution_state || plan.status || '')}</span>`
+      : `${escapeHotCoreHtml(plan.status || '等待首30分钟')}<br><span class="muted">${escapeHotCoreHtml(plan.reason || '尚未形成执行区间')}</span>`;
+    const news = (item.related_news || []).map(row => {
+      const title = escapeHotCoreHtml(row.title || '相关新闻');
+      const url = /^https?:\/\//.test(String(row.url || '')) ? escapeHotCoreHtml(row.url) : '';
+      return url ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a>` : title;
+    }).join('<br>') || '<span class="muted">暂无直接命中个股名称的快讯</span>';
+    return `<tr>
+      <td><strong>${item.hot_core_rank || '-'}. ${escapeHotCoreHtml(item.name || '-')}</strong><br><span class="muted">${escapeHotCoreHtml(item.code || '')} · ${Number(item.price || 0).toFixed(2)}元</span></td>
+      <td><span class="chip chip-gold">${escapeHotCoreHtml(item.hot_board || '-')}</span><br>${escapeHotCoreHtml(item.leadership_role || '核心票')}</td>
+      <td style="font-size:18px;font-weight:700;color:var(--gold)">${Number(item.hot_core_score || 0)}</td>
+      <td>${Number(item.leadership_score || 0)} / ${Number(item.board_rotation_score || 0)}</td>
+      <td>${Number(item.fundamental_score || 0)} / ${Number(item.technical_score || 0)}</td>
+      <td style="min-width:190px;font-size:12px">${planText}</td>
+      <td style="min-width:230px;font-size:12px">${news}<br><span class="down">${escapeHotCoreHtml(item.risk || '请核验公告')}</span></td>
+    </tr>`;
+  }).join('');
 }
 
 function renderRotationAnalysis(analysis, ruleBoards) {

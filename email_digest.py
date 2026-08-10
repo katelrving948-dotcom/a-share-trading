@@ -203,6 +203,78 @@ def _build_rotation_digest(summary: dict) -> tuple[str, str, str]:
     return "\n".join(plain_lines), overview_html, detail_html
 
 
+def _build_hot_core_digest(summary: dict) -> tuple[str, str]:
+    candidates = summary.get("hot_core_candidates") or []
+    if not candidates:
+        return "热门核心票：本次未形成满足条件的板块龙头/次龙头。", ""
+    plain_rows = ["热门核心票（强势板块龙头/次龙头）"]
+    html_rows = []
+    for item in candidates:
+        plan = item.get("opening_plan") or {}
+        entry = plan.get("entry_zone") or {}
+        stop = plan.get("stop_zone") or {}
+        targets = plan.get("take_profit_zones") or []
+        first_target = targets[0] if targets else {}
+        news = item.get("related_news") or []
+        news_text = "；".join(str(row.get("title") or "") for row in news) or "暂无直接命中个股名称的快讯"
+        if plan.get("levels_available") or plan.get("actionable"):
+            plan_text = (
+                f"进场{_number(entry.get('low'), 2)}-{_number(entry.get('high'), 2)}，"
+                f"止损{_number(stop.get('low'), 2)}-{_number(stop.get('high'), 2)}，"
+                f"首档止盈{_number(first_target.get('low'), 2)}"
+            )
+        else:
+            plan_text = f"{plan.get('status') or '等待首30分钟数据'}：{plan.get('reason') or '尚未形成执行区间'}"
+        plain_rows.append(
+            f"{item.get('hot_core_rank')}. {item.get('name')}({item.get('code')}) "
+            f"{item.get('hot_board')}{item.get('leadership_role')}，核心{_number(item.get('hot_core_score'), 0)}分，"
+            f"龙头{_number(item.get('leadership_score'), 0)}/板块{_number(item.get('board_rotation_score'), 0)}/"
+            f"基本{_number(item.get('fundamental_score'), 0)}/技术{_number(item.get('technical_score'), 0)}；"
+            f"{plan_text}；新闻：{news_text}"
+        )
+        news_links = []
+        for row in news:
+            title = html.escape(str(row.get("title") or "相关新闻"))
+            url = html.escape(str(row.get("url") or ""), quote=True)
+            news_links.append(
+                f'<a href="{url}" style="color:#2563eb;text-decoration:none">{title}</a>'
+                if url else title
+            )
+        news_html = "；".join(news_links) or "暂无直接命中个股名称的快讯"
+        html_rows.append(
+            '<tr style="border-top:1px solid #e7ebf3"><td style="padding:10px 8px">'
+            f'<strong>{html.escape(str(item.get("name") or ""))}</strong>'
+            f'<div style="font-size:10px;color:#64748b">{html.escape(str(item.get("code") or ""))} · '
+            f'{_number(item.get("price"), 2)}元</div></td>'
+            f'<td style="padding:10px 8px"><strong>{html.escape(str(item.get("hot_board") or ""))} · '
+            f'{html.escape(str(item.get("leadership_role") or ""))}</strong>'
+            f'<div style="font-size:10px;color:#64748b">龙头{_number(item.get("leadership_score"), 0)} · '
+            f'轮动{_number(item.get("board_rotation_score"), 0)}</div></td>'
+            f'<td style="padding:10px 8px;text-align:center"><strong style="font-size:17px">'
+            f'{_number(item.get("hot_core_score"), 0)}</strong>'
+            f'<div style="font-size:10px;color:#64748b">基{_number(item.get("fundamental_score"), 0)} / '
+            f'技{_number(item.get("technical_score"), 0)}</div></td>'
+            f'<td style="padding:10px 8px;font-size:11px"><strong>{html.escape(plan_text)}</strong>'
+            f'<div style="margin-top:3px;color:#64748b">新闻：{news_html}</div>'
+            f'<div style="margin-top:3px;color:#b45309">风险：{html.escape(str(item.get("risk") or "请核验公告"))}</div></td></tr>'
+        )
+    rule = html.escape(str(summary.get("hot_core_rule") or ""))
+    section = f"""
+      <div style="margin-top:24px;padding:14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px 8px 0 0">
+        <div style="font-size:10px;letter-spacing:1px;color:#c2410c;font-weight:700">HOT SECTOR LEADERS</div>
+        <div style="font-size:20px;font-weight:800;margin-top:3px">热门核心票：板块龙头与次龙头</div>
+        <div style="font-size:11px;color:#9a3412;margin-top:4px">{rule}</div>
+      </div>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #fed7aa;border-top:0;border-radius:0 0 8px 8px;border-collapse:separate;font-size:12px">
+        <thead><tr style="background:#fffaf5;color:#9a3412;font-size:10px">
+          <th style="padding:7px;text-align:left">标的</th><th style="padding:7px;text-align:left">所属主线</th>
+          <th style="padding:7px">核心分</th><th style="padding:7px;text-align:left">执行与新闻</th>
+        </tr></thead><tbody>{''.join(html_rows)}</tbody>
+      </table>
+    """
+    return "\n".join(plain_rows), section
+
+
 def build_email(candidates: list, summary: dict, generated_at: datetime) -> EmailMessage:
     date_text = generated_at.astimezone(SHANGHAI).strftime("%Y-%m-%d")
     rows = []
@@ -287,6 +359,7 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
     generated_text = generated_at.astimezone(SHANGHAI).strftime("%Y-%m-%d %H:%M:%S")
     site_url = os.getenv("SITE_URL", "https://a-share-trading.onrender.com")
     rotation_plain, rotation_overview_html, rotation_detail_html = _build_rotation_digest(summary)
+    hot_plain, hot_html = _build_hot_core_digest(summary)
     body_html = f"""
     <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
     <body style="margin:0;padding:0;background:#f3f6fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',Arial,sans-serif;color:#172033">
@@ -295,12 +368,12 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
           <tr><td style="padding:20px 22px 14px">
             <div style="font-size:11px;letter-spacing:1px;color:#2563eb;font-weight:700">A-SHARE DAILY BRIEFING</div>
             <div style="font-size:27px;font-weight:850;line-height:1.25;margin-top:5px">{date_text} A股选股日报</div>
-            <div style="font-size:13px;color:#475569;margin-top:7px;line-height:1.6">先看市场与推荐榜，再读板块轮动和个股执行分析。<br>{scope} · 精选 {len(candidates)} 只 · {generated_text}</div>
+            <div style="font-size:13px;color:#475569;margin-top:7px;line-height:1.6">先看市场与推荐榜，再读热门龙头、板块轮动和个股执行分析。<br>{scope} · 基本面精选 {len(candidates)} 只 · 热门核心 {len(summary.get('hot_core_candidates') or [])} 只 · {generated_text}</div>
             <div style="margin-top:18px;margin-bottom:8px;font-size:16px;font-weight:800">今日市场速览</div>
             {rotation_overview_html}
             <div style="margin-top:18px;padding:12px 14px;background:#172033;color:#fff;border-radius:8px 8px 0 0">
               <div style="font-size:10px;letter-spacing:1px;color:#93c5fd">TOP PICKS</div>
-              <div style="font-size:18px;font-weight:800;margin-top:2px">今日10只推荐榜</div>
+              <div style="font-size:18px;font-weight:800;margin-top:2px">今日{len(candidates)}只基本面精选榜</div>
               <div style="font-size:11px;color:#cbd5e1;margin-top:3px">先快速查看排名、分数、主题与执行状态</div>
             </div>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #dce2ec;border-top:0;border-radius:0 0 8px 8px;border-collapse:separate;font-size:12px">
@@ -311,17 +384,18 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
               </tr></thead>
               <tbody>{''.join(ranking_rows)}</tbody>
             </table>
+            {hot_html}
             {rotation_detail_html}
             <div style="margin-top:24px;padding-top:16px;border-top:2px solid #172033">
               <div style="font-size:11px;letter-spacing:1px;color:#2563eb;font-weight:700">STOCK ANALYSIS</div>
-              <div style="margin-top:3px;font-size:20px;font-weight:800">10只个股详细分析</div>
+              <div style="margin-top:3px;font-size:20px;font-weight:800">{len(candidates)}只基本面精选详细分析</div>
               <div style="font-size:12px;color:#64748b;margin:4px 0 10px">完整资金主题、基本/技术分、进场区间、突破价、两档止盈、止损与风险</div>
             </div>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e7ebf3;border-radius:8px;border-collapse:separate;font-size:13px">
               <tbody>{''.join(rows)}</tbody>
             </table>
             <div style="text-align:center;margin:18px 0 10px">
-              <a href="{html.escape(site_url)}" style="display:inline-block;padding:10px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:7px;font-size:13px;font-weight:700">查看完整10只与详细数据</a>
+              <a href="{html.escape(site_url)}" style="display:inline-block;padding:10px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:7px;font-size:13px;font-weight:700">查看完整榜单与详细数据</a>
             </div>
             <div style="border-top:1px solid #edf0f5;padding-top:10px;color:#64748b;font-size:11px;line-height:1.6">
               仅供量化研究，不构成投资建议。行情、财务和资金数据可能延迟，交易前请核验公告并独立决策。
@@ -333,12 +407,13 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
     """
 
     message = EmailMessage()
-    message["Subject"] = f"{date_text} A股中长期选股日报"
+    message["Subject"] = f"{date_text} A股选股日报（基本面精选+热门核心）"
     message.set_content(
         f"{date_text} A股中长期选股日报\n\n"
         + rotation_plain
         + "\n\n中长期精选股票\n"
         + "\n".join(plain_rows)
+        + "\n\n" + hot_plain
         + f"\n\n完整页面：{site_url}\n\n本邮件仅供研究，不构成投资建议。"
     )
     message.add_alternative(body_html, subtype="html")

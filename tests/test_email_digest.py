@@ -152,6 +152,34 @@ class EmailDigestTest(unittest.TestCase):
         self.assertIn("潜在受益：石油、航运", html_body)
         self.assertIn("https://finance.eastmoney.com/a/example.html", html_body)
 
+    def test_build_email_contains_hot_sector_leader_channel(self):
+        summary = {
+            "hot_core_rule": "强势板块内识别龙头和次龙头",
+            "hot_core_candidates": [{
+                "hot_core_rank": 1, "code": "300308", "name": "中际旭创",
+                "price": 864.58, "hot_board": "CPO概念", "leadership_role": "龙头",
+                "hot_core_score": 88, "leadership_score": 95,
+                "board_rotation_score": 85, "fundamental_score": 69,
+                "technical_score": 70, "risk": "估值偏高",
+                "opening_plan": {"status": "等待回踩", "reason": "暂不追涨"},
+                "related_news": [{
+                    "title": "中际旭创业绩增长", "url": "https://example.com/300308",
+                }],
+            }],
+        }
+
+        message = build_email(
+            [], summary,
+            datetime(2026, 8, 10, 18, 0, tzinfo=ZoneInfo("Asia/Shanghai")),
+        )
+
+        plain_body = message.get_body(preferencelist=("plain",)).get_content()
+        html_body = message.get_body(preferencelist=("html",)).get_content()
+        self.assertIn("热门核心票（强势板块龙头/次龙头）", plain_body)
+        self.assertIn("中际旭创(300308)", plain_body)
+        self.assertIn("CPO概念 · 龙头", html_body)
+        self.assertIn("https://example.com/300308", html_body)
+
     @patch("email_digest.smtplib.SMTP_SSL")
     @patch.dict("os.environ", {
         "MAIL_USERNAME": "sender@gmail.com",

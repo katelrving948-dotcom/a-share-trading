@@ -83,6 +83,10 @@ LONG_TERM = {
     "rotation_external_weight": 0.20,
     "rotation_ai_weight": 0.25,
     "theme_board_limit": 8,
+    # 热门核心票独立于基本面硬门槛：从强势板块中各取龙头、次龙头。
+    "hot_core_board_limit": 5,
+    "hot_core_count": 10,
+    "hot_core_minimum_board_score": 55,
 }
 
 # ========== 风险管理 ==========
