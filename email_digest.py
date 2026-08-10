@@ -49,7 +49,10 @@ def _build_rotation_digest(summary: dict) -> tuple[str, str, str]:
     analysis = summary.get("rotation_analysis") or {}
     boards = summary.get("rotation_boards") or []
     ai_used = bool(analysis.get("available"))
-    mode = "AI辅助轮动" if ai_used else "资金规则轮动"
+    external = analysis.get("external_market") or {}
+    mode = "AI+外部联动" if ai_used else (
+        "资金+外部规则" if external.get("available") else "资金规则轮动"
+    )
     market_stage = analysis.get("market_stage") or (
         "按板块资金强度排序" if boards else "暂无有效板块资金数据"
     )
@@ -65,6 +68,43 @@ def _build_rotation_digest(summary: dict) -> tuple[str, str, str]:
     ]
     if stage_reason:
         plain_lines.append(f"阶段依据：{stage_reason}")
+    external_summary = analysis.get("external_driver_summary") or external.get("coverage") or ""
+    if external_summary:
+        plain_lines.append(f"外盘联动：{external_summary}")
+    market_chips = [
+        f"{item.get('name', item.get('symbol', '--'))} "
+        f"{_number(item.get('change_pct'), 2, '%')}"
+        f"（{item.get('as_of') or '时间待核验'}）"
+        for item in external.get("markets", [])
+    ]
+    if market_chips:
+        plain_lines.append("外盘快照：" + "；".join(market_chips))
+
+    event_rows = []
+    for event in (external.get("events") or [])[:4]:
+        first = (event.get("headlines") or [{}])[0]
+        headline = first.get("title") or event.get("name") or "外部事件"
+        source_time = " / ".join(
+            part for part in (first.get("source"), first.get("time")) if part
+        )
+        impact = event.get("impact_summary") or "等待A股资金确认"
+        plain_lines.append(
+            f"外部事件：{headline}（{source_time or '时间来源待核验'}）；A股映射：{impact}"
+        )
+        link = html.escape(str(first.get("url") or ""), quote=True)
+        headline_html = html.escape(str(headline))
+        if link:
+            headline_html = (
+                f'<a href="{link}" style="color:#2563eb;text-decoration:none">'
+                f'{headline_html}</a>'
+            )
+        event_rows.append(
+            '<div style="padding:7px 9px;margin-top:5px;background:#f8fafc;'
+            'border-left:3px solid #2563eb;font-size:12px;line-height:1.55">'
+            f'<strong>{html.escape(str(event.get("name") or "外部事件"))}：</strong>'
+            f'{headline_html}<div style="color:#64748b">{html.escape(source_time)} · '
+            f'{html.escape(str(impact))}</div></div>'
+        )
 
     board_rows = []
     for index, board in enumerate(boards, start=1):
@@ -78,7 +118,8 @@ def _build_rotation_digest(summary: dict) -> tuple[str, str, str]:
             f"{index}. {board.get('name', '--')}({board.get('type', '--')})："
             f"当日{_number(board.get('main_net_inflow'), 2, '亿')}，"
             f"近5日{recent_text}，轮动{_number(board.get('rotation_score'), 0)}分，"
-            f"{state}/{confidence}"
+            f"{state}/{confidence}；资金分{_number(board.get('rule_flow_score'), 0)}，"
+            f"外部分{_number(board.get('external_score'), 0)}"
         )
         board_rows.append(
             '<tr style="border-top:1px solid #e7ebf3">'
@@ -89,10 +130,12 @@ def _build_rotation_digest(summary: dict) -> tuple[str, str, str]:
             f'<td style="padding:10px 8px"><strong>{_number(board.get("main_net_inflow"), 2, "亿")}</strong>'
             f'<div style="font-size:12px;color:#64748b">近5日 {html.escape(recent_text)}</div></td>'
             f'<td style="padding:10px 8px;text-align:center"><strong>{_number(board.get("rotation_score"), 0)}</strong>'
-            '<div style="font-size:12px;color:#64748b">轮动分</div></td>'
+            f'<div style="font-size:12px;color:#64748b">资金{_number(board.get("rule_flow_score"), 0)} · 外部{_number(board.get("external_score"), 0)}</div></td>'
             f'<td style="padding:10px 8px"><strong>{html.escape(str(state))} / {html.escape(str(confidence))}</strong>'
             f'<div style="font-size:12px;color:#64748b">触发：{html.escape(str(trigger))}；'
-            f'失效：{html.escape(str(invalidation))}</div></td>'
+            f'失效：{html.escape(str(invalidation))}</div>'
+            f'<div style="font-size:11px;color:#2563eb;margin-top:3px">外部依据：'
+            f'{html.escape("、".join(board.get("external_reasons", [])) or "无直接映射")}</div></td>'
             "</tr>"
         )
 
@@ -136,7 +179,9 @@ def _build_rotation_digest(summary: dict) -> tuple[str, str, str]:
           </td>
         </tr>
       </table>
-      {f'<div style="margin:6px 2px 9px;font-size:12px;color:#475569"><strong>阶段依据：</strong>{html.escape(str(stage_reason))}</div>' if stage_reason else ''}
+      {f'<div style="margin:6px 2px 5px;font-size:12px;color:#475569"><strong>阶段依据：</strong>{html.escape(str(stage_reason))}</div>' if stage_reason else ''}
+      {f'<div style="margin:5px 2px 9px;font-size:12px;color:#2563eb"><strong>外盘联动：</strong>{html.escape(str(external_summary))}<br>{html.escape("；".join(market_chips))}</div>' if external_summary or market_chips else ''}
+      {''.join(event_rows)}
     """
     detail_html = f"""
       <div style="margin-top:24px;padding-top:16px;border-top:2px solid #172033">

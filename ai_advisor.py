@@ -137,7 +137,10 @@ class AIAdvisor:
                 f"{name}({board.get('type', '板块')}) | "
                 f"当日涨幅{float(board.get('change_pct') or 0):+.2f}% | "
                 f"当日主力净流入{float(board.get('main_net_inflow') or 0):+.2f}亿 | "
-                f"规则资金分{float(board.get('flow_score') or 0):.0f} | {recent_text}"
+                f"规则资金分{float(board.get('flow_score') or 0):.0f} | "
+                f"外部影响分{float(board.get('external_score') or 50):.0f}"
+                f"({board.get('external_confidence', '无')}置信，"
+                f"{'/'.join(board.get('external_reasons', [])) or '无匹配'}) | {recent_text}"
             )
         path_source_names = set(allowed_names)
         for key in ("sector_flow", "sector_outflow", "hot_concepts", "concept_outflow"):
@@ -158,6 +161,7 @@ class AIAdvisor:
   "market_stage_reason":"仅依据已提供数据的简要理由",
   "short_term_outlook":"未来1-3个交易日判断",
   "medium_term_outlook":"未来3-10个交易日判断",
+  "external_driver_summary":"外盘和事件如何影响A股风格与板块的摘要",
   "rotation_path":[{{"from":"净流出榜或候选板块原名","to":"候选板块原名","driver":"资金/国内政策/国际环境及依据","confidence":"高/中/低"}}],
   "boards":[{{"name":"候选板块原名","state":"延续/分歧/退潮/反弹线索/反转待确认","rotation_score":0,"confidence":"高/中/低","horizon":"1-3日或3-10日","reason":"评分依据","trigger":"确认条件","invalidation":"失效条件"}}],
   "risks":["主要风险或待验证项"]
@@ -245,6 +249,8 @@ boards 只能使用上方候选板块的原名；rotation_score 为0-100。没�
             "market_stage_reason": str(payload.get("market_stage_reason", "")).strip()[:240],
             "short_term_outlook": str(payload.get("short_term_outlook", "")).strip()[:240],
             "medium_term_outlook": str(payload.get("medium_term_outlook", "")).strip()[:240],
+            "external_driver_summary": str(payload.get("external_driver_summary", "")).strip()[:240],
+            "external_market": context.get("external_market", {}),
             "rotation_path": rotation_path[:6],
             "boards": normalized_boards,
             "risks": [str(risk).strip()[:160] for risk in payload.get("risks", [])[:8]],
@@ -486,6 +492,30 @@ ROE: {stock_info.get('roe', 'N/A')}%（年化参考 {stock_info.get('annualized_
                 f"净流入占比{c.get('main_net_pct', 0):+.2f}%\n"
             )
 
+        external = context.get("external_market") or {}
+        prompt += "\n=== 外盘、港股与大宗商品（最近可得快照） ===\n"
+        if external.get("available"):
+            prompt += f"数据源: {external.get('source', '未知')}；覆盖: {external.get('coverage', '')}\n"
+            for item in external.get("markets", []):
+                prompt += (
+                    f"  {item.get('name', item.get('symbol', ''))}: "
+                    f"{float(item.get('change_pct') or 0):+.2f}% "
+                    f"最新{item.get('price', '-')} 截止{item.get('as_of', '时间未知')}\n"
+                )
+        else:
+            prompt += "  外盘快照不可用，不得凭常识补写当日涨跌。\n"
+
+        prompt += "\n=== 已识别的国际宏观/地缘事件线索 ===\n"
+        if external.get("events"):
+            for event in external.get("events", []):
+                headlines = "；".join(
+                    f"[{item.get('time', '')}/{item.get('source', '')}]{item.get('title', '')}"
+                    for item in event.get("headlines", [])[:2]
+                )
+                prompt += f"  {event.get('name', '')}: {headlines}\n"
+        else:
+            prompt += "  当前新闻样本未提取到明确事件线索。\n"
+
         prompt += "\n=== 跌幅榜 TOP10（反弹与风险参照） ===\n"
         for s in context.get("top_losers", []):
             prompt += f"  {s['code']} {s['name']} {s['change_pct']:+.2f}% [{s['board']}]\n"
@@ -498,10 +528,11 @@ ROE: {stock_info.get('roe', 'N/A')}%（年化参考 {stock_info.get('annualized_
         prompt += """\n请完成A股板块轮动研判：
 1. 市场状态：结合上涨/下跌家数、涨跌停数量和平均涨跌幅，判断当前是趋势延续、震荡分歧、退潮、超跌反弹还是潜在反转。
 2. 每日资金强度：综合板块涨跌幅、主力净流入额、净流入占比和上涨/下跌家数，评估资金强度与板块内部扩散度；不要只按绝对净流入额排序。
-3. 轮动路径：指出资金可能流出的板块、正在承接的板块和下一阶段候选板块，并说明国际环境、国内政策或新闻事件如何影响该路径。
-4. 反弹与反转：单日上涨、单日流入或消息刺激只能判为线索。只有资金持续性、板块扩散度、市场宽度和后续催化共同确认时，才可判为反转；当前数据无法验证连续性时必须标注“待后续交易日确认”。
-5. 预测窗口：分别给出未来1-3个交易日和3-10个交易日的判断，用高/中/低表示信号强度，并列出触发条件与失效条件。
-6. 标的映射：只从已提供的股票中列出3-5只观察标的，说明其对应板块逻辑；不得编造个股资金或基本面数据。
+3. 外部联动：先总结美股科技、中概股、恒指、原油、黄金、铜及已识别事件的方向，再说明哪些A股板块已获资金确认、哪些只是外部催化候选、哪些出现背离。
+4. 轮动路径：指出资金可能流出的板块、正在承接的板块和下一阶段候选板块，并说明外盘、国内政策或新闻事件如何影响该路径。
+5. 反弹与反转：单日上涨、单日流入或消息刺激只能判为线索。只有资金持续性、板块扩散度、市场宽度和后续催化共同确认时，才可判为反转；当前数据无法验证连续性时必须标注“待后续交易日确认”。
+6. 预测窗口：分别给出未来1-3个交易日和3-10个交易日的条件判断，用高/中/低表示信号强度，并列出触发条件与失效条件。不得把外盘涨跌直接写成A股必然跟涨或跟跌。
+7. 标的映射：只从已提供的股票中列出3-5只观察标的，说明其对应板块逻辑；不得编造个股资金或基本面数据。
 
 请按“市场阶段—资金强弱排行—板块轮动路径—反弹/反转判断—观察标的—风险与待验证项”的顺序用中文输出。明确区分事实、推断和待验证事项，避免空泛喊单或确定性预测。"""
         return prompt

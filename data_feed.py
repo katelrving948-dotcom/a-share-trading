@@ -36,6 +36,58 @@ MARKET_CACHE_DIR = os.path.join(os.path.dirname(__file__), ".cache")
 MARKET_CACHE_FILE = os.path.join(MARKET_CACHE_DIR, "market_snapshot.json")
 MARKET_CACHE_META_FILE = os.path.join(MARKET_CACHE_DIR, "market_snapshot.meta.json")
 
+EXTERNAL_MARKET_QUOTES = (
+    ("DJIA", "道琼斯", "美股", "100.DJIA"),
+    ("SPX", "标普500", "美股", "100.SPX"),
+    ("NDX", "纳斯达克100", "美股", "100.NDX"),
+    ("HXC", "纳斯达克中国金龙", "中概股", "251.HXC"),
+    ("HSI", "恒生指数", "港股", "100.HSI"),
+    ("CL00Y", "NYMEX原油", "大宗商品", "102.CL00Y"),
+    ("GC00Y", "COMEX黄金", "大宗商品", "101.GC00Y"),
+    ("HG00Y", "COMEX铜", "大宗商品", "101.HG00Y"),
+)
+
+EASTMONEY_FAST_NEWS_URL = (
+    "https://np-weblist.eastmoney.com/comm/web/getFastNewsList"
+)
+EXTERNAL_NEWS_COLUMNS = (
+    ("105", "全球股市"),
+    ("106", "商品地缘"),
+    ("107", "外汇宏观"),
+    ("108", "债券利率"),
+)
+
+EXTERNAL_BOARD_MAP = {
+    "us_tech": {
+        "keywords": ("半导体", "芯片", "电子", "软件", "计算机", "通信", "互联网", "人工智能", "算力", "数据", "云计算", "光模块"),
+        "symbols": ("NDX",), "sensitivity": 6.0,
+    },
+    "us_risk": {
+        "keywords": ("半导体", "电子", "软件", "计算机", "通信", "互联网", "证券", "消费"),
+        "symbols": ("DJIA", "SPX"), "sensitivity": 2.5,
+    },
+    "china_adr": {
+        "keywords": ("互联网", "游戏", "电商", "传媒", "创新药", "医药", "汽车", "新能源车", "激光雷达"),
+        "symbols": ("HXC",), "sensitivity": 6.0,
+    },
+    "hong_kong": {
+        "keywords": ("银行", "保险", "证券", "房地产", "地产", "白酒", "食品饮料", "零售", "消费"),
+        "symbols": ("HSI",), "sensitivity": 5.0,
+    },
+    "crude": {
+        "keywords": ("石油", "油气", "油服", "煤化工", "化工", "航运", "港口"),
+        "symbols": ("CL00Y",), "sensitivity": 5.0,
+    },
+    "gold": {
+        "keywords": ("黄金", "贵金属"),
+        "symbols": ("GC00Y",), "sensitivity": 6.0,
+    },
+    "copper": {
+        "keywords": ("有色", "铜", "工业金属", "金属"),
+        "symbols": ("HG00Y",), "sensitivity": 5.0,
+    },
+}
+
 
 def _safe_float(val, default=0.0):
     try:
@@ -64,11 +116,14 @@ class DataFeed:
         self._board_history_unavailable_until = 0
         self._financial_cache = {}
         self._financial_cache_ttl = 12 * 60 * 60
+        self._external_market_cache = None
+        self._external_market_cache_time = 0
         self._source_state = {
             "market_snapshot": {"source": "尚未加载", "ok": False, "stale": False},
             "realtime": {"source": "尚未请求", "ok": False},
             "kline": {"source": "尚未请求", "ok": False},
             "fundamentals": {"source": "尚未请求", "ok": False},
+            "external_market": {"source": "尚未请求", "ok": False},
         }
         self._load_local_snapshot()
 
@@ -948,20 +1003,49 @@ class DataFeed:
             "days": len(main_flows),
         }
 
-    def get_rotation_matches(self, candidate_codes: list, top_n: int = 8) -> dict:
-        """将资金领先的行业/概念板块与综合候选股对应起来。"""
+    def get_rotation_matches(self, candidate_codes: list, top_n: int = 8,
+                             external_context: dict = None) -> dict:
+        """将资金领先及受外盘驱动的板块与综合候选股对应起来。"""
         target_codes = {str(code).zfill(6) for code in candidate_codes}
         matches = {code: [] for code in target_codes}
         board_specs = []
+        broad_limit = max(top_n, 120) if (external_context or {}).get("available") else top_n
         sources = (
-            ("行业", self.get_sector_fund_flow(top_n)),
-            ("概念", self.get_concept_fund_flow(top_n)),
+            ("行业", self.get_sector_fund_flow(broad_limit)),
+            ("概念", self.get_concept_fund_flow(broad_limit)),
         )
+        external_specs = []
         for board_type, frame in sources:
             if frame.empty:
                 continue
-            for rank, (_, row) in enumerate(frame.head(top_n).iterrows(), start=1):
-                board_specs.append((board_type, rank, row))
+            for rank, (_, row) in enumerate(frame.iterrows(), start=1):
+                spec = (board_type, rank, row)
+                if rank <= top_n:
+                    board_specs.append(spec)
+                    continue
+                impact = self.score_board_external_impact(
+                    str(row.get("name", "")), external_context or {}
+                )
+                if impact["signal_count"] and abs(impact["score"] - 50) >= 8:
+                    external_specs.append((abs(impact["score"] - 50), spec))
+        known_codes = {str(spec[2].get("code", "")) for spec in board_specs}
+        selected_external = []
+        reason_counts = {}
+        for _, spec in sorted(external_specs, key=lambda item: item[0], reverse=True):
+            impact = self.score_board_external_impact(
+                str(spec[2].get("name", "")), external_context or {}
+            )
+            reason_key = tuple(impact.get("reasons", []))
+            if reason_counts.get(reason_key, 0) >= 2:
+                continue
+            selected_external.append(spec)
+            reason_counts[reason_key] = reason_counts.get(reason_key, 0) + 1
+            if len(selected_external) >= 8:
+                break
+        for spec in selected_external:
+            if str(spec[2].get("code", "")) not in known_codes:
+                board_specs.append(spec)
+                known_codes.add(str(spec[2].get("code", "")))
         if not board_specs:
             return {"boards": [], "matches": matches}
 
@@ -1001,6 +1085,12 @@ class DataFeed:
                 "history_days": history["days"],
                 "flow_score": round(max(0.0, min(100.0, score))),
             }
+            board.update({
+                f"external_{key}": value
+                for key, value in self.score_board_external_impact(
+                    board["name"], external_context or {}
+                ).items()
+            })
             members = self.get_board_constituents(board["code"])
             return board, members
 
@@ -1340,37 +1430,61 @@ class DataFeed:
             ) if main_net != 0 else 0,
         }
 
-    def get_financial_news(self, count: int = 30) -> list:
-        """获取最新财经新闻（东方财富）"""
-        url = "https://np-listapi.eastmoney.com/comm/web/getFastNewsListByDate"
+    def _get_fast_news_column(self, column: str, count: int,
+                              category: str) -> list:
         params = {
             "client": "web",
-            "biz": "fast_news",
-            "fastColumn": "102",
+            "biz": "web_news_col",
+            "fastColumn": column,
             "sortEnd": "",
-            "pageIndex": 1,
             "pageSize": min(count, 100),
-            "req_timestamp": int(time.time() * 1000),
+            "req_trace": int(time.time() * 1000),
         }
         try:
-            resp = self._request(url, params)
+            resp = self._request(EASTMONEY_FAST_NEWS_URL, params)
             if not resp:
-                return self._get_news_fallback(count)
+                return []
             data = resp.json()
-            items = data.get("data", {}).get("fastNewsList", [])
-            if not items:
-                return self._get_news_fallback(count)
+            items = (data.get("data") or {}).get("fastNewsList") or []
             news_list = []
             for item in items[:count]:
+                title = str(item.get("title") or "").strip()
+                if not title:
+                    continue
+                article_code = str(item.get("code") or "").strip()
                 news_list.append({
-                    "title": item.get("title", ""),
-                    "summary": item.get("summary", ""),
-                    "time": item.get("showTime", ""),
-                    "source": "东方财富",
+                    "title": title,
+                    "summary": str(item.get("summary") or "").strip(),
+                    "time": str(item.get("showTime") or "").strip(),
+                    "source": f"东方财富·{category}",
+                    "category": category,
+                    "url": (
+                        f"https://finance.eastmoney.com/a/{article_code}.html"
+                        if article_code else ""
+                    ),
                 })
             return news_list
         except Exception:
-            return self._get_news_fallback(count)
+            return []
+
+    def get_financial_news(self, count: int = 30) -> list:
+        """获取最新综合财经快讯（东方财富）。"""
+        return self._get_fast_news_column("102", count, "财经综合")
+
+    def get_external_news(self, count: int = 40) -> list:
+        """按栏目配额获取美股、宏观、商品和地缘相关新闻。"""
+        quota = max(5, math.ceil(count / len(EXTERNAL_NEWS_COLUMNS)))
+        items = []
+        seen = set()
+        for column, category in EXTERNAL_NEWS_COLUMNS:
+            for item in self._get_fast_news_column(column, quota, category):
+                key = item.get("url") or item.get("title")
+                if not key or key in seen:
+                    continue
+                seen.add(key)
+                items.append(item)
+        items.sort(key=lambda item: item.get("time", ""), reverse=True)
+        return items[:count]
 
     def _get_news_fallback(self, count: int) -> list:
         """备用新闻源：东方财富要闻列表"""
@@ -1419,7 +1533,230 @@ class DataFeed:
             })
         return hot
 
-    def get_market_context(self) -> dict:
+    @staticmethod
+    def _matches_board(name: str, keywords: tuple) -> bool:
+        return any(keyword in name for keyword in keywords)
+
+    def score_board_external_impact(self, board_name: str,
+                                    external_context: dict) -> dict:
+        """把外盘行情和事件映射为板块短期影响分；50分表示无方向证据。"""
+        if not external_context or not external_context.get("available"):
+            return {
+                "score": 50, "confidence": "无", "signal_count": 0,
+                "reasons": [],
+            }
+        quote_map = {
+            item.get("symbol"): item
+            for item in external_context.get("markets", [])
+            if item.get("change_pct") is not None
+        }
+        delta = 0.0
+        reasons = []
+        signal_count = 0
+        for mapping in EXTERNAL_BOARD_MAP.values():
+            if not self._matches_board(board_name, mapping["keywords"]):
+                continue
+            changes = [
+                float(quote_map[symbol]["change_pct"])
+                for symbol in mapping["symbols"] if symbol in quote_map
+            ]
+            if not changes:
+                continue
+            change = sum(changes) / len(changes)
+            contribution = max(-18.0, min(18.0, change * mapping["sensitivity"]))
+            delta += contribution
+            signal_count += 1
+            labels = "/".join(quote_map[symbol]["name"] for symbol in mapping["symbols"] if symbol in quote_map)
+            reasons.append(f"{labels}{change:+.2f}%")
+
+        for event in external_context.get("events", []):
+            benefit = tuple(event.get("beneficiary_keywords", []))
+            pressure = tuple(event.get("pressure_keywords", []))
+            event_delta = float(event.get("score_delta") or 0)
+            if benefit and self._matches_board(board_name, benefit):
+                delta += event_delta
+                signal_count += 1
+                reasons.append(event.get("name", "外部事件"))
+            if pressure and self._matches_board(board_name, pressure):
+                delta -= abs(event_delta)
+                signal_count += 1
+                reasons.append(f"{event.get('name', '外部事件')}承压")
+
+        score = round(max(0.0, min(100.0, 50 + delta)))
+        distance = abs(score - 50)
+        confidence = "高" if signal_count >= 2 and distance >= 18 else (
+            "中" if distance >= 8 else "低"
+        )
+        return {
+            "score": score,
+            "confidence": confidence,
+            "signal_count": signal_count,
+            "reasons": reasons[:4],
+        }
+
+    @staticmethod
+    def _extract_external_events(news: list) -> list:
+        """从实时新闻中提取可解释的短期外部冲击，不猜测未出现的事件。"""
+        rules = (
+            {
+                "id": "geopolitics", "name": "地缘冲突/航道风险",
+                "required": (
+                    "封锁", "关闭", "通行受阻", "袭击", "冲突升级",
+                    "战争升级", "航运中断", "制裁升级",
+                ),
+                "context": ("中东", "伊朗", "以色列", "霍尔木兹", "曼德海峡", "红海"),
+                "excluded": ("局势缓和", "停火协议达成", "恢复通航"),
+                "beneficiary_keywords": ("石油", "油气", "油服", "化工", "航运", "港口", "黄金", "贵金属"),
+                "pressure_keywords": ("航空", "机场"), "score_delta": 12,
+            },
+            {
+                "id": "geopolitics_watch", "name": "地缘/航道动态待确认",
+                "required": ("中东", "伊朗", "以色列", "霍尔木兹", "曼德海峡", "红海"),
+                "excluded": (
+                    "封锁", "关闭", "通行受阻", "袭击", "冲突升级",
+                    "战争升级", "航运中断", "制裁升级",
+                ),
+                "beneficiary_keywords": (), "pressure_keywords": (),
+                "score_delta": 0,
+            },
+            {
+                "id": "fed_easing", "name": "美元流动性宽松线索",
+                "required": (
+                    "降息", "非农不及", "非农转负", "非农爆冷", "就业市场松动",
+                    "通胀回落", "CPI不及", "PCE不及", "鸽派",
+                    "加息预期降温", "降息预期升温",
+                ),
+                "excluded": ("降息预期降温", "加息预期升温", "鹰派"),
+                "beneficiary_keywords": ("半导体", "芯片", "软件", "计算机", "互联网", "创新药", "医药", "黄金", "有色", "消费"),
+                "pressure_keywords": (), "score_delta": 9,
+            },
+            {
+                "id": "fed_tightening", "name": "美元流动性收紧线索",
+                "required": (
+                    "加息预期升温", "加息概率上升", "加息25个基点", "鹰派",
+                    "维持高利率", "推迟降息", "通胀反弹", "CPI超预期",
+                    "PCE超预期", "非农超预期",
+                ),
+                "excluded": (
+                    "加息预期降温", "降息预期升温", "非农不及", "非农转负",
+                    "非农爆冷", "就业市场松动", "通胀回落", "鸽派",
+                ),
+                "beneficiary_keywords": ("银行",),
+                "pressure_keywords": ("半导体", "芯片", "软件", "计算机", "互联网", "创新药", "黄金", "有色", "消费"),
+                "score_delta": 9,
+            },
+            {
+                "id": "trade_restriction", "name": "贸易限制/科技制裁",
+                "required": ("关税", "制裁", "出口管制", "实体清单", "科技限制"),
+                "excluded": ("取消关税", "解除制裁", "移出实体清单"),
+                "beneficiary_keywords": ("国产替代", "半导体", "芯片", "稀土", "关键矿产"),
+                "pressure_keywords": ("消费电子", "纺织", "家电", "出口"),
+                "score_delta": 8,
+            },
+            {
+                "id": "critical_minerals", "name": "关键矿产投资/供应扰动",
+                "required": ("关键矿产", "稀土", "锂矿", "铜矿", "矿产投资"),
+                "excluded": (),
+                "beneficiary_keywords": ("稀土", "锂", "有色", "铜", "工业金属"),
+                "pressure_keywords": (), "score_delta": 8,
+            },
+        )
+        events = []
+        for rule in rules:
+            matched = []
+            for item in news or []:
+                text = f"{item.get('title', '')} {item.get('summary', '')}"
+                has_signal = any(keyword in text for keyword in rule["required"])
+                has_context = not rule.get("context") or any(
+                    keyword in text for keyword in rule["context"]
+                )
+                has_exclusion = any(
+                    keyword in text for keyword in rule.get("excluded", ())
+                )
+                if has_signal and has_context and not has_exclusion:
+                    matched.append({
+                        "title": item.get("title", "")[:100],
+                        "time": item.get("time", ""),
+                        "source": item.get("source", ""),
+                        "url": item.get("url", ""),
+                    })
+            if not matched:
+                continue
+            events.append({
+                "id": rule["id"], "name": rule["name"],
+                "direction": "结构性影响", "score_delta": rule["score_delta"],
+                "beneficiary_keywords": list(rule["beneficiary_keywords"]),
+                "pressure_keywords": list(rule["pressure_keywords"]),
+                "impact_summary": (
+                    "仅作为地缘动态展示，不直接加减分；等待风险升级证据和A股资金确认"
+                    if not rule["score_delta"] else
+                    f"潜在受益：{'、'.join(rule['beneficiary_keywords']) or '无'}；"
+                    f"潜在承压：{'、'.join(rule['pressure_keywords']) or '无'}；"
+                    "须由A股板块资金和上涨家数确认"
+                ),
+                "headlines": matched[:3], "matched_news_count": len(matched),
+            })
+        return events
+
+    def get_external_market_context(self, news: list = None,
+                                    force_refresh: bool = False) -> dict:
+        """取得最近外盘收盘/盘中快照，并生成可追溯的跨市场因子。"""
+        if (not force_refresh and self._external_market_cache is not None
+                and time.time() - self._external_market_cache_time < 180):
+            return dict(self._external_market_cache)
+        params = {
+            "fltt": 2, "invt": 2,
+            "fields": "f12,f13,f14,f2,f3,f4,f18,f124",
+            "secids": ",".join(item[3] for item in EXTERNAL_MARKET_QUOTES),
+        }
+        resp, source = self._request_eastmoney(
+            "/api/qt/ulist.np/get", params, prefer_delay=True
+        )
+        rows = []
+        if resp is not None:
+            try:
+                raw_rows = (resp.json().get("data") or {}).get("diff", [])
+            except (ValueError, TypeError, AttributeError):
+                raw_rows = []
+            raw_map = {str(row.get("f12", "")): row for row in raw_rows}
+            for symbol, name, category, _ in EXTERNAL_MARKET_QUOTES:
+                raw = raw_map.get(symbol)
+                if not raw or raw.get("f2") in (None, "-") or raw.get("f3") in (None, "-"):
+                    continue
+                timestamp = int(_safe_float(raw.get("f124")))
+                rows.append({
+                    "symbol": symbol, "name": name, "category": category,
+                    "price": round(_safe_float(raw.get("f2")), 3),
+                    "change_pct": round(_safe_float(raw.get("f3")), 2),
+                    "change": round(_safe_float(raw.get("f4")), 3),
+                    "as_of": datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M") if timestamp else "",
+                })
+        events = self._extract_external_events(news or [])
+        external_available = bool(rows or events)
+        context = {
+            "available": external_available,
+            "market_available": bool(rows),
+            "news_available": bool(events),
+            "source": source or ("东方财富专题快讯" if events else "外盘行情不可用"),
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "markets": rows,
+            "events": events,
+            "coverage": f"{len(rows)}/{len(EXTERNAL_MARKET_QUOTES)}项外盘行情，{len(events)}类事件信号",
+            "limitations": [
+                "外盘为最近可得盘中或收盘快照，不等同于A股开盘后的确认信号。",
+                "新闻事件为关键词提取，须结合原文、时间和后续资金验证。",
+                "未接入CME FedWatch概率、美国官方经济日历和航道实时通行量。",
+            ],
+        }
+        self._external_market_cache = context
+        self._external_market_cache_time = time.time()
+        self._set_source_state(
+            "external_market", context["source"], external_available,
+            detail=context["coverage"],
+        )
+        return dict(context)
+
+    def get_market_context(self, external_context: dict = None) -> dict:
         """获取AI分析所需的完整市场上下文数据"""
         stocks = self.get_stock_list()
         context = {
@@ -1437,6 +1774,7 @@ class DataFeed:
             "sector_flow": [],
             "sector_outflow": [],
             "concept_outflow": [],
+            "external_market": external_context or {},
         }
 
         cols = ["code", "name", "price", "change_pct", "turnover_rate", "market_cap", "board"]

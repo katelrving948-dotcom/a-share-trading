@@ -102,6 +102,25 @@ class EmailDigestTest(unittest.TestCase):
                     "driver": "政策预期", "confidence": "中",
                 }],
                 "risks": ["单日信号可能失真"],
+                "external_market": {
+                    "available": True,
+                    "source": "东方财富延时行情",
+                    "coverage": "8/8项外盘行情，1类事件信号",
+                    "markets": [{
+                        "symbol": "NDX", "name": "纳斯达克100",
+                        "change_pct": 1.2,
+                    }],
+                    "events": [{
+                        "name": "地缘冲突/航道风险",
+                        "impact_summary": "潜在受益：石油、航运；潜在承压：航空；须由A股板块资金确认",
+                        "headlines": [{
+                            "title": "霍尔木兹海峡通行受阻",
+                            "time": "2026-08-10 18:30",
+                            "source": "东方财富·商品地缘",
+                            "url": "https://finance.eastmoney.com/a/example.html",
+                        }],
+                    }],
+                },
             },
         }
 
@@ -117,6 +136,9 @@ class EmailDigestTest(unittest.TestCase):
         self.assertIn("当日 / 近5日主力净流入", html_body)
         self.assertIn("20.50亿", html_body)
         self.assertIn("反转待确认 / 中", html_body)
+        self.assertIn("霍尔木兹海峡通行受阻", plain_body)
+        self.assertIn("潜在受益：石油、航运", html_body)
+        self.assertIn("https://finance.eastmoney.com/a/example.html", html_body)
 
     @patch("email_digest.smtplib.SMTP_SSL")
     @patch.dict("os.environ", {

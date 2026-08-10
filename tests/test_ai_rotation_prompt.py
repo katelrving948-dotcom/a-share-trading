@@ -51,6 +51,19 @@ class AIRotationPromptTest(unittest.TestCase):
                 },
             ],
             "concept_outflow": [],
+            "external_market": {
+                "available": True,
+                "source": "东方财富延时行情",
+                "coverage": "8/8项外盘行情，1类事件信号",
+                "markets": [{
+                    "symbol": "NDX", "name": "纳斯达克100", "price": 20000,
+                    "change_pct": 1.2, "as_of": "2026-08-08 16:00",
+                }],
+                "events": [{
+                    "name": "地缘冲突/航道风险",
+                    "headlines": [{"title": "霍尔木兹海峡通行受阻", "time": "08:10", "source": "东方财富"}],
+                }],
+            },
         }
 
     def test_prompt_contains_rotation_evidence_and_confirmation_rules(self):
@@ -66,6 +79,9 @@ class AIRotationPromptTest(unittest.TestCase):
         self.assertIn("未来1-3个交易日和3-10个交易日", prompt)
         self.assertIn("待后续交易日确认", prompt)
         self.assertIn("事实、推断和待验证事项", prompt)
+        self.assertIn("纳斯达克100: +1.20%", prompt)
+        self.assertIn("霍尔木兹海峡通行受阻", prompt)
+        self.assertIn("不得把外盘涨跌直接写成A股必然跟涨或跟跌", prompt)
 
     def test_structured_rotation_filters_unknown_boards_and_clamps_score(self):
         advisor = AIAdvisor.__new__(AIAdvisor)

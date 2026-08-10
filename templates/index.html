@@ -431,7 +431,7 @@ tr:hover td { background: var(--hover); }
     </div>
     <div class="card">
       <div class="card-title">综合分析与精选规则</div>
-      <div class="card-subtitle">基本面合格后追加 K 线趋势、MACD、RSI、KDJ 与量价评分，基本面/技术面按 70%/30% 合成为综合分；综合分再结合行业与概念板块近期资金流、个股资金流，以 80%/20% 得到精选分并选出 10 只。配置 DeepSeek 后，板块资金分会叠加 25% 的受控 AI 轮动研判，未配置或解析失败时自动回退规则分。</div>
+      <div class="card-subtitle">基本面合格后追加 K 线趋势、MACD、RSI、KDJ 与量价评分，基本面/技术面按 70%/30% 合成为综合分；综合分再结合行业与概念板块近期资金流、个股资金流，以 80%/20% 得到精选分并选出 10 只。轮动规则分在数据可用时叠加 20% 外盘/事件结构分；配置 DeepSeek 后再叠加 25% 的受控 AI 研判，任一数据源不可用时逐层降级。</div>
     </div>
     <div class="card" id="rotationAnalysisCard" style="display:none">
       <div class="flex-between" style="margin-bottom:12px">
@@ -440,6 +440,12 @@ tr:hover td { background: var(--hover); }
       </div>
       <div id="rotationStage" style="font-size:14px;color:#fff;margin-bottom:6px"></div>
       <div id="rotationReason" class="card-subtitle" style="margin-bottom:12px"></div>
+      <div style="background:#0f1117;border-radius:8px;padding:12px;margin-bottom:12px">
+        <div class="muted" style="font-size:11px;margin-bottom:7px">外盘联动快照 · 最近可得收盘/盘中数据</div>
+        <div id="rotationExternalMarkets" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        <div id="rotationExternalSummary" class="card-subtitle" style="margin-top:8px"></div>
+        <div id="rotationExternalEvents" style="margin-top:7px"></div>
+      </div>
       <div class="two-col" style="margin-bottom:12px">
         <div style="background:#0f1117;border-radius:8px;padding:12px"><div class="muted" style="font-size:11px;margin-bottom:5px">未来1-3个交易日</div><div id="rotationShort"></div></div>
         <div style="background:#0f1117;border-radius:8px;padding:12px"><div class="muted" style="font-size:11px;margin-bottom:5px">未来3-10个交易日</div><div id="rotationMedium"></div></div>
@@ -1262,18 +1268,58 @@ function renderRotationAnalysis(analysis, ruleBoards) {
   const card = document.getElementById('rotationAnalysisCard');
   card.style.display = 'block';
   const available = Boolean(analysis.available);
+  const external = analysis.external_market || {};
   const mode = document.getElementById('rotationMode');
-  mode.textContent = available ? 'AI辅助轮动' : '规则评分';
+  mode.textContent = available ? 'AI + 外部联动' : (external.available ? '资金 + 外部规则' : '资金规则');
   mode.className = `chip ${available ? 'chip-green' : 'chip-gold'}`;
-  document.getElementById('rotationStage').textContent = available
-    ? `市场阶段：${analysis.market_stage || '待判断'}`
-    : '板块轮动：规则资金评分';
+  document.getElementById('rotationStage').textContent = `市场阶段：${analysis.market_stage || '待判断'}`;
   document.getElementById('rotationReason').textContent =
     analysis.market_stage_reason || analysis.reason || '依据板块资金流与近期资金轨迹排序。';
   document.getElementById('rotationShort').textContent =
     analysis.short_term_outlook || '未启用AI预测，关注当日资金强度与后续确认。';
   document.getElementById('rotationMedium').textContent =
     analysis.medium_term_outlook || '未启用AI预测，等待连续资金与政策催化验证。';
+
+  const externalMarkets = document.getElementById('rotationExternalMarkets');
+  externalMarkets.replaceChildren();
+  (external.markets || []).forEach(item => {
+    const chip = document.createElement('span');
+    const change = Number(item.change_pct || 0);
+    chip.className = `chip ${change >= 0 ? 'chip-green' : 'chip-red'}`;
+    chip.title = `${item.source || external.source || ''} ${item.as_of || ''}`.trim();
+    chip.textContent = `${item.name || item.symbol} ${change >= 0 ? '+' : ''}${change.toFixed(2)}%${item.as_of ? ` · ${item.as_of}` : ''}`;
+    externalMarkets.appendChild(chip);
+  });
+  if (!(external.markets || []).length) {
+    const empty = document.createElement('span');
+    empty.className = 'muted';
+    empty.textContent = '外盘快照暂不可用，本轮未加入外部方向分。';
+    externalMarkets.appendChild(empty);
+  }
+  document.getElementById('rotationExternalSummary').textContent =
+    `${analysis.external_driver_summary || external.coverage || ''}${external.source ? ` · ${external.source}` : ''}`;
+  const eventContainer = document.getElementById('rotationExternalEvents');
+  eventContainer.replaceChildren();
+  (external.events || []).slice(0, 4).forEach(event => {
+    const row = document.createElement('div');
+    row.style.cssText = 'font-size:11px;color:var(--text-secondary);padding:3px 0';
+    const first = (event.headlines || [])[0] || {};
+    const summary = document.createElement('div');
+    summary.textContent = `事件线索：${event.name || '-'}${first.time ? `（${first.time}）` : ''}`;
+    const headline = first.url ? document.createElement('a') : document.createElement('span');
+    if (first.url) {
+      headline.href = first.url;
+      headline.target = '_blank';
+      headline.rel = 'noopener noreferrer';
+    }
+    headline.textContent = first.title || '查看事件来源';
+    headline.style.cssText = 'color:var(--cyan);display:block;margin-top:2px';
+    const impact = document.createElement('div');
+    impact.textContent = `A股映射：${event.impact_summary || '等待板块资金确认'}`;
+    impact.style.marginTop = '2px';
+    row.append(summary, headline, impact);
+    eventContainer.appendChild(row);
+  });
 
   const boardContainer = document.getElementById('rotationBoards');
   boardContainer.replaceChildren();
@@ -1286,14 +1332,20 @@ function renderRotationAnalysis(analysis, ruleBoards) {
     const detail = document.createElement('span');
     detail.style.cssText = 'float:right;color:var(--text-secondary);font-size:12px';
     detail.textContent = board.ai_state
-      ? `${board.ai_state} / ${board.ai_confidence || '低'}置信`
-      : `规则资金分 ${board.rule_flow_score ?? board.flow_score ?? 0}`;
+      ? `${board.ai_state} / AI ${board.ai_confidence || '低'}置信`
+      : `资金 ${board.rule_flow_score ?? board.flow_score ?? 0} · 外部 ${board.external_score ?? 50}`;
     row.append(title, detail);
     if (board.ai_reason) {
       const reason = document.createElement('div');
       reason.style.cssText = 'font-size:11px;color:var(--text-secondary);margin-top:3px';
       reason.textContent = board.ai_reason;
       row.appendChild(reason);
+    }
+    if ((board.external_reasons || []).length) {
+      const externalReason = document.createElement('div');
+      externalReason.style.cssText = 'font-size:11px;color:var(--cyan);margin-top:3px';
+      externalReason.textContent = `外部联动：${board.external_reasons.join('、')}（${board.external_confidence || '低'}置信）`;
+      row.appendChild(externalReason);
     }
     boardContainer.appendChild(row);
   });

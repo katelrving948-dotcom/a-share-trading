@@ -31,6 +31,74 @@ def _growth_score(value: float) -> float:
     return 80
 
 
+def _build_rule_rotation_analysis(context: dict, boards: list) -> dict:
+    """在AI不可用时，仍用市场宽度、资金和外部因子形成条件化研判。"""
+    stats = context.get("market_stats", {})
+    up = int(stats.get("up") or 0)
+    down = int(stats.get("down") or 0)
+    avg_change = float(stats.get("avg_change") or 0)
+    advance_ratio = up / max(down, 1)
+    if advance_ratio >= 1.3 and avg_change > 0.5:
+        stage = "趋势延续/扩散"
+    elif advance_ratio <= 0.75 and avg_change < -0.5:
+        stage = "退潮/防守"
+    else:
+        stage = "震荡分歧"
+
+    external = context.get("external_market") or {}
+    markets = external.get("markets", [])
+    positive = sorted(markets, key=lambda item: item.get("change_pct", 0), reverse=True)
+    negative = sorted(markets, key=lambda item: item.get("change_pct", 0))
+    external_summary = "外盘快照不可用，未把外部方向计入规则分。"
+    if external.get("available"):
+        lead = "、".join(
+            f"{item.get('name')}{float(item.get('change_pct') or 0):+.2f}%"
+            for item in positive[:2]
+        )
+        weak = "、".join(
+            f"{item.get('name')}{float(item.get('change_pct') or 0):+.2f}%"
+            for item in negative[:2]
+        )
+        external_summary = f"外盘强项：{lead}；弱项：{weak}。"
+
+    externally_supported = [
+        board for board in boards
+        if board.get("external_signal_count") and board.get("external_score", 50) >= 58
+    ]
+    externally_pressured = [
+        board for board in boards
+        if board.get("external_signal_count") and board.get("external_score", 50) <= 42
+    ]
+    supported_names = "、".join(board.get("name", "") for board in externally_supported[:3])
+    pressured_names = "、".join(board.get("name", "") for board in externally_pressured[:3])
+    top_funded = "、".join(board.get("name", "") for board in boards[:3]) or "暂无"
+    short = f"1-3日优先观察资金前列的{top_funded}"
+    if supported_names:
+        short += f"；其中{supported_names}同时获得外盘/事件方向支持"
+    if pressured_names:
+        short += f"。{pressured_names}存在外部逆风，需等资金继续增强再确认"
+    short += "。"
+    medium = "3-10日只在板块连续流入、上涨家数扩散且外部催化未反转时延续判断；否则按轮动线索而非趋势确认处理。"
+    return {
+        "available": False,
+        "external_available": bool(external.get("available")),
+        "mode": "rule_external" if external.get("available") else "rule_only",
+        "market_stage": stage,
+        "market_stage_reason": (
+            f"上涨{up}家、下跌{down}家、平均涨跌{avg_change:+.2f}%；"
+            f"板块排序综合当日/近5日资金与外部影响。"
+        ),
+        "short_term_outlook": short,
+        "medium_term_outlook": medium,
+        "external_driver_summary": external_summary,
+        "external_market": external,
+        "rotation_path": [],
+        "boards": [],
+        "risks": list(external.get("limitations", [])),
+        "reason": "未配置AI或AI不可用，使用资金+外盘+事件规则评分。",
+    }
+
+
 def build_opening_entry_plan(intraday: dict) -> dict:
     """Turn the completed 09:30-10:00 window into a bounded execution plan."""
     window = (intraday or {}).get("opening_30m") or {}
@@ -232,7 +300,7 @@ class LongTermFundamentalScreener:
             "state": "market",
             "done": len(fundamental_ranked),
             "total": len(fundamental_ranked),
-            "message": "结合近期热点与板块资金流精选十股",
+            "message": "结合板块资金、外盘联动与事件冲击精选十股",
         })
         selected, rotation_boards, rotation_analysis = self._select_recommendations(
             fundamental_ranked, ai_advisor=ai_advisor
@@ -257,10 +325,12 @@ class LongTermFundamentalScreener:
             ),
             "comprehensive_count": min(len(fundamental_ranked), LONG_TERM["result_limit"]),
             "scan_scope": "全部初筛股票" if not limit else f"诊断限制 {limit} 只",
-            "data_source": "东方财富财务指标 API / K线指标 / 板块资金流",
+            "data_source": "东方财富财务指标 API / K线指标 / 板块资金流 / 外盘与商品快照 / 财经快讯事件",
             "weights": dict(LONG_TERM["weights"]),
             "composite_weights": dict(LONG_TERM["composite_weights"]),
             "selection_weights": dict(LONG_TERM["selection_weights"]),
+            "rotation_external_weight": LONG_TERM.get("rotation_external_weight", 0),
+            "rotation_ai_weight": LONG_TERM.get("rotation_ai_weight", 0),
             "rotation_boards": rotation_boards[:8],
             "rotation_analysis": rotation_analysis,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -504,39 +574,71 @@ class LongTermFundamentalScreener:
                 "reason": "没有通过综合评分的候选股票。",
                 "boards": [],
             }
-        rotation = self.df.get_rotation_matches(
-            [item["code"] for item in ranked],
-            top_n=LONG_TERM["theme_board_limit"],
+        news = self.df.get_financial_news()
+        external_news = (
+            self.df.get_external_news()
+            if hasattr(self.df, "get_external_news") else news
         )
+        combined_news = []
+        seen_news = set()
+        for item in [*external_news, *news]:
+            key = item.get("url") or item.get("title")
+            if key and key not in seen_news:
+                seen_news.add(key)
+                combined_news.append(item)
+        external_context = {}
+        if hasattr(self.df, "get_external_market_context"):
+            external_context = self.df.get_external_market_context(news=external_news)
+        rotation_kwargs = {
+            "top_n": LONG_TERM["theme_board_limit"],
+        }
+        if external_context:
+            rotation_kwargs["external_context"] = external_context
+        try:
+            rotation = self.df.get_rotation_matches(
+                [item["code"] for item in ranked], **rotation_kwargs
+            )
+        except TypeError as exc:
+            if "external_context" not in str(exc):
+                raise
+            rotation_kwargs.pop("external_context", None)
+            rotation = self.df.get_rotation_matches(
+                [item["code"] for item in ranked], **rotation_kwargs
+            )
         matches = rotation.get("matches", {})
         boards = rotation.get("boards", [])
         market_data_available = bool(boards)
-        rotation_analysis = {
-            "available": False,
-            "mode": "rule_only",
-            "reason": "未配置AI，板块轮动使用资金规则评分。",
-            "boards": [],
-        }
+        context = self.df.get_market_context()
+        context["external_market"] = external_context
+        rotation_analysis = _build_rule_rotation_analysis(context, boards)
         if ai_advisor is not None and ai_advisor.is_configured and boards:
             self._progress.update({
                 "state": "rotation_ai",
                 "message": "结合每日资金、国际环境与政策研判板块轮动",
             })
             try:
-                context = self.df.get_market_context()
-                news = self.df.get_financial_news()
                 rotation_analysis = ai_advisor.analyze_sector_rotation(
                     context=context,
-                    news=news,
+                    news=combined_news,
                     boards=boards,
                 )
             except Exception as exc:
                 rotation_analysis = {
-                    "available": False,
+                    **_build_rule_rotation_analysis(context, boards),
                     "mode": "rule_fallback",
-                    "reason": f"AI板块轮动分析失败，已回退规则评分：{exc}",
-                    "boards": [],
+                    "reason": f"AI板块轮动分析失败，已回退资金+外部规则评分：{exc}",
                 }
+
+        if rotation_analysis.get("available"):
+            rotation_analysis.setdefault("external_market", external_context)
+        else:
+            fallback_reason = rotation_analysis.get("reason", "")
+            fallback_mode = rotation_analysis.get("mode", "rule_external")
+            rotation_analysis = {
+                **_build_rule_rotation_analysis(context, boards),
+                "mode": fallback_mode,
+                "reason": fallback_reason or "AI不可用，使用资金+外盘+事件规则评分。",
+            }
 
         ai_boards = {
             board["name"]: board
@@ -544,9 +646,17 @@ class LongTermFundamentalScreener:
             if isinstance(board, dict) and board.get("name")
         }
         ai_weight = float(LONG_TERM.get("rotation_ai_weight", 0.25))
+        external_weight = float(LONG_TERM.get("rotation_external_weight", 0.20))
         for board in boards:
             rule_score = float(board.get("flow_score") or 0)
             board["rule_flow_score"] = round(rule_score)
+            if external_context.get("available"):
+                external_score = float(board.get("external_score") or 50)
+                rule_score = (
+                    rule_score * (1 - external_weight) +
+                    external_score * external_weight
+                )
+            board["rule_external_score"] = round(rule_score)
             ai_board = ai_boards.get(board.get("name"))
             if rotation_analysis.get("available") and ai_board:
                 ai_score = float(ai_board.get("rotation_score") or 0)
@@ -592,8 +702,15 @@ class LongTermFundamentalScreener:
                 ai_text = ""
                 if board.get("ai_state"):
                     ai_text = f"，AI:{board['ai_state']}/{board.get('ai_confidence', '低')}"
+                external_text = ""
+                if board.get("external_signal_count"):
+                    reasons = "/".join(board.get("external_reasons", [])[:2])
+                    external_text = (
+                        f"，外部{board.get('external_score', 50):.0f}分"
+                        f":{reasons or '事件映射'}"
+                    )
                 item["matched_themes"].append(
-                    f"{board['name']}({board['type']}, {recent_text}{ai_text})"
+                    f"{board['name']}({board['type']}, {recent_text}{external_text}{ai_text})"
                 )
             item["selection_score"] = round(
                 item["composite_score"] * weights["composite"] +

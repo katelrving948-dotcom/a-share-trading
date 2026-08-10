@@ -1134,12 +1134,18 @@ class ApiHandler(BaseHTTPRequestHandler):
 
         rotation_analysis = fundamental_screener.summary.get("rotation_analysis", {})
         rotation_ai_used = bool(rotation_analysis.get("available"))
-        mode = "AI轮动 + 规则精选" if rotation_ai_used else "规则精选建议"
+        external_used = bool(rotation_analysis.get("external_market", {}).get("available"))
+        mode = "AI轮动 + 外部联动 + 规则精选" if rotation_ai_used else (
+            "外部联动 + 规则精选" if external_used else "规则精选建议"
+        )
         if data.get("use_ai", True) and ai_advisor.is_configured:
             candidates = ai_advisor.explain_long_term_candidates(candidates)
             mode = (
-                "DeepSeek摘要 + AI轮动 + 规则精选"
-                if rotation_ai_used else "DeepSeek摘要 + 规则精选"
+                "DeepSeek摘要 + AI轮动 + 外部联动 + 规则精选"
+                if rotation_ai_used else (
+                    "DeepSeek摘要 + 外部联动 + 规则精选"
+                    if external_used else "DeepSeek摘要 + 规则精选"
+                )
             )
 
         position = round(min(
@@ -1190,10 +1196,17 @@ class ApiHandler(BaseHTTPRequestHandler):
                     f"；AI研判{board['ai_state']}（{board.get('ai_confidence', '低')}置信）"
                     f"，轮动分{board.get('rotation_score', board.get('flow_score', 0))}"
                 )
+            external_signal = ""
+            if board.get("external_signal_count"):
+                external_signal = (
+                    f"；外部影响{board.get('external_score', 50)}分"
+                    f"（{board.get('external_confidence', '低')}置信："
+                    f"{'、'.join(board.get('external_reasons', []))}）"
+                )
             sectors.append({
                 "name": board.get("name", "-"),
                 "weight": round(position * len(candidates) / 3, 1),
-                "reason": f"资金热点匹配{flow}{ai_signal}",
+                "reason": f"资金热点匹配{flow}{external_signal}{ai_signal}",
             })
         for risk in rotation_analysis.get("risks", []):
             if risk and risk not in risk_alerts:
