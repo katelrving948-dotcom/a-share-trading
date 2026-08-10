@@ -1180,31 +1180,55 @@ class DataFeed:
             symbol = f"sz{code}"
         resp = self._request(
             "https://web.ifzq.gtimg.cn/appstock/app/minute/query",
-            {"param": symbol}, timeout=(3, 8), retries=2,
+            {"code": symbol}, timeout=(3, 8), retries=2,
         )
         if not resp:
             return {"available": False, "error": "分时数据请求失败"}
 
         try:
             payload = resp.json()
+            if payload.get("code") not in (None, 0):
+                return {
+                    "available": False,
+                    "error": payload.get("msg") or "分时接口返回错误",
+                }
             data_section = (payload.get("data") or {}).get(symbol) or {}
-            mins_raw = data_section.get("MINS") or data_section.get("data") or []
+            nested_data = data_section.get("data")
+            if isinstance(nested_data, dict):
+                mins_raw = nested_data.get("data") or []
+            else:
+                mins_raw = data_section.get("MINS") or nested_data or []
             if not mins_raw or not isinstance(mins_raw, list):
                 return {"available": False, "error": "无分时数据（可能未开市）"}
         except (json.JSONDecodeError, KeyError, TypeError, AttributeError):
             return {"available": False, "error": "分时响应解析失败"}
 
         rows = []
+        previous_cumulative_volume = 0.0
         for entry in mins_raw:
             parts = str(entry).split()
             if len(parts) < 3:
                 continue
             try:
+                price = float(parts[1])
+                raw_volume = float(parts[2])
+                avg_price = price
+                volume = raw_volume
+                if len(parts) > 3:
+                    fourth_value = float(parts[3])
+                    # 当前腾讯格式为“时间 价格 累计成交量(手) 累计成交额”。
+                    # 旧格式若直接给出均价，则保留原值以兼容。
+                    if raw_volume > 0 and fourth_value > price * 10:
+                        avg_price = fourth_value / (raw_volume * 100)
+                        volume = max(0.0, raw_volume - previous_cumulative_volume)
+                        previous_cumulative_volume = raw_volume
+                    elif fourth_value > 0:
+                        avg_price = fourth_value
                 rows.append({
                     "time": parts[0],
-                    "price": float(parts[1]),
-                    "volume": float(parts[2]),
-                    "avg_price": float(parts[3]) if len(parts) > 3 else float(parts[1]),
+                    "price": price,
+                    "volume": volume,
+                    "avg_price": avg_price,
                 })
             except (ValueError, IndexError):
                 continue

@@ -1,10 +1,50 @@
 import unittest
+from unittest.mock import Mock
 
 from data_feed import DataFeed
 from fundamental import build_opening_entry_plan
 
 
 class OpeningEntryPlanTest(unittest.TestCase):
+    def test_current_tencent_minute_payload_builds_opening_window(self):
+        response = Mock()
+        response.__bool__ = Mock(return_value=True)
+        response.json.return_value = {
+            "code": 0,
+            "msg": "",
+            "data": {
+                "sh600989": {
+                    "data": {
+                        "date": "20260810",
+                        "data": [
+                            "0930 23.60 100 236000.00",
+                            "0935 23.70 180 425600.00",
+                            "0940 23.75 260 615600.00",
+                            "0945 23.80 340 806000.00",
+                            "0950 23.85 420 996800.00",
+                            "0955 23.90 500 1188000.00",
+                            "0958 23.95 580 1380000.00",
+                            "0959 24.00 660 1572000.00",
+                            "1000 24.05 740 1764400.00",
+                        ],
+                    }
+                }
+            },
+        }
+        feed = DataFeed.__new__(DataFeed)
+        feed._request = Mock(return_value=response)
+
+        intraday = feed.get_intraday_minute("600989")
+
+        self.assertTrue(intraday["available"])
+        self.assertTrue(intraday["opening_30m"]["completed"])
+        self.assertEqual(intraday["opening_30m"]["sample_count"], 9)
+        self.assertAlmostEqual(intraday["opening_30m"]["vwap"], 23.84, places=2)
+        feed._request.assert_called_once_with(
+            "https://web.ifzq.gtimg.cn/appstock/app/minute/query",
+            {"code": "sh600989"}, timeout=(3, 8), retries=2,
+        )
+
     def test_completed_strong_window_builds_entry_and_stop_zones(self):
         rows = []
         times = ["0930", "0934", "0938", "0942", "0946", "0950", "0954", "0958", "1000"]
