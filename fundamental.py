@@ -110,7 +110,15 @@ def build_opening_entry_plan(intraday: dict) -> dict:
         "breakout_trigger": None,
         "max_chase_price": None,
         "stop_zone": None,
+        "take_profit_zones": [],
         "risk_pct": None,
+        "reference_price": None,
+        "execution_state": "等待首30分钟完成",
+        "levels_available": False,
+        "execution_note": (
+            "普通A股当日买入通常不能当日卖出；止损止盈为条件计划，"
+            "跳空或流动性不足可能导致实际成交偏离。"
+        ),
         "reason": "等待首30分钟形成完整价格区间。",
         "opening": window,
     }
@@ -180,23 +188,69 @@ def build_opening_entry_plan(intraday: dict) -> dict:
     stop_low = stop_reference * 0.995
     stop_high = min(stop_reference * 1.002, entry_low * 0.995)
     actual_risk = max(0.0, (entry_mid - stop_high) / entry_mid * 100)
-    plan_type = "强势回踩" if strong else "均价承接确认"
+    risk_per_share = max(entry_mid - stop_high, entry_mid * 0.005)
+    first_target_low = max(high * 1.005, entry_mid + risk_per_share * 1.5)
+    first_target_high = first_target_low * 1.008
+    second_target_low = max(first_target_high + 0.01, entry_mid + risk_per_share * 2.5)
+    second_target_high = second_target_low * 1.012
+    max_chase_price = high * 1.015
+    current_price = float((intraday or {}).get("close_price") or close)
+    execution_state = "等待回踩进场区或放量突破确认"
+    actionable = True
+    status = "强势回踩" if strong else "均价承接确认"
+    if current_price < stop_high:
+        actionable = False
+        status = "首30分钟结构已失效"
+        execution_state = "当前价已跌入止损区下方，不按原计划进场"
+    elif current_price > max_chase_price:
+        actionable = False
+        status = "当前价格暂不追涨"
+        execution_state = "当前价已超过禁止追价上限，等待重新形成支撑"
+    elif entry_low <= current_price <= entry_high:
+        execution_state = "当前价进入回踩进场区，可结合量能分批观察"
+    elif current_price < entry_low:
+        execution_state = "当前价低于计划进场区，等待重新站回分时均价确认"
+    elif current_price >= high * 1.002:
+        execution_state = "已触发突破确认，但未超过禁追线，避免一次性追入"
     base.update({
-        "actionable": True,
-        "status": plan_type,
+        "actionable": actionable,
+        "levels_available": True,
+        "status": status,
         "entry_zone": {
             "low": round(entry_low, 2),
             "high": round(entry_high, 2),
             "label": "回踩分时均价附近分批观察",
         },
         "breakout_trigger": round(high * 1.002, 2),
-        "max_chase_price": round(high * 1.015, 2),
+        "max_chase_price": round(max_chase_price, 2),
         "stop_zone": {
             "low": round(stop_low, 2),
             "high": round(stop_high, 2),
             "label": "跌入区间视为首30分钟结构失效",
         },
+        "take_profit_zones": [
+            {
+                "name": "第一止盈",
+                "low": round(first_target_low, 2),
+                "high": round(first_target_high, 2),
+                "risk_reward": round(
+                    (first_target_low - entry_mid) / risk_per_share, 2
+                ),
+                "action": "到达后可减仓约三分之一，并将保护位上移至进场均价附近",
+            },
+            {
+                "name": "第二止盈",
+                "low": round(second_target_low, 2),
+                "high": round(second_target_high, 2),
+                "risk_reward": round(
+                    (second_target_low - entry_mid) / risk_per_share, 2
+                ),
+                "action": "到达后可继续减仓，剩余仓位按分时均价或短期均线跟踪",
+            },
+        ],
         "risk_pct": round(actual_risk, 2),
+        "reference_price": round(current_price, 2),
+        "execution_state": execution_state,
         "reason": (
             f"首30分钟收盘{close:.2f}，分时均价{vwap:.2f}，"
             f"收在区间{close_position:.0%}位置，上涨分钟占比{up_ratio:.0%}。"

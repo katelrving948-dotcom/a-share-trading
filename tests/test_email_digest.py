@@ -24,7 +24,15 @@ class EmailDigestTest(unittest.TestCase):
                     "status": "强势回踩",
                     "entry_zone": {"low": 10.40, "high": 10.50},
                     "breakout_trigger": 10.70,
+                    "max_chase_price": 10.85,
                     "stop_zone": {"low": 10.05, "high": 10.10},
+                    "take_profit_zones": [
+                        {"name": "第一止盈", "low": 11.10, "high": 11.20},
+                        {"name": "第二止盈", "low": 11.60, "high": 11.75},
+                    ],
+                    "levels_available": True,
+                    "reference_price": 10.55,
+                    "execution_state": "等待回踩进场区或放量突破确认",
                 },
             }],
             {"scan_scope": "诊断限制 500 只"},
@@ -32,11 +40,15 @@ class EmailDigestTest(unittest.TestCase):
         )
 
         self.assertIn("2026-07-22", message["Subject"])
-        self.assertIn("平安银行(000001)", message.get_body(preferencelist=("plain",)).get_content())
+        plain_body = message.get_body(preferencelist=("plain",)).get_content()
+        self.assertIn("平安银行(000001)", plain_body)
+        self.assertIn("止盈一11.10-11.20", plain_body)
+        self.assertIn("止盈二11.60-11.75", plain_body)
         html_body = message.get_body(preferencelist=("html",)).get_content()
         self.assertIn("银行(行业, 近5日净流入+2.30亿)", html_body)
         self.assertIn("进 10.40–10.50", html_body)
         self.assertIn("止 10.05–10.10", html_body)
+        self.assertIn("盈 11.10 / 11.60", html_body)
         self.assertIn("不构成投资建议", html_body)
 
     def test_build_email_handles_empty_result(self):

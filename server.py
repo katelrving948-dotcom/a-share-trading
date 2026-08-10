@@ -1158,11 +1158,17 @@ class ApiHandler(BaseHTTPRequestHandler):
             opening_plan = item.get("opening_plan") or {}
             entry_zone = opening_plan.get("entry_zone") or {}
             stop_zone = opening_plan.get("stop_zone") or {}
+            targets = opening_plan.get("take_profit_zones") or []
+            first_target = targets[0] if len(targets) > 0 else {}
+            second_target = targets[1] if len(targets) > 1 else {}
             execution_text = (
                 f"首30分钟计划: 进场{entry_zone.get('low')}-{entry_zone.get('high')}，"
                 f"突破确认{opening_plan.get('breakout_trigger')}，"
-                f"止损{stop_zone.get('low')}-{stop_zone.get('high')}"
-                if opening_plan.get("actionable") else
+                f"止损{stop_zone.get('low')}-{stop_zone.get('high')}，"
+                f"第一止盈{first_target.get('low')}-{first_target.get('high')}，"
+                f"第二止盈{second_target.get('low')}-{second_target.get('high')}，"
+                f"当前状态{opening_plan.get('execution_state', '等待确认')}"
+                if opening_plan.get("levels_available") or opening_plan.get("actionable") else
                 f"首30分钟计划: {opening_plan.get('status', '等待确认')}"
             )
             reason = "；".join(part for part in (

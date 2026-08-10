@@ -66,6 +66,43 @@ class OpeningEntryPlanTest(unittest.TestCase):
         self.assertLess(plan["entry_zone"]["low"], plan["entry_zone"]["high"])
         self.assertLess(plan["stop_zone"]["high"], plan["entry_zone"]["low"])
         self.assertGreater(plan["breakout_trigger"], opening["high"])
+        self.assertEqual(len(plan["take_profit_zones"]), 2)
+        self.assertGreater(
+            plan["take_profit_zones"][0]["low"], plan["entry_zone"]["high"]
+        )
+        self.assertGreater(
+            plan["take_profit_zones"][1]["low"],
+            plan["take_profit_zones"][0]["high"],
+        )
+        self.assertGreaterEqual(plan["take_profit_zones"][0]["risk_reward"], 1.5)
+        self.assertGreaterEqual(plan["take_profit_zones"][1]["risk_reward"], 2.5)
+
+    def test_price_above_chase_limit_keeps_levels_but_blocks_entry(self):
+        opening = {
+            "completed": True,
+            "status": "首30分钟已完成",
+            "open": 10.0,
+            "high": 10.2,
+            "low": 9.95,
+            "close": 10.15,
+            "vwap": 10.08,
+            "change_pct": 1.5,
+            "range_pct": 2.5,
+            "up_minute_ratio": 0.7,
+            "close_position": 0.8,
+            "above_vwap_ratio": 0.7,
+        }
+
+        plan = build_opening_entry_plan({
+            "opening_30m": opening,
+            "close_price": 10.50,
+        })
+
+        self.assertFalse(plan["actionable"])
+        self.assertTrue(plan["levels_available"])
+        self.assertIn("暂不追涨", plan["status"])
+        self.assertIsNotNone(plan["entry_zone"])
+        self.assertEqual(len(plan["take_profit_zones"]), 2)
 
     def test_incomplete_window_waits_until_ten(self):
         opening = DataFeed._summarize_opening_window([

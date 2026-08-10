@@ -1185,7 +1185,7 @@ async function fundamentalScreen() {
   document.getElementById('screenResultHead').innerHTML = `<tr>
     <th>综合排名 / 股票</th><th style="color:#f2a900">综合分</th><th>基本面 / 技术</th><th>精选分 / 资金热点</th>
     <th>报告期</th><th>ROE年化参考</th><th>营收 / 净利同比</th><th>PE / PB</th>
-    <th>首30分钟进场 / 止损</th><th>趋势与依据 / 风险</th><th>操作</th>
+    <th>首30分钟进场 / 止盈止损</th><th>趋势与依据 / 风险</th><th>操作</th>
   </tr>`;
 
   const btn = document.getElementById('fundScreenBtn');
@@ -1378,12 +1378,17 @@ function renderLongTermResults(results) {
     const plan = s.opening_plan || {};
     const entry = plan.entry_zone || {};
     const stop = plan.stop_zone || {};
+    const targets = plan.take_profit_zones || [];
+    const target1 = targets[0] || {};
+    const target2 = targets[1] || {};
     const opening = plan.opening || {};
-    const planHtml = plan.actionable
-      ? `<span class="chip chip-green">${plan.status || '可观察'}</span><br>
+    const planHtml = (plan.levels_available || plan.actionable)
+      ? `<span class="chip ${plan.actionable ? 'chip-green' : 'chip-red'}">${plan.status || '可观察'}</span><br>
          <strong>回踩 ${Number(entry.low || 0).toFixed(2)}-${Number(entry.high || 0).toFixed(2)}</strong><br>
          突破确认 ${Number(plan.breakout_trigger || 0).toFixed(2)} · 禁追 ${Number(plan.max_chase_price || 0).toFixed(2)}以上<br>
          <span style="color:var(--red)">止损 ${Number(stop.low || 0).toFixed(2)}-${Number(stop.high || 0).toFixed(2)}</span><br>
+         <span style="color:var(--green)">止盈一 ${Number(target1.low || 0).toFixed(2)}-${Number(target1.high || 0).toFixed(2)} · 止盈二 ${Number(target2.low || 0).toFixed(2)}-${Number(target2.high || 0).toFixed(2)}</span><br>
+         <span class="muted">参考价 ${Number(plan.reference_price || 0).toFixed(2)} · ${plan.execution_state || '等待价格确认'}</span><br>
          <span class="muted">首30分钟 O/H/L/VWAP ${Number(opening.open || 0).toFixed(2)} / ${Number(opening.high || 0).toFixed(2)} / ${Number(opening.low || 0).toFixed(2)} / ${Number(opening.vwap || 0).toFixed(2)}</span>`
       : `<span class="chip chip-gold">${plan.status || '等待10:00'}</span><br><span class="muted">${plan.reason || '首30分钟完成后生成计划'}</span>`;
     return `<tr>

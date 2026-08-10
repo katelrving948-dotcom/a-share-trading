@@ -220,16 +220,22 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
         plan = item.get("opening_plan") or {}
         entry = plan.get("entry_zone") or {}
         stop = plan.get("stop_zone") or {}
-        if plan.get("actionable"):
+        targets = plan.get("take_profit_zones") or []
+        first_target = targets[0] if len(targets) > 0 else {}
+        second_target = targets[1] if len(targets) > 1 else {}
+        if plan.get("levels_available") or plan.get("actionable"):
             plan_text = (
                 f"进场{_number(entry.get('low'), 2)}-{_number(entry.get('high'), 2)}，"
                 f"突破确认{_number(plan.get('breakout_trigger'), 2)}，"
-                f"止损{_number(stop.get('low'), 2)}-{_number(stop.get('high'), 2)}"
+                f"止损{_number(stop.get('low'), 2)}-{_number(stop.get('high'), 2)}，"
+                f"止盈一{_number(first_target.get('low'), 2)}-{_number(first_target.get('high'), 2)}，"
+                f"止盈二{_number(second_target.get('low'), 2)}-{_number(second_target.get('high'), 2)}；"
+                f"{plan.get('execution_state') or plan.get('status', '')}"
             )
             plan_short = (
                 f"进 {_number(entry.get('low'), 2)}–{_number(entry.get('high'), 2)} ｜ "
-                f"破 {_number(plan.get('breakout_trigger'), 2)} ｜ "
-                f"止 {_number(stop.get('low'), 2)}–{_number(stop.get('high'), 2)}"
+                f"止 {_number(stop.get('low'), 2)}–{_number(stop.get('high'), 2)} ｜ "
+                f"盈 {_number(first_target.get('low'), 2)} / {_number(second_target.get('low'), 2)}"
             )
         else:
             plan_text = f"{plan.get('status') or '等待10:00'}：{plan.get('reason') or '首30分钟计划未形成'}"
@@ -264,6 +270,9 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
             '</tr></table>'
             f'<div style="margin-top:5px;font-size:12px"><span style="color:#2563eb">{html.escape(theme_names)}</span> · '
             f'<strong>{html.escape(plan_short)}</strong></div>'
+            f'<div style="margin-top:3px;font-size:10px;color:#475569">执行状态：'
+            f'{html.escape(str(plan.get("execution_state") or plan.get("status") or "等待确认"))} · '
+            f'参考价 {_number(plan.get("reference_price"), 2)} · 禁追 {_number(plan.get("max_chase_price"), 2)}</div>'
             f'<div style="margin-top:3px;font-size:10px;color:#64748b">资金主题：{html.escape(themes)}</div>'
             f'<div style="margin-top:2px;font-size:11px;color:#b45309">风险：{html.escape(str(risk))}</div>'
             '</td></tr>'
@@ -306,7 +315,7 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
             <div style="margin-top:24px;padding-top:16px;border-top:2px solid #172033">
               <div style="font-size:11px;letter-spacing:1px;color:#2563eb;font-weight:700">STOCK ANALYSIS</div>
               <div style="margin-top:3px;font-size:20px;font-weight:800">10只个股详细分析</div>
-              <div style="font-size:12px;color:#64748b;margin:4px 0 10px">完整资金主题、基本/技术分、进场区间、突破价、止损与风险</div>
+              <div style="font-size:12px;color:#64748b;margin:4px 0 10px">完整资金主题、基本/技术分、进场区间、突破价、两档止盈、止损与风险</div>
             </div>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e7ebf3;border-radius:8px;border-collapse:separate;font-size:13px">
               <tbody>{''.join(rows)}</tbody>
