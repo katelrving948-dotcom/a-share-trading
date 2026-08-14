@@ -9,12 +9,123 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 
-from config import LONG_TERM, SCREEN
+from config import LONG_TERM, PUSH_DISCIPLINE, SCREEN
 from data_feed import DataFeed
 
 
 def _clip(value: float) -> float:
     return max(0.0, min(100.0, float(value)))
+
+
+def build_trade_decision(item: dict) -> dict:
+    """把候选排名转换为板块、个股、入场三道独立决策门槛。"""
+    board_raw = item.get("board_strength_score")
+    if board_raw is None:
+        board_raw = item.get("board_rotation_score")
+    board_score = round(_clip(board_raw)) if board_raw is not None else None
+
+    stock_raw = item.get("composite_score")
+    if stock_raw is None:
+        fundamental = float(item.get("fundamental_score") or 0)
+        technical = float(item.get("technical_score") or 0)
+        stock_raw = fundamental * 0.70 + technical * 0.30
+    stock_score = round(_clip(stock_raw))
+
+    plan = item.get("opening_plan") or {}
+    state = str(plan.get("execution_state") or "")
+    plan_status = str(plan.get("status") or "")
+    levels_available = bool(plan.get("levels_available"))
+    plan_actionable = bool(plan.get("actionable"))
+    entry_triggered = plan_actionable and (
+        "进入回踩进场区" in state or "已触发突破确认" in state
+    )
+    if not levels_available:
+        entry_score = None
+        entry_label = plan_status or "等待10:00数据"
+    elif not plan_actionable:
+        entry_score = 10
+        entry_label = plan_status or "当前不进场"
+    elif entry_triggered:
+        entry_score = 90 if "进入回踩进场区" in state else 80
+        entry_label = "回踩触发" if "进入回踩进场区" in state else "突破触发"
+    else:
+        entry_score = 60
+        entry_label = "计划有效，等待触发"
+
+    board_pass = (
+        board_score is not None
+        and board_score >= PUSH_DISCIPLINE["board_min_score"]
+    )
+    stock_pass = stock_score >= PUSH_DISCIPLINE["stock_min_score"]
+    entry_pass = bool(entry_triggered)
+    blocked = any(
+        word in f"{plan_status}{state}"
+        for word in ("暂不追涨", "暂不进场", "失效", "失败", "异常")
+    )
+    if blocked or not board_pass or not stock_pass:
+        status = "不交易"
+    elif entry_pass:
+        status = "可执行观察"
+    else:
+        status = "等待确认"
+
+    reasons = []
+    if not board_pass:
+        reasons.append("板块强度未达门槛或无有效板块匹配")
+    if not stock_pass:
+        reasons.append("个股质量未达门槛")
+    if board_pass and stock_pass and not entry_pass:
+        reasons.append(plan_status or "实时买点尚未触发")
+    if status == "可执行观察":
+        reasons.append("三道门槛已通过，仍须分批并执行止损")
+
+    capital = float(PUSH_DISCIPLINE["reference_capital"])
+    allowed_loss = capital * float(PUSH_DISCIPLINE["risk_per_trade_pct"])
+    max_position = capital * float(PUSH_DISCIPLINE["max_single_position_pct"])
+    position_cap = None
+    reference_shares = None
+    entry = plan.get("entry_zone") or {}
+    stop = plan.get("stop_zone") or {}
+    try:
+        entry_mid = (float(entry["low"]) + float(entry["high"])) / 2
+        stop_high = float(stop["high"])
+        stop_distance = (entry_mid - stop_high) / entry_mid
+        if entry_mid > 0 and stop_distance > 0:
+            risk_limited_position = allowed_loss / stop_distance
+            raw_position = min(max_position, risk_limited_position)
+            reference_shares = int(raw_position / entry_mid / 100) * 100
+            position_cap = round(reference_shares * entry_mid, 2)
+    except (KeyError, TypeError, ValueError, ZeroDivisionError):
+        pass
+
+    if status == "可执行观察" and not position_cap:
+        status = "不交易"
+        reasons.append("按风险与仓位上限无法形成100股整数倍仓位")
+
+    return {
+        "status": status,
+        "board": {
+            "score": board_score,
+            "passed": board_pass,
+            "label": "板块强度",
+        },
+        "stock": {
+            "score": stock_score,
+            "passed": stock_pass,
+            "label": "个股质量",
+        },
+        "entry": {
+            "score": entry_score,
+            "passed": entry_pass,
+            "label": entry_label,
+        },
+        "reasons": reasons,
+        "allowed_loss": round(allowed_loss, 2),
+        "position_cap": position_cap,
+        "reference_shares": reference_shares,
+        "position_now": position_cap if status == "可执行观察" else 0,
+        "note": "排名仅形成观察池；跳空或流动性不足时实际亏损可能超过计划值。",
+    }
 
 
 def _growth_score(value: float) -> float:
@@ -381,6 +492,9 @@ class LongTermFundamentalScreener:
         }
         for item in fundamental_ranked:
             item["recommendation_rank"] = recommendation_codes.get(item["code"])
+            item["trade_decision"] = build_trade_decision(item)
+        for item in self.hot_core_candidates:
+            item["trade_decision"] = build_trade_decision(item)
 
         self.summary = {
             "holding_horizon": LONG_TERM["holding_horizon"],
@@ -396,11 +510,11 @@ class LongTermFundamentalScreener:
             ),
             "entry_plan_ready_count": sum(
                 1 for item in self.recommendations
-                if (item.get("opening_plan") or {}).get("actionable")
+                if (item.get("trade_decision") or {}).get("status") == "可执行观察"
             ),
             "hot_core_entry_plan_ready_count": sum(
                 1 for item in self.hot_core_candidates
-                if (item.get("opening_plan") or {}).get("actionable")
+                if (item.get("trade_decision") or {}).get("status") == "可执行观察"
             ),
             "comprehensive_count": min(len(fundamental_ranked), LONG_TERM["result_limit"]),
             "scan_scope": "全部初筛股票" if not limit else f"诊断限制 {limit} 只",
@@ -412,6 +526,25 @@ class LongTermFundamentalScreener:
             "rotation_ai_weight": LONG_TERM.get("rotation_ai_weight", 0),
             "rotation_boards": rotation_boards[:8],
             "rotation_analysis": rotation_analysis,
+            "push_discipline": {
+                **PUSH_DISCIPLINE,
+                "allowed_loss_per_trade": round(
+                    PUSH_DISCIPLINE["reference_capital"]
+                    * PUSH_DISCIPLINE["risk_per_trade_pct"], 2
+                ),
+                "max_single_position": round(
+                    PUSH_DISCIPLINE["reference_capital"]
+                    * PUSH_DISCIPLINE["max_single_position_pct"], 2
+                ),
+                "max_daily_loss": round(
+                    PUSH_DISCIPLINE["reference_capital"]
+                    * PUSH_DISCIPLINE["max_daily_loss_pct"], 2
+                ),
+                "max_weekly_loss": round(
+                    PUSH_DISCIPLINE["reference_capital"]
+                    * PUSH_DISCIPLINE["max_weekly_loss_pct"], 2
+                ),
+            },
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
         self._progress.update({"state": "done", "done": len(codes), "total": len(codes)})
@@ -758,10 +891,13 @@ class LongTermFundamentalScreener:
                 theme_score = float(
                     stock_matches[0].get("rotation_score", stock_matches[0].get("flow_score", 0))
                 )
+                item["board_strength_score"] = round(_clip(theme_score))
                 market_score = theme_score * 0.8 + individual_score * 0.2
             elif market_data_available:
+                item["board_strength_score"] = None
                 market_score = individual_score * 0.3
             else:
+                item["board_strength_score"] = None
                 market_score = 50
             item["market_flow_score"] = round(_clip(market_score))
             item["matched_themes"] = []

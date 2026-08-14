@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock
 
 from data_feed import DataFeed
-from fundamental import build_opening_entry_plan
+from fundamental import build_opening_entry_plan, build_trade_decision
 
 
 class OpeningEntryPlanTest(unittest.TestCase):
@@ -136,6 +136,77 @@ class OpeningEntryPlanTest(unittest.TestCase):
         self.assertFalse(plan["actionable"])
         self.assertEqual(plan["status"], "暂不追涨")
         self.assertIsNone(plan["entry_zone"])
+
+    def test_valid_plan_still_waits_until_entry_is_triggered(self):
+        decision = build_trade_decision({
+            "board_strength_score": 75,
+            "composite_score": 72,
+            "opening_plan": {
+                "actionable": True,
+                "levels_available": True,
+                "status": "强势回踩",
+                "execution_state": "等待回踩进场区或放量突破确认",
+                "entry_zone": {"low": 10.0, "high": 10.1},
+                "stop_zone": {"low": 9.7, "high": 9.8},
+            },
+        })
+
+        self.assertEqual(decision["status"], "等待确认")
+        self.assertFalse(decision["entry"]["passed"])
+        self.assertEqual(decision["position_now"], 0)
+
+    def test_three_passed_gates_build_bounded_reference_position(self):
+        decision = build_trade_decision({
+            "board_strength_score": 75,
+            "composite_score": 72,
+            "opening_plan": {
+                "actionable": True,
+                "levels_available": True,
+                "status": "强势回踩",
+                "execution_state": "当前价进入回踩进场区，可结合量能分批观察",
+                "entry_zone": {"low": 10.0, "high": 10.1},
+                "stop_zone": {"low": 9.7, "high": 9.8},
+            },
+        })
+
+        self.assertEqual(decision["status"], "可执行观察")
+        self.assertTrue(decision["entry"]["passed"])
+        self.assertEqual(decision["allowed_loss"], 250)
+        self.assertGreater(decision["position_cap"], 0)
+        self.assertLessEqual(decision["position_cap"], 10000)
+        self.assertEqual(decision["position_now"], decision["position_cap"])
+
+    def test_missing_board_match_blocks_trade_even_with_entry_trigger(self):
+        decision = build_trade_decision({
+            "composite_score": 80,
+            "opening_plan": {
+                "actionable": True,
+                "levels_available": True,
+                "status": "强势回踩",
+                "execution_state": "当前价进入回踩进场区，可结合量能分批观察",
+            },
+        })
+
+        self.assertEqual(decision["status"], "不交易")
+        self.assertFalse(decision["board"]["passed"])
+
+    def test_position_limit_blocks_stock_when_one_lot_exceeds_budget(self):
+        decision = build_trade_decision({
+            "board_strength_score": 80,
+            "composite_score": 80,
+            "opening_plan": {
+                "actionable": True,
+                "levels_available": True,
+                "status": "强势回踩",
+                "execution_state": "当前价进入回踩进场区，可结合量能分批观察",
+                "entry_zone": {"low": 150.0, "high": 151.0},
+                "stop_zone": {"low": 145.0, "high": 146.0},
+            },
+        })
+
+        self.assertEqual(decision["status"], "不交易")
+        self.assertEqual(decision["position_now"], 0)
+        self.assertIn("100股整数倍", "；".join(decision["reasons"]))
 
 
 if __name__ == "__main__":

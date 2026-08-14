@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo
 
 from data_feed import DataFeed
 from ai_advisor import AIAdvisor
-from fundamental import LongTermFundamentalScreener
+from fundamental import LongTermFundamentalScreener, build_trade_decision
 
 
 SHANGHAI = ZoneInfo("Asia/Shanghai")
@@ -25,6 +25,65 @@ def _number(value, digits=1, suffix="") -> str:
         return f"{float(value):.{digits}f}{suffix}"
     except (TypeError, ValueError):
         return "--"
+
+
+def _decision(item: dict) -> dict:
+    return item.get("trade_decision") or build_trade_decision(item)
+
+
+def _gate_text(decision: dict) -> str:
+    board = decision.get("board") or {}
+    stock = decision.get("stock") or {}
+    entry = decision.get("entry") or {}
+    return (
+        f"板块{_number(board.get('score'), 0)}"
+        f"/{'过' if board.get('passed') else '否'}，"
+        f"个股{_number(stock.get('score'), 0)}"
+        f"/{'过' if stock.get('passed') else '否'}，"
+        f"入场{_number(entry.get('score'), 0)}"
+        f"/{'过' if entry.get('passed') else '否'}"
+    )
+
+
+def _build_discipline_digest(summary: dict, candidates: list) -> tuple[str, str]:
+    discipline = summary.get("push_discipline") or {}
+    capital = discipline.get("reference_capital", 50000)
+    allowed_loss = discipline.get("allowed_loss_per_trade", 250)
+    max_position = discipline.get("max_single_position", 10000)
+    daily_loss = discipline.get("max_daily_loss", 500)
+    weekly_loss = discipline.get("max_weekly_loss", 1000)
+    max_new = discipline.get("max_new_trades_per_day", 1)
+    all_candidates = {}
+    for item in list(candidates) + list(summary.get("hot_core_candidates") or []):
+        key = str(item.get("code") or id(item))
+        all_candidates[key] = item
+    executable = sum(
+        1 for item in all_candidates.values()
+        if _decision(item).get("status") == "可执行观察"
+    )
+    conclusion = (
+        f"三道门槛全部通过 {executable} 只；"
+        + ("其余候选只观察，不下单。" if executable else "今天允许空仓，不因榜单排名强行交易。")
+    )
+    plain = (
+        f"交易纪律：参考本金{_number(capital, 0)}元，单笔计划亏损上限"
+        f"{_number(allowed_loss, 0)}元，单票计划仓位不超过{_number(max_position, 0)}元；"
+        f"单日亏损{_number(daily_loss, 0)}元或单周亏损{_number(weekly_loss, 0)}元停止新开仓；"
+        f"每天最多新开{max_new}只，不做浮盈加仓。{conclusion}"
+    )
+    section = f"""
+      <div style="margin:14px 0;padding:13px 14px;background:#fff7ed;border:1px solid #fdba74;border-radius:8px">
+        <div style="font-size:11px;color:#c2410c;font-weight:800;letter-spacing:.5px">先看纪律，再看候选</div>
+        <div style="font-size:15px;font-weight:800;margin-top:4px">{html.escape(conclusion)}</div>
+        <div style="font-size:12px;color:#7c2d12;line-height:1.7;margin-top:5px">
+          参考本金 {_number(capital, 0)} 元 · 单笔计划亏损上限 {_number(allowed_loss, 0)} 元 ·
+          单票仓位上限 {_number(max_position, 0)} 元<br>
+          单日亏损 {_number(daily_loss, 0)} 元停止 · 单周亏损 {_number(weekly_loss, 0)} 元停止 ·
+          每天最多新开 {max_new} 只 · 禁止浮盈临时加仓
+        </div>
+      </div>
+    """
+    return plain, section
 
 
 def select_candidates(universe_limit: int, count: int) -> tuple[list, dict]:
@@ -206,10 +265,13 @@ def _build_rotation_digest(summary: dict) -> tuple[str, str, str]:
 def _build_hot_core_digest(summary: dict) -> tuple[str, str]:
     candidates = summary.get("hot_core_candidates") or []
     if not candidates:
-        return "热门核心票：本次未形成满足条件的板块龙头/次龙头。", ""
-    plain_rows = ["热门核心票（强势板块龙头/次龙头）"]
+        return "热门核心观察池：本次未形成满足条件的板块龙头/次龙头。", ""
+    plain_rows = ["热门核心观察池（强势板块龙头/次龙头）"]
     html_rows = []
     for item in candidates:
+        decision = _decision(item)
+        decision_status = str(decision.get("status") or "等待确认")
+        decision_reason = "；".join(decision.get("reasons") or [])
         plan = item.get("opening_plan") or {}
         entry = plan.get("entry_zone") or {}
         stop = plan.get("stop_zone") or {}
@@ -227,10 +289,8 @@ def _build_hot_core_digest(summary: dict) -> tuple[str, str]:
             plan_text = f"{plan.get('status') or '等待首30分钟数据'}：{plan.get('reason') or '尚未形成执行区间'}"
         plain_rows.append(
             f"{item.get('hot_core_rank')}. {item.get('name')}({item.get('code')}) "
-            f"{item.get('hot_board')}{item.get('leadership_role')}，核心{_number(item.get('hot_core_score'), 0)}分，"
-            f"龙头{_number(item.get('leadership_score'), 0)}/板块{_number(item.get('board_rotation_score'), 0)}/"
-            f"基本{_number(item.get('fundamental_score'), 0)}/技术{_number(item.get('technical_score'), 0)}；"
-            f"{plan_text}；新闻：{news_text}"
+            f"{item.get('hot_board')}{item.get('leadership_role')}，{decision_status}；"
+            f"{_gate_text(decision)}；{decision_reason}；{plan_text}；新闻：{news_text}"
         )
         news_links = []
         for row in news:
@@ -250,11 +310,11 @@ def _build_hot_core_digest(summary: dict) -> tuple[str, str]:
             f'{html.escape(str(item.get("leadership_role") or ""))}</strong>'
             f'<div style="font-size:10px;color:#64748b">龙头{_number(item.get("leadership_score"), 0)} · '
             f'轮动{_number(item.get("board_rotation_score"), 0)}</div></td>'
-            f'<td style="padding:10px 8px;text-align:center"><strong style="font-size:17px">'
-            f'{_number(item.get("hot_core_score"), 0)}</strong>'
-            f'<div style="font-size:10px;color:#64748b">基{_number(item.get("fundamental_score"), 0)} / '
-            f'技{_number(item.get("technical_score"), 0)}</div></td>'
+            f'<td style="padding:10px 8px;text-align:center"><strong style="font-size:14px">'
+            f'{html.escape(decision_status)}</strong>'
+            f'<div style="font-size:10px;color:#64748b">{html.escape(_gate_text(decision))}</div></td>'
             f'<td style="padding:10px 8px;font-size:11px"><strong>{html.escape(plan_text)}</strong>'
+            f'<div style="margin-top:3px;color:#c2410c">门槛：{html.escape(decision_reason)}</div>'
             f'<div style="margin-top:3px;color:#64748b">新闻：{news_html}</div>'
             f'<div style="margin-top:3px;color:#b45309">风险：{html.escape(str(item.get("risk") or "请核验公告"))}</div></td></tr>'
         )
@@ -262,13 +322,13 @@ def _build_hot_core_digest(summary: dict) -> tuple[str, str]:
     section = f"""
       <div style="margin-top:24px;padding:14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px 8px 0 0">
         <div style="font-size:10px;letter-spacing:1px;color:#c2410c;font-weight:700">HOT SECTOR LEADERS</div>
-        <div style="font-size:20px;font-weight:800;margin-top:3px">热门核心票：板块龙头与次龙头</div>
-        <div style="font-size:11px;color:#9a3412;margin-top:4px">{rule}</div>
+        <div style="font-size:20px;font-weight:800;margin-top:3px">热门核心观察池：板块龙头与次龙头</div>
+        <div style="font-size:11px;color:#9a3412;margin-top:4px">排名不代表买点；三道门槛全部通过后才进入可执行观察。{rule}</div>
       </div>
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #fed7aa;border-top:0;border-radius:0 0 8px 8px;border-collapse:separate;font-size:12px">
         <thead><tr style="background:#fffaf5;color:#9a3412;font-size:10px">
           <th style="padding:7px;text-align:left">标的</th><th style="padding:7px;text-align:left">所属主线</th>
-          <th style="padding:7px">核心分</th><th style="padding:7px;text-align:left">执行与新闻</th>
+          <th style="padding:7px">三道门槛</th><th style="padding:7px;text-align:left">执行与新闻</th>
         </tr></thead><tbody>{''.join(html_rows)}</tbody>
       </table>
     """
@@ -281,6 +341,9 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
     ranking_rows = []
     plain_rows = []
     for rank, item in enumerate(candidates, start=1):
+        decision = _decision(item)
+        decision_status = str(decision.get("status") or "等待确认")
+        decision_reason = "；".join(decision.get("reasons") or [])
         matched_themes = item.get("matched_themes") or []
         themes = "、".join(matched_themes) or "--"
         theme_names = "、".join(
@@ -314,18 +377,18 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
             plan_short = f"{plan.get('status') or '等待10:00'} ｜ {plan.get('reason') or '首30分钟计划未形成'}"
         plain_rows.append(
             f"{rank}. {item.get('name', '')}({item.get('code', '')}) "
-            f"综合{_number(item.get('selection_score'), 0)}分，"
-            f"现价{_number(item.get('price'), 2)}；{plan_text}；{risk}"
+            f"{decision_status}；{_gate_text(decision)}；"
+            f"{decision_reason}；现价{_number(item.get('price'), 2)}；{plan_text}；{risk}"
         )
         ranking_rows.append(
             '<tr style="border-top:1px solid #edf0f5">'
             f'<td style="padding:8px 6px;color:#64748b;text-align:center">{rank}</td>'
             f'<td style="padding:8px 6px"><strong>{html.escape(str(item.get("name", "")))}</strong>'
             f'<div style="font-size:10px;color:#64748b">{html.escape(str(item.get("code", "")))} · {_number(item.get("price"), 2)}元</div></td>'
-            f'<td style="padding:8px 6px;text-align:center"><strong style="font-size:16px">{_number(item.get("selection_score"), 0)}</strong>'
-            f'<div style="font-size:9px;color:#64748b">基{_number(item.get("fundamental_score"), 0)}/技{_number(item.get("technical_score"), 0)}</div></td>'
+            f'<td style="padding:8px 6px;text-align:center"><strong style="font-size:13px">{html.escape(decision_status)}</strong>'
+            f'<div style="font-size:9px;color:#64748b">{html.escape(_gate_text(decision))}</div></td>'
             f'<td style="padding:8px 6px;font-size:11px;color:#2563eb">{html.escape(theme_names)}</td>'
-            f'<td style="padding:8px 6px;font-size:11px">{html.escape(plan.get("status") or ("可执行" if plan.get("actionable") else "等待确认"))}</td>'
+            f'<td style="padding:8px 6px;font-size:11px">{html.escape(decision_reason or "等待确认")}</td>'
             '</tr>'
         )
         rows.append(
@@ -336,15 +399,16 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
             f'<strong style="font-size:14px">{html.escape(str(item.get("name", "")))}</strong> '
             f'<span style="font-size:11px;color:#64748b">{html.escape(str(item.get("code", "")))} · '
             f'{_number(item.get("price"), 2)}元</span></td>'
-            f'<td style="text-align:right;vertical-align:top"><strong style="font-size:18px">{_number(item.get("selection_score"), 0)}</strong>'
-            f'<span style="font-size:10px;color:#64748b"> 分</span><div style="font-size:10px;color:#64748b">'
-            f'基本{_number(item.get("fundamental_score"), 0)} · 技术{_number(item.get("technical_score"), 0)}</div></td>'
+            f'<td style="text-align:right;vertical-align:top"><strong style="font-size:15px">{html.escape(decision_status)}</strong>'
+            f'<div style="font-size:10px;color:#64748b">{html.escape(_gate_text(decision))}</div></td>'
             '</tr></table>'
             f'<div style="margin-top:5px;font-size:12px"><span style="color:#2563eb">{html.escape(theme_names)}</span> · '
             f'<strong>{html.escape(plan_short)}</strong></div>'
             f'<div style="margin-top:3px;font-size:10px;color:#475569">执行状态：'
             f'{html.escape(str(plan.get("execution_state") or plan.get("status") or "等待确认"))} · '
             f'参考价 {_number(plan.get("reference_price"), 2)} · 禁追 {_number(plan.get("max_chase_price"), 2)}</div>'
+            f'<div style="margin-top:3px;font-size:10px;color:#c2410c">决策门槛：{html.escape(decision_reason or "等待确认")}'
+            f' · 触发后仓位上限 {_number(decision.get("position_cap"), 0)}元 · 单笔计划亏损上限 {_number(decision.get("allowed_loss"), 0)}元</div>'
             f'<div style="margin-top:3px;font-size:10px;color:#64748b">资金主题：{html.escape(themes)}</div>'
             f'<div style="margin-top:2px;font-size:11px;color:#b45309">风险：{html.escape(str(risk))}</div>'
             '</td></tr>'
@@ -360,6 +424,7 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
     site_url = os.getenv("SITE_URL", "https://a-share-trading.onrender.com")
     rotation_plain, rotation_overview_html, rotation_detail_html = _build_rotation_digest(summary)
     hot_plain, hot_html = _build_hot_core_digest(summary)
+    discipline_plain, discipline_html = _build_discipline_digest(summary, candidates)
     body_html = f"""
     <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
     <body style="margin:0;padding:0;background:#f3f6fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',Arial,sans-serif;color:#172033">
@@ -367,20 +432,21 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
         <table role="presentation" width="720" cellspacing="0" cellpadding="0" style="width:100%;max-width:720px;background:#ffffff;border-radius:12px;box-shadow:0 4px 18px rgba(23,32,51,.08)">
           <tr><td style="padding:20px 22px 14px">
             <div style="font-size:11px;letter-spacing:1px;color:#2563eb;font-weight:700">A-SHARE DAILY BRIEFING</div>
-            <div style="font-size:27px;font-weight:850;line-height:1.25;margin-top:5px">{date_text} A股选股日报</div>
-            <div style="font-size:13px;color:#475569;margin-top:7px;line-height:1.6">先看市场与推荐榜，再读热门龙头、板块轮动和个股执行分析。<br>{scope} · 基本面精选 {len(candidates)} 只 · 热门核心 {len(summary.get('hot_core_candidates') or [])} 只 · {generated_text}</div>
+            <div style="font-size:27px;font-weight:850;line-height:1.25;margin-top:5px">{date_text} A股分层观察日报</div>
+            <div style="font-size:13px;color:#475569;margin-top:7px;line-height:1.6">顺序固定为市场环境 → 板块强度 → 个股质量 → 实时买点；排名只形成观察池。<br>{scope} · 基本面观察 {len(candidates)} 只 · 热门核心观察 {len(summary.get('hot_core_candidates') or [])} 只 · {generated_text}</div>
             <div style="margin-top:18px;margin-bottom:8px;font-size:16px;font-weight:800">今日市场速览</div>
             {rotation_overview_html}
+            {discipline_html}
             <div style="margin-top:18px;padding:12px 14px;background:#172033;color:#fff;border-radius:8px 8px 0 0">
-              <div style="font-size:10px;letter-spacing:1px;color:#93c5fd">TOP PICKS</div>
-              <div style="font-size:18px;font-weight:800;margin-top:2px">今日{len(candidates)}只基本面精选榜</div>
-              <div style="font-size:11px;color:#cbd5e1;margin-top:3px">先快速查看排名、分数、主题与执行状态</div>
+              <div style="font-size:10px;letter-spacing:1px;color:#93c5fd">WATCHLIST GATES</div>
+              <div style="font-size:18px;font-weight:800;margin-top:2px">今日{len(candidates)}只基本面观察池</div>
+              <div style="font-size:11px;color:#cbd5e1;margin-top:3px">板块、个股、入场三道门槛全部通过，才进入可执行观察</div>
             </div>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #dce2ec;border-top:0;border-radius:0 0 8px 8px;border-collapse:separate;font-size:12px">
               <thead><tr style="background:#f8fafc;color:#64748b;font-size:10px">
                 <th style="padding:7px 5px">#</th><th style="padding:7px 5px;text-align:left">标的</th>
-                <th style="padding:7px 5px">评分</th><th style="padding:7px 5px;text-align:left">主线</th>
-                <th style="padding:7px 5px;text-align:left">状态</th>
+                <th style="padding:7px 5px">结论 / 三门槛</th><th style="padding:7px 5px;text-align:left">主线</th>
+                <th style="padding:7px 5px;text-align:left">原因</th>
               </tr></thead>
               <tbody>{''.join(ranking_rows)}</tbody>
             </table>
@@ -388,7 +454,7 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
             {rotation_detail_html}
             <div style="margin-top:24px;padding-top:16px;border-top:2px solid #172033">
               <div style="font-size:11px;letter-spacing:1px;color:#2563eb;font-weight:700">STOCK ANALYSIS</div>
-              <div style="margin-top:3px;font-size:20px;font-weight:800">{len(candidates)}只基本面精选详细分析</div>
+              <div style="margin-top:3px;font-size:20px;font-weight:800">{len(candidates)}只基本面观察详细分析</div>
               <div style="font-size:12px;color:#64748b;margin:4px 0 10px">完整资金主题、基本/技术分、进场区间、突破价、两档止盈、止损与风险</div>
             </div>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e7ebf3;border-radius:8px;border-collapse:separate;font-size:13px">
@@ -407,11 +473,12 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
     """
 
     message = EmailMessage()
-    message["Subject"] = f"{date_text} A股选股日报（基本面精选+热门核心）"
+    message["Subject"] = f"{date_text} A股分层观察日报（板块+个股+买点）"
     message.set_content(
-        f"{date_text} A股中长期选股日报\n\n"
+        f"{date_text} A股分层观察日报\n排名只形成观察池，不代表买入或次日上涨预测。\n\n"
         + rotation_plain
-        + "\n\n中长期精选股票\n"
+        + "\n\n" + discipline_plain
+        + "\n\n中长期观察池\n"
         + "\n".join(plain_rows)
         + "\n\n" + hot_plain
         + f"\n\n完整页面：{site_url}\n\n本邮件仅供研究，不构成投资建议。"

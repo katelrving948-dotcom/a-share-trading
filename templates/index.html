@@ -404,7 +404,7 @@ tr:hover td { background: var(--hover); }
     <div class="hero">
       <div>
         <div class="hero-title">选股</div>
-        <div class="hero-sub">目标持仓至少一周，重点观察 1 至 6 个月。主榜按基本面、技术面和资金轮动精选 10 只；另设热门核心通道，从强势板块独立识别龙头与次龙头，不受主榜价格和基本面硬门槛限制。</div>
+        <div class="hero-sub">目标持仓至少一周，重点观察 1 至 6 个月。固定按市场环境 → 板块强度 → 个股质量 → 实时买点筛选；排行榜只形成观察池，不代表立即买入或次日上涨预测。</div>
       </div>
       <div class="hero-tags"><span class="hero-tag">全量基本面</span><span class="hero-tag">资金精选十股</span><span class="hero-tag">热门板块龙头</span></div>
     </div>
@@ -430,15 +430,20 @@ tr:hover td { background: var(--hover); }
       </div>
     </div>
     <div class="card">
-      <div class="card-title">综合分析与精选规则</div>
-      <div class="card-subtitle">基本面主榜维持原有 10 只精选逻辑。热门核心通道从强势行业/概念中各取龙头、次龙头，板块内按市值35%+成交额35%+当日涨势15%+主力资金15%排序，再补齐基本面、技术面、个股新闻和首30分钟进出场计划。两条通道分别展示，不用热门度掩盖财务风险。</div>
+      <div class="card-title">分层观察与交易门槛</div>
+      <div class="card-subtitle">先选持续性较强的板块，再检查个股质量，最后等待首30分钟回踩或突破真正触发。三道门槛未全部通过时，只能等待或不交易；系统允许当天没有合格交易。</div>
+    </div>
+    <div class="card" id="decisionDisciplineCard" style="display:none">
+      <div class="card-title">本次交易纪律</div>
+      <div class="card-subtitle" id="decisionSummary"></div>
+      <div class="mini-grid" id="decisionLimits"></div>
     </div>
     <div class="card" id="hotCoreCard" style="display:none">
-      <div class="card-title">热门核心票 · 板块龙头与次龙头</div>
+      <div class="card-title">热门核心观察池 · 板块龙头与次龙头</div>
       <div class="card-subtitle" id="hotCoreRule"></div>
       <div class="scroll-x"><table><thead><tr>
-        <th>排名 / 股票</th><th>强势板块 / 地位</th><th>核心分</th><th>龙头 / 板块</th>
-        <th>基本 / 技术</th><th>进场 / 止盈止损</th><th>相关新闻 / 风险</th>
+        <th>排名 / 股票</th><th>强势板块 / 地位</th><th>结论</th><th>三道门槛</th>
+        <th>触发后仓位上限</th><th>进场 / 止盈止损</th><th>相关新闻 / 风险</th>
       </tr></thead><tbody id="hotCoreTable"></tbody></table></div>
     </div>
     <div class="card" id="rotationAnalysisCard" style="display:none">
@@ -1191,7 +1196,7 @@ async function loadScreenConfig() {
 
 async function fundamentalScreen() {
   document.getElementById('screenResultHead').innerHTML = `<tr>
-    <th>综合排名 / 股票</th><th style="color:#f2a900">综合分</th><th>基本面 / 技术</th><th>精选分 / 资金热点</th>
+    <th>观察排名 / 股票</th><th>交易结论</th><th>板块 / 个股 / 入场</th><th>综合分 / 资金热点</th>
     <th>报告期</th><th>ROE年化参考</th><th>营收 / 净利同比</th><th>PE / PB</th>
     <th>首30分钟进场 / 止盈止损</th><th>趋势与依据 / 风险</th><th>操作</th>
   </tr>`;
@@ -1253,10 +1258,11 @@ async function pollLongTermStatus() {
     document.getElementById('screenProgressText').textContent = '完成';
     const summary = r.summary || {};
     document.getElementById('screenCount').textContent =
-      `${summary.scan_scope || '全量'} ${summary.pool_count || 0} 只 · 有效财报 ${summary.financial_success_count || 0} 只 · 综合候选 ${summary.fundamental_qualified_count || 0} 只 · 基本面精选 ${summary.selected_count || 0} 只 · 热门核心 ${summary.hot_core_count || 0} 只`;
+      `${summary.scan_scope || '全量'} ${summary.pool_count || 0} 只 · 有效财报 ${summary.financial_success_count || 0} 只 · 综合候选 ${summary.fundamental_qualified_count || 0} 只 · 基本面观察 ${summary.selected_count || 0} 只 · 热门核心观察 ${summary.hot_core_count || 0} 只`;
     document.getElementById('screenProgressDetail').textContent =
       `${summary.data_source || ''} · ${summary.generated_at || r.timestamp || ''}`;
     renderRotationAnalysis(summary.rotation_analysis || {}, summary.rotation_boards || []);
+    renderDecisionDiscipline(summary, r.results || []);
     renderHotCoreCandidates(summary.hot_core_candidates || [], summary.hot_core_rule || '');
     renderLongTermResults(r.results || []);
     btn.disabled = false;
@@ -1279,12 +1285,50 @@ function escapeHotCoreHtml(value) {
   })[char]);
 }
 
+function decisionGateText(decision) {
+  const score = gate => gate && gate.score != null ? Number(gate.score).toFixed(0) : '--';
+  const mark = gate => gate && gate.passed ? '✓' : '×';
+  return `板块 ${score(decision.board)}${mark(decision.board)} / 个股 ${score(decision.stock)}${mark(decision.stock)} / 入场 ${score(decision.entry)}${mark(decision.entry)}`;
+}
+
+function decisionChip(status) {
+  if (status === '可执行观察') return 'chip-green';
+  if (status === '不交易') return 'chip-red';
+  return 'chip-gold';
+}
+
+function renderDecisionDiscipline(summary, results) {
+  const card = document.getElementById('decisionDisciplineCard');
+  const rule = summary.push_discipline || {};
+  const hot = summary.hot_core_candidates || [];
+  const all = [...new Map(
+    [...results.filter(item => item.recommendation_rank), ...hot]
+      .map(item => [String(item.code || ''), item])
+  ).values()];
+  const executable = all.filter(item => (item.trade_decision || {}).status === '可执行观察').length;
+  card.style.display = 'block';
+  document.getElementById('decisionSummary').textContent = executable
+    ? `三道门槛全部通过 ${executable} 只；这仍是可执行观察，不是收益承诺。`
+    : '本次没有候选同时通过三道门槛：允许空仓，不因榜单排名强行交易。';
+  const rows = [
+    ['单笔计划亏损上限', `${Number(rule.allowed_loss_per_trade || 250).toFixed(0)} 元`],
+    ['单票计划仓位上限', `${Number(rule.max_single_position || 10000).toFixed(0)} 元`],
+    ['单日 / 单周停止线', `${Number(rule.max_daily_loss || 500).toFixed(0)} / ${Number(rule.max_weekly_loss || 1000).toFixed(0)} 元`],
+    ['新开仓 / 加仓', `每天最多 ${Number(rule.max_new_trades_per_day || 1)} 只 / 禁止浮盈临时加仓`],
+  ];
+  document.getElementById('decisionLimits').innerHTML = rows.map(([label, value]) => `
+    <div class="stage-item"><div class="stage-status">纪律</div><div><div class="stage-name">${escapeHotCoreHtml(label)}</div><div class="muted">${escapeHotCoreHtml(value)}</div></div></div>
+  `).join('');
+}
+
 function renderHotCoreCandidates(candidates, rule) {
   const card = document.getElementById('hotCoreCard');
   const tbody = document.getElementById('hotCoreTable');
-  document.getElementById('hotCoreRule').textContent = rule || '从强势板块中识别龙头和次龙头。';
+  document.getElementById('hotCoreRule').textContent = `排名不代表买点；三道门槛全部通过后才进入可执行观察。${rule || '从强势板块中识别龙头和次龙头。'}`;
   card.style.display = candidates.length ? 'block' : 'none';
   tbody.innerHTML = candidates.map(item => {
+    const decision = item.trade_decision || {};
+    const decisionStatus = decision.status || '等待确认';
     const plan = item.opening_plan || {};
     const entry = plan.entry_zone || {};
     const stop = plan.stop_zone || {};
@@ -1301,9 +1345,9 @@ function renderHotCoreCandidates(candidates, rule) {
     return `<tr>
       <td><strong>${item.hot_core_rank || '-'}. ${escapeHotCoreHtml(item.name || '-')}</strong><br><span class="muted">${escapeHotCoreHtml(item.code || '')} · ${Number(item.price || 0).toFixed(2)}元</span></td>
       <td><span class="chip chip-gold">${escapeHotCoreHtml(item.hot_board || '-')}</span><br>${escapeHotCoreHtml(item.leadership_role || '核心票')}</td>
-      <td style="font-size:18px;font-weight:700;color:var(--gold)">${Number(item.hot_core_score || 0)}</td>
-      <td>${Number(item.leadership_score || 0)} / ${Number(item.board_rotation_score || 0)}</td>
-      <td>${Number(item.fundamental_score || 0)} / ${Number(item.technical_score || 0)}</td>
+      <td><span class="chip ${decisionChip(decisionStatus)}">${escapeHotCoreHtml(decisionStatus)}</span></td>
+      <td>${escapeHotCoreHtml(decisionGateText(decision))}<br><span class="muted">${escapeHotCoreHtml((decision.reasons || []).join('；'))}</span></td>
+      <td>${decision.position_cap == null ? '--' : `${Number(decision.position_cap).toFixed(0)}元`}<br><span class="muted">当前 ${Number(decision.position_now || 0).toFixed(0)}元</span></td>
       <td style="min-width:190px;font-size:12px">${planText}</td>
       <td style="min-width:230px;font-size:12px">${news}<br><span class="down">${escapeHotCoreHtml(item.risk || '请核验公告')}</span></td>
     </tr>`;
@@ -1419,8 +1463,11 @@ function renderLongTermResults(results) {
     const badgeColor = score >= 75 ? '#00b061' : score >= 60 ? '#f2a900' : '#ef5350';
     const summary = `${s.fundamental_reason || ''}；${s.technical_reason || ''}`;
     const risk = s.ai_risk_note || s.risk || '';
-    const selected = s.recommendation_rank ? `<span class="chip chip-gold">精选#${s.recommendation_rank}</span>` : '';
+    const selected = s.recommendation_rank ? `<span class="chip chip-gold">观察#${s.recommendation_rank}</span>` : '';
     const themes = (s.matched_themes || []).join('；') || '未匹配到资金领先板块';
+    const decision = s.trade_decision || {};
+    const decisionStatus = decision.status || '等待确认';
+    const decisionReasons = (decision.reasons || []).join('；') || '等待三道门槛确认';
     const plan = s.opening_plan || {};
     const entry = plan.entry_zone || {};
     const stop = plan.stop_zone || {};
@@ -1439,8 +1486,8 @@ function renderLongTermResults(results) {
       : `<span class="chip chip-gold">${plan.status || '等待10:00'}</span><br><span class="muted">${plan.reason || '首30分钟完成后生成计划'}</span>`;
     return `<tr>
       <td><span class="muted">${i + 1}.</span> <a href="javascript:void(0)" onclick="switchTab('kline');showKline('${s.code}')">${s.code}</a><br>${s.name || '-'} ${selected}</td>
-      <td style="font-size:18px;font-weight:700;color:${badgeColor}">${score}</td>
-      <td>${Number(s.fundamental_score || 0)} / ${Number(s.technical_score || 0)}</td>
+      <td><span class="chip ${decisionChip(decisionStatus)}">${escapeHotCoreHtml(decisionStatus)}</span><br><span class="muted">${escapeHotCoreHtml(decisionReasons)}</span></td>
+      <td>${escapeHotCoreHtml(decisionGateText(decision))}<br><span class="muted">触发后仓位上限 ${decision.position_cap == null ? '--' : Number(decision.position_cap).toFixed(0)}元 · 当前 ${Number(decision.position_now || 0).toFixed(0)}元</span></td>
       <td><strong style="color:var(--gold)">${Number(s.selection_score || 0)}</strong><br><span class="muted">${Number(s.market_flow_score || 0)} · ${themes}</span></td>
       <td>${s.report_date || '-'}</td>
       <td>${Number(s.annualized_roe || 0).toFixed(1)}%</td>

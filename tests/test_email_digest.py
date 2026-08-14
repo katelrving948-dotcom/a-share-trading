@@ -15,6 +15,8 @@ class EmailDigestTest(unittest.TestCase):
                 "name": "平安银行",
                 "price": 10.56,
                 "selection_score": 82,
+                "composite_score": 81,
+                "board_strength_score": 76,
                 "fundamental_score": 79,
                 "technical_score": 88,
                 "matched_themes": ["银行(行业, 近5日净流入+2.30亿)"],
@@ -32,7 +34,7 @@ class EmailDigestTest(unittest.TestCase):
                     ],
                     "levels_available": True,
                     "reference_price": 10.55,
-                    "execution_state": "等待回踩进场区或放量突破确认",
+                    "execution_state": "当前价进入回踩进场区，可结合量能分批观察",
                 },
             }],
             {"scan_scope": "诊断限制 500 只"},
@@ -40,8 +42,12 @@ class EmailDigestTest(unittest.TestCase):
         )
 
         self.assertIn("2026-07-22", message["Subject"])
+        self.assertIn("分层观察日报", message["Subject"])
         plain_body = message.get_body(preferencelist=("plain",)).get_content()
         self.assertIn("平安银行(000001)", plain_body)
+        self.assertIn("可执行观察", plain_body)
+        self.assertIn("板块76/过，个股81/过，入场90/过", plain_body)
+        self.assertIn("单笔计划亏损上限250元", plain_body)
         self.assertIn("止盈一11.10-11.20", plain_body)
         self.assertIn("止盈二11.60-11.75", plain_body)
         html_body = message.get_body(preferencelist=("html",)).get_content()
@@ -175,7 +181,7 @@ class EmailDigestTest(unittest.TestCase):
 
         plain_body = message.get_body(preferencelist=("plain",)).get_content()
         html_body = message.get_body(preferencelist=("html",)).get_content()
-        self.assertIn("热门核心票（强势板块龙头/次龙头）", plain_body)
+        self.assertIn("热门核心观察池（强势板块龙头/次龙头）", plain_body)
         self.assertIn("中际旭创(300308)", plain_body)
         self.assertIn("CPO概念 · 龙头", html_body)
         self.assertIn("https://example.com/300308", html_body)

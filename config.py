@@ -89,6 +89,21 @@ LONG_TERM = {
     "hot_core_minimum_board_score": 55,
 }
 
+# ========== 选股推送决策门槛 ==========
+# 排名只负责形成观察池；板块、个股和实时入场三道门槛全部通过后，
+# 才允许在邮件和网页中显示“可执行观察”。金额均为风险预算参考，不是自动委托。
+PUSH_DISCIPLINE = {
+    "reference_capital": 50000,
+    "risk_per_trade_pct": 0.005,
+    "max_single_position_pct": 0.20,
+    "max_daily_loss_pct": 0.01,
+    "max_weekly_loss_pct": 0.02,
+    "max_new_trades_per_day": 1,
+    "board_min_score": 60,
+    "stock_min_score": 60,
+    "allow_profit_add": False,
+}
+
 # ========== 风险管理 ==========
 RISK = {
     "position_pct": 0.2,
