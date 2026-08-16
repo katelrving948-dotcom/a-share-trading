@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-16 21:39:49",
+  "updated_at": "2026-08-16 22:03:09",
   "entries": [
     {
       "generated_at": "2026-08-16 21:39:49",
@@ -33,6 +33,60 @@
         "重新运行9组参数的滚动训练与样本外回测",
         "尚无下一交易日收盘数据，等待次日验证",
         "参数窗口保持不变，避免根据单日结果追涨杀跌式调参"
+      ],
+      "guardrail": "只在预设参数网格内按滚动样本外结果选择；单日验证只记录，不直接改写因子定义。"
+    },
+    {
+      "generated_at": "2026-08-16 22:03:09",
+      "validation": {
+        "status": "pending",
+        "signal_date": "2026-08-14",
+        "message": "尚无下一交易日收盘数据，等待次日验证"
+      },
+      "parameter_changes": [
+        {
+          "part": "factor_weights",
+          "before": null,
+          "after": {
+            "momentum": 0.3,
+            "trend": 0.2,
+            "low_volatility": 0.15,
+            "volume_ratio": 0.1,
+            "rsi": 0.1,
+            "bollinger": 0.05,
+            "low_atr": 0.1
+          }
+        },
+        {
+          "part": "momentum_window",
+          "before": 60,
+          "after": 20
+        }
+      ],
+      "metric_changes": [
+        {
+          "metric": "annual_return",
+          "before": -5.2871,
+          "after": 25.8646,
+          "delta": 31.1517
+        },
+        {
+          "metric": "max_drawdown",
+          "before": -35.1376,
+          "after": -23.5348,
+          "delta": 11.6028
+        },
+        {
+          "metric": "sharpe_ratio",
+          "before": -0.1196,
+          "after": 0.8857,
+          "delta": 1.0053
+        }
+      ],
+      "actions": [
+        "重新运行45组参数的滚动训练与样本外回测",
+        "尚无下一交易日收盘数据，等待次日验证",
+        "调整2项参数窗口"
       ],
       "guardrail": "只在预设参数网格内按滚动样本外结果选择；单日验证只记录，不直接改写因子定义。"
     }
