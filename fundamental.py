@@ -1,1064 +1,166 @@
-"""
-中长期综合选股器。
+"""Transparent fundamental scoring for the research dashboard and email digest."""
 
-先用流动性与交易边界建立可执行股票池，并为池内全部股票请求最新财务
-指标报告；基本面合格后追加技术评分，再结合近期板块资金热点精选十股。
-"""
+from __future__ import annotations
+
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Callable
 
 import pandas as pd
 
-from config import LONG_TERM, PUSH_DISCIPLINE, SCREEN
-from data_feed import DataFeed, SHANGHAI
+from config import LONG_TERM, SCREEN
+from data_feed import DataFeed
 
 
-def _clip(value: float) -> float:
-    return max(0.0, min(100.0, float(value)))
-
-
-def build_trade_decision(item: dict) -> dict:
-    """把候选排名转换为板块、个股、入场三道独立决策门槛。"""
-    board_raw = item.get("board_strength_score")
-    if board_raw is None:
-        board_raw = item.get("board_rotation_score")
-    board_score = round(_clip(board_raw)) if board_raw is not None else None
-
-    stock_raw = item.get("composite_score")
-    if stock_raw is None:
-        fundamental = float(item.get("fundamental_score") or 0)
-        technical = float(item.get("technical_score") or 0)
-        stock_raw = fundamental * 0.70 + technical * 0.30
-    stock_score = round(_clip(stock_raw))
-
-    plan = item.get("opening_plan") or {}
-    state = str(plan.get("execution_state") or "")
-    plan_status = str(plan.get("status") or "")
-    levels_available = bool(plan.get("levels_available"))
-    plan_actionable = bool(plan.get("actionable"))
-    entry_triggered = plan_actionable and (
-        "进入回踩进场区" in state or "已触发突破确认" in state
-    )
-    if not levels_available:
-        entry_score = None
-        entry_label = plan_status or "等待上午盘数据"
-    elif not plan_actionable:
-        entry_score = 10
-        entry_label = plan_status or "当前不进场"
-    elif entry_triggered:
-        entry_score = 90 if "进入回踩进场区" in state else 80
-        entry_label = "回踩触发" if "进入回踩进场区" in state else "突破触发"
-    else:
-        entry_score = 60
-        entry_label = "计划有效，等待触发"
-
-    board_pass = (
-        board_score is not None
-        and board_score >= PUSH_DISCIPLINE["board_min_score"]
-    )
-    stock_pass = stock_score >= PUSH_DISCIPLINE["stock_min_score"]
-    entry_pass = bool(entry_triggered)
-    blocked = any(
-        word in f"{plan_status}{state}"
-        for word in ("暂不追涨", "暂不进场", "失效", "失败", "异常")
-    )
-    if blocked or not board_pass or not stock_pass:
-        status = "不交易"
-    elif entry_pass:
-        status = "可执行观察"
-    else:
-        status = "等待确认"
-
-    reasons = []
-    if not board_pass:
-        reasons.append("板块强度未达门槛或无有效板块匹配")
-    if not stock_pass:
-        reasons.append("个股质量未达门槛")
-    if board_pass and stock_pass and not entry_pass:
-        reasons.append(plan_status or "实时买点尚未触发")
-    if status == "可执行观察":
-        reasons.append("三道门槛已通过，仍须分批并执行止损")
-
-    capital = float(PUSH_DISCIPLINE["reference_capital"])
-    allowed_loss = capital * float(PUSH_DISCIPLINE["risk_per_trade_pct"])
-    max_position = capital * float(PUSH_DISCIPLINE["max_single_position_pct"])
-    position_cap = None
-    reference_shares = None
-    entry = plan.get("entry_zone") or {}
-    stop = plan.get("stop_zone") or {}
-    try:
-        entry_mid = (float(entry["low"]) + float(entry["high"])) / 2
-        stop_high = float(stop["high"])
-        stop_distance = (entry_mid - stop_high) / entry_mid
-        if entry_mid > 0 and stop_distance > 0:
-            risk_limited_position = allowed_loss / stop_distance
-            raw_position = min(max_position, risk_limited_position)
-            reference_shares = int(raw_position / entry_mid / 100) * 100
-            position_cap = round(reference_shares * entry_mid, 2)
-    except (KeyError, TypeError, ValueError, ZeroDivisionError):
-        pass
-
-    if status == "可执行观察" and not position_cap:
-        status = "不交易"
-        reasons.append("按风险与仓位上限无法形成100股整数倍仓位")
-
-    return {
-        "status": status,
-        "board": {
-            "score": board_score,
-            "passed": board_pass,
-            "label": "板块强度",
-        },
-        "stock": {
-            "score": stock_score,
-            "passed": stock_pass,
-            "label": "个股质量",
-        },
-        "entry": {
-            "score": entry_score,
-            "passed": entry_pass,
-            "label": entry_label,
-        },
-        "reasons": reasons,
-        "allowed_loss": round(allowed_loss, 2),
-        "position_cap": position_cap,
-        "reference_shares": reference_shares,
-        "position_now": position_cap if status == "可执行观察" else 0,
-        "note": "排名仅形成观察池；跳空或流动性不足时实际亏损可能超过计划值。",
-    }
+def _clip(value: float, low: float = 0.0, high: float = 100.0) -> float:
+    return max(low, min(high, float(value)))
 
 
 def _growth_score(value: float) -> float:
-    if value <= -20:
+    if value <= -30:
         return 0
     if value < 0:
-        return 25
-    if value < 5:
-        return 50
-    if value < 15:
-        return 70
-    if value < 35:
-        return 90
-    return 80
+        return 30 + value
+    if value <= 20:
+        return 50 + value * 2
+    if value <= 50:
+        return 90 + (value - 20) / 3
+    return 100
 
 
-def _build_rule_rotation_analysis(context: dict, boards: list) -> dict:
-    """在AI不可用时，仍用市场宽度、资金和外部因子形成条件化研判。"""
-    stats = context.get("market_stats", {})
-    up = int(stats.get("up") or 0)
-    down = int(stats.get("down") or 0)
-    avg_change = float(stats.get("avg_change") or 0)
-    advance_ratio = up / max(down, 1)
-    if advance_ratio >= 1.3 and avg_change > 0.5:
-        stage = "趋势延续/扩散"
-    elif advance_ratio <= 0.75 and avg_change < -0.5:
-        stage = "退潮/防守"
-    else:
-        stage = "震荡分歧"
+class FundamentalScorer:
+    """Score disclosed financial metrics without technical or trading rules."""
 
-    external = context.get("external_market") or {}
-    markets = external.get("markets", [])
-    positive = sorted(markets, key=lambda item: item.get("change_pct", 0), reverse=True)
-    negative = sorted(markets, key=lambda item: item.get("change_pct", 0))
-    external_summary = "外盘快照不可用，未把外部方向计入规则分。"
-    if external.get("available"):
-        lead = "、".join(
-            f"{item.get('name')}{float(item.get('change_pct') or 0):+.2f}%"
-            for item in positive[:2]
-        )
-        weak = "、".join(
-            f"{item.get('name')}{float(item.get('change_pct') or 0):+.2f}%"
-            for item in negative[:2]
-        )
-        external_summary = f"外盘强项：{lead}；弱项：{weak}。"
+    def __init__(self, data_feed: DataFeed | None = None):
+        self.data_feed = data_feed or DataFeed()
+        self.progress = {"state": "idle", "done": 0, "total": 0}
+        self.summary: dict = {}
 
-    externally_supported = [
-        board for board in boards
-        if board.get("external_signal_count") and board.get("external_score", 50) >= 58
-    ]
-    externally_pressured = [
-        board for board in boards
-        if board.get("external_signal_count") and board.get("external_score", 50) <= 42
-    ]
-    supported_names = "、".join(board.get("name", "") for board in externally_supported[:3])
-    pressured_names = "、".join(board.get("name", "") for board in externally_pressured[:3])
-    top_funded = "、".join(board.get("name", "") for board in boards[:3]) or "暂无"
-    short = f"1-3日优先观察资金前列的{top_funded}"
-    if supported_names:
-        short += f"；其中{supported_names}同时获得外盘/事件方向支持"
-    if pressured_names:
-        short += f"。{pressured_names}存在外部逆风，需等资金继续增强再确认"
-    short += "。"
-    medium = "3-10日只在板块连续流入、上涨家数扩散且外部催化未反转时延续判断；否则按轮动线索而非趋势确认处理。"
-    return {
-        "available": False,
-        "external_available": bool(external.get("available")),
-        "mode": "rule_external" if external.get("available") else "rule_only",
-        "market_stage": stage,
-        "market_stage_reason": (
-            f"上涨{up}家、下跌{down}家、平均涨跌{avg_change:+.2f}%；"
-            f"板块排序综合当日/近5日资金与外部影响。"
-        ),
-        "short_term_outlook": short,
-        "medium_term_outlook": medium,
-        "external_driver_summary": external_summary,
-        "external_market": external,
-        "rotation_path": [],
-        "boards": [],
-        "risks": list(external.get("limitations", [])),
-        "reason": "未配置AI或AI不可用，使用资金+外盘+事件规则评分。",
-    }
-
-
-def build_opening_entry_plan(intraday: dict) -> dict:
-    """Turn the completed morning session into a bounded afternoon plan."""
-    intraday = intraday or {}
-    morning = intraday.get("morning_session") or {}
-    window = morning if morning.get("completed") else (intraday.get("opening_30m") or {})
-    window_name = "09:30-11:30" if morning.get("completed") else "09:30-10:00"
-    observation_label = "上午盘" if morning.get("completed") else "首30分钟"
-    base = {
-        "window": window_name,
-        "actionable": False,
-        "status": window.get("status") or "上午盘数据不可用",
-        "entry_zone": None,
-        "breakout_trigger": None,
-        "max_chase_price": None,
-        "stop_zone": None,
-        "take_profit_zones": [],
-        "risk_pct": None,
-        "reference_price": None,
-        "execution_state": f"等待{observation_label}完成",
-        "levels_available": False,
-        "execution_note": (
-            "普通A股当日买入通常不能当日卖出；止损止盈为条件计划，"
-            "跳空或流动性不足可能导致实际成交偏离。"
-        ),
-        "reason": f"等待{observation_label}形成完整价格区间。",
-        "opening": window,
-    }
-    if not window.get("completed"):
-        return base
-
-    try:
-        open_price = float(window["open"])
-        high = float(window["high"])
-        low = float(window["low"])
-        close = float(window["close"])
-        vwap = float(window["vwap"])
-        change_pct = float(window.get("change_pct") or 0)
-        range_pct = float(window.get("range_pct") or 0)
-        up_ratio = float(window.get("up_minute_ratio") or 0)
-        close_position = float(window.get("close_position") or 0)
-        above_vwap_ratio = float(window.get("above_vwap_ratio") or 0)
-    except (KeyError, TypeError, ValueError):
-        base.update(status=f"{observation_label}数据不完整", reason="缺少价格区间或分时均价。")
-        return base
-
-    if min(open_price, high, low, close, vwap) <= 0 or high < low:
-        base.update(status=f"{observation_label}数据异常", reason="价格字段无效，不能计算进场计划。")
-        return base
-
-    if range_pct > 4.5 or change_pct > 3.5:
-        base.update(
-            status="暂不追涨",
-            reason=(
-                f"{observation_label}涨幅{change_pct:+.2f}%、振幅{range_pct:.2f}%，"
-                "波动或涨幅过大；等待回落重新形成支撑。"
-            ),
-        )
-        return base
-
-    if (close < vwap * 0.995 or close_position < 0.35
-            or above_vwap_ratio < 0.40 or change_pct < -1.5):
-        base.update(
-            status="暂不进场",
-            reason=(
-                f"观察窗末价格相对区间位置{close_position:.0%}，"
-                f"位于分时均价上方的时间占比{above_vwap_ratio:.0%}；"
-                "观察窗承接不足。"
-            ),
-        )
-        return base
-
-    strong = (
-        close >= vwap
-        and close_position >= 0.65
-        and up_ratio >= 0.50
-        and above_vwap_ratio >= 0.55
-    )
-    entry_low_factor = 0.995 if strong else 0.990
-    entry_high_factor = 1.005 if strong else 1.002
-    entry_low = max(low, vwap * entry_low_factor)
-    entry_high = min(high, vwap * entry_high_factor)
-    if entry_high < entry_low:
-        entry_high = min(high, entry_low * 1.005)
-    if entry_high < entry_low:
-        base.update(status="暂不进场", reason="分时均价与开盘区间无法形成有效回踩区间。")
-        return base
-
-    entry_mid = (entry_low + entry_high) / 2
-    risk_fraction = min(0.05, max(0.02, range_pct / 100 * 0.8))
-    stop_reference = max(low * 0.995, entry_low * (1 - risk_fraction))
-    stop_low = stop_reference * 0.995
-    stop_high = min(stop_reference * 1.002, entry_low * 0.995)
-    actual_risk = max(0.0, (entry_mid - stop_high) / entry_mid * 100)
-    risk_per_share = max(entry_mid - stop_high, entry_mid * 0.005)
-    first_target_low = max(high * 1.005, entry_mid + risk_per_share * 1.5)
-    first_target_high = first_target_low * 1.008
-    second_target_low = max(first_target_high + 0.01, entry_mid + risk_per_share * 2.5)
-    second_target_high = second_target_low * 1.012
-    max_chase_price = high * 1.015
-    current_price = float((intraday or {}).get("close_price") or close)
-    execution_state = "等待回踩进场区或放量突破确认"
-    actionable = True
-    status = "强势回踩" if strong else "均价承接确认"
-    if current_price < stop_high:
-        actionable = False
-        status = f"{observation_label}结构已失效"
-        execution_state = "当前价已跌入止损区下方，不按原计划进场"
-    elif current_price > max_chase_price:
-        actionable = False
-        status = "当前价格暂不追涨"
-        execution_state = "当前价已超过禁止追价上限，等待重新形成支撑"
-    elif entry_low <= current_price <= entry_high:
-        execution_state = "当前价进入回踩进场区，可结合量能分批观察"
-    elif current_price < entry_low:
-        execution_state = "当前价低于计划进场区，等待重新站回分时均价确认"
-    elif current_price >= high * 1.002:
-        execution_state = "已触发突破确认，但未超过禁追线，避免一次性追入"
-    base.update({
-        "actionable": actionable,
-        "levels_available": True,
-        "status": status,
-        "entry_zone": {
-            "low": round(entry_low, 2),
-            "high": round(entry_high, 2),
-            "label": "回踩分时均价附近分批观察",
-        },
-        "breakout_trigger": round(high * 1.002, 2),
-        "max_chase_price": round(max_chase_price, 2),
-        "stop_zone": {
-            "low": round(stop_low, 2),
-            "high": round(stop_high, 2),
-            "label": f"跌入区间视为{observation_label}结构失效",
-        },
-        "take_profit_zones": [
-            {
-                "name": "第一止盈",
-                "low": round(first_target_low, 2),
-                "high": round(first_target_high, 2),
-                "risk_reward": round(
-                    (first_target_low - entry_mid) / risk_per_share, 2
-                ),
-                "action": "到达后可减仓约三分之一，并将保护位上移至进场均价附近",
-            },
-            {
-                "name": "第二止盈",
-                "low": round(second_target_low, 2),
-                "high": round(second_target_high, 2),
-                "risk_reward": round(
-                    (second_target_low - entry_mid) / risk_per_share, 2
-                ),
-                "action": "到达后可继续减仓，剩余仓位按分时均价或短期均线跟踪",
-            },
-        ],
-        "risk_pct": round(actual_risk, 2),
-        "reference_price": round(current_price, 2),
-        "execution_state": execution_state,
-        "reason": (
-            f"{observation_label}末价{close:.2f}，分时均价{vwap:.2f}，"
-            f"收在区间{close_position:.0%}位置，上涨分钟占比{up_ratio:.0%}。"
-        ),
-    })
-    return base
-
-
-class LongTermFundamentalScreener:
-    """面向一周以上持仓周期的可复核综合选股流程。"""
-
-    def __init__(self, data_feed=None):
-        self.df = data_feed if data_feed is not None else DataFeed()
-        self._progress = {"state": "idle", "done": 0, "total": 0}
-        self.summary = {}
-        self.recommendations = []
-        self.hot_core_candidates = []
-        self._selection_news = []
-
-    @property
-    def progress(self) -> dict:
-        return dict(self._progress)
-
-    def screen(self, universe_limit: int = None, ai_advisor=None) -> list:
-        stocks = self.df.get_stock_list()
+    def score(
+        self,
+        universe_limit: int | None = None,
+        progress_callback: Callable[[dict], None] | None = None,
+    ) -> list[dict]:
+        stocks = self.data_feed.get_stock_list()
         if stocks.empty:
-            self.summary = {"error": "获取市场股票池失败"}
-            self.recommendations = []
+            self.summary = {"error": "获取市场股票池失败", "generated_at": self._now()}
             return []
 
         pool = self._candidate_pool(stocks)
-        # 默认覆盖全部初筛股票；正数限制仅保留给命令行诊断/兼容调用。
-        limit = LONG_TERM["universe_limit"] if universe_limit is None else int(universe_limit)
+        limit = LONG_TERM.get("universe_limit", 0) if universe_limit is None else int(universe_limit)
         if limit > 0:
             pool = pool.head(limit)
+        codes = pool["code"].astype(str).tolist()
+        self._set_progress("fundamentals", 0, len(codes), "逐股读取已披露财务指标", progress_callback)
 
-        codes = pool["code"].tolist()
-        self._progress = {
-            "state": "fundamentals",
-            "done": 0,
-            "total": len(codes),
-            "message": "逐股拉取最新财务指标报告",
-        }
+        def on_financial_progress(done, total, code, available):
+            self._set_progress(
+                "fundamentals", done, total,
+                f"读取 {code}：{'成功' if available else '无有效数据'}",
+                progress_callback,
+            )
 
-        def on_progress(done, total, code, available):
-            self._progress.update({
-                "state": "fundamentals",
-                "done": done,
-                "total": total,
-                "current_code": str(code),
-                "financial_available": available,
-            })
+        financials = self.data_feed.get_financials_batch(codes, progress_callback=on_financial_progress)
+        rows = []
+        for code in codes:
+            financial = financials.get(str(code), {})
+            if financial.get("available"):
+                rows.append(self._evaluate(financial))
+        rows.sort(key=lambda item: item["fundamental_score"], reverse=True)
+        for rank, item in enumerate(rows, start=1):
+            item["fundamental_rank"] = rank
 
-        financials = self.df.get_financials_batch(codes, progress_callback=on_progress)
-        self._progress.update({"state": "scoring", "message": "计算中长期基本面评分"})
-
-        ranked = []
-        successful = 0
-        for _, quote in pool.iterrows():
-            financial = financials.get(str(quote["code"]), {})
-            if not financial.get("available"):
-                continue
-            successful += 1
-            ranked.append(self._evaluate(financial))
-
-        fundamental_ranked = [
-            item for item in ranked
-            if item["fundamental_score"] >= LONG_TERM["minimum_score"]
-        ]
-        fundamental_ranked.sort(key=lambda item: item["fundamental_score"], reverse=True)
-
-        self._progress.update({
-            "state": "technical",
-            "done": 0,
-            "total": len(fundamental_ranked),
-            "message": "在基本面合格池上计算技术评分与综合排名",
-        })
-        with ThreadPoolExecutor(max_workers=min(6, len(fundamental_ranked) or 1)) as executor:
-            futures = {
-                executor.submit(self._technical_analysis, item["code"]): item
-                for item in fundamental_ranked
-            }
-            for index, future in enumerate(as_completed(futures), start=1):
-                item = futures[future]
-                try:
-                    item.update(future.result())
-                except Exception:
-                    item.update({
-                        "technical_available": False,
-                        "technical_score": 0,
-                        "technical_reason": "技术数据请求失败",
-                        "trend_confirmation": "趋势数据不可用",
-                    })
-                item["composite_score"] = self._composite_score(item)
-                self._progress.update({
-                    "done": index,
-                    "current_code": item["code"],
-                    "technical_available": item.get("technical_available", False),
-                })
-
-        fundamental_ranked.sort(key=lambda item: item["composite_score"], reverse=True)
-        self._progress.update({
-            "state": "market",
-            "done": len(fundamental_ranked),
-            "total": len(fundamental_ranked),
-            "message": "结合板块资金、外盘联动与事件冲击精选十股",
-        })
-        selected, rotation_boards, rotation_analysis = self._select_recommendations(
-            fundamental_ranked, ai_advisor=ai_advisor
-        )
-        self.recommendations = selected[:LONG_TERM["recommendation_count"]]
-        self.hot_core_candidates = self._build_hot_core_candidates(rotation_boards)
-        plan_candidates = list(self.recommendations)
-        regular_codes = {item["code"] for item in plan_candidates}
-        plan_candidates.extend(
-            item for item in self.hot_core_candidates if item["code"] not in regular_codes
-        )
-        self._attach_opening_plans(plan_candidates)
-        plan_by_code = {
-            item["code"]: item.get("opening_plan") for item in plan_candidates
-            if item.get("opening_plan")
-        }
-        for item in self.hot_core_candidates:
-            if not item.get("opening_plan") and plan_by_code.get(item["code"]):
-                item["opening_plan"] = plan_by_code[item["code"]]
-        recommendation_codes = {
-            item["code"]: rank for rank, item in enumerate(self.recommendations, start=1)
-        }
-        for item in fundamental_ranked:
-            item["recommendation_rank"] = recommendation_codes.get(item["code"])
-            item["trade_decision"] = build_trade_decision(item)
-        for item in self.hot_core_candidates:
-            item["trade_decision"] = build_trade_decision(item)
-
+        minimum = float(LONG_TERM.get("minimum_score", 50))
         self.summary = {
-            "holding_horizon": LONG_TERM["holding_horizon"],
+            "generated_at": self._now(),
             "pool_count": len(pool),
-            "financial_success_count": successful,
-            "fundamental_qualified_count": len(fundamental_ranked),
-            "selected_count": len(self.recommendations),
-            "hot_core_count": len(self.hot_core_candidates),
-            "hot_core_candidates": self.hot_core_candidates,
-            "hot_core_rule": (
-                "强势行业/概念板块内，按市值35%+成交额35%+当日涨势15%+"
-                "主力资金15%识别龙头和次龙头；不受200元价格上限和基本面50分硬门槛限制"
-            ),
-            "entry_plan_ready_count": sum(
-                1 for item in self.recommendations
-                if (item.get("trade_decision") or {}).get("status") == "可执行观察"
-            ),
-            "hot_core_entry_plan_ready_count": sum(
-                1 for item in self.hot_core_candidates
-                if (item.get("trade_decision") or {}).get("status") == "可执行观察"
-            ),
-            "comprehensive_count": min(len(fundamental_ranked), LONG_TERM["result_limit"]),
-            "scan_scope": "全部初筛股票" if not limit else f"诊断限制 {limit} 只",
-            "data_source": "东方财富财务指标 API / K线指标 / 板块资金流 / 外盘与商品快照 / 财经快讯事件",
+            "financial_success_count": len(rows),
+            "qualified_count": sum(item["fundamental_score"] >= minimum for item in rows),
+            "minimum_score": minimum,
             "weights": dict(LONG_TERM["weights"]),
-            "composite_weights": dict(LONG_TERM["composite_weights"]),
-            "selection_weights": dict(LONG_TERM["selection_weights"]),
-            "rotation_external_weight": LONG_TERM.get("rotation_external_weight", 0),
-            "rotation_ai_weight": LONG_TERM.get("rotation_ai_weight", 0),
-            "rotation_boards": rotation_boards[:8],
-            "rotation_analysis": rotation_analysis,
-            "analysis_window": rotation_analysis.get("analysis_window", {}),
-            "push_discipline": {
-                **PUSH_DISCIPLINE,
-                "allowed_loss_per_trade": round(
-                    PUSH_DISCIPLINE["reference_capital"]
-                    * PUSH_DISCIPLINE["risk_per_trade_pct"], 2
-                ),
-                "max_single_position": round(
-                    PUSH_DISCIPLINE["reference_capital"]
-                    * PUSH_DISCIPLINE["max_single_position_pct"], 2
-                ),
-                "max_daily_loss": round(
-                    PUSH_DISCIPLINE["reference_capital"]
-                    * PUSH_DISCIPLINE["max_daily_loss_pct"], 2
-                ),
-                "max_weekly_loss": round(
-                    PUSH_DISCIPLINE["reference_capital"]
-                    * PUSH_DISCIPLINE["max_weekly_loss_pct"], 2
-                ),
-            },
-            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "scan_scope": "全部初筛股票" if limit <= 0 else f"流动性前 {limit} 只",
+            "data_source": "东方财富已披露财务指标与行情估值快照",
+            "purpose": "基本面评分可视化；不生成买卖、仓位或止盈止损计划",
         }
-        self._progress.update({"state": "done", "done": len(codes), "total": len(codes)})
-        return fundamental_ranked[:LONG_TERM["result_limit"]]
+        self._set_progress("done", len(codes), len(codes), "基本面评分完成", progress_callback)
+        return rows
 
-    def _attach_opening_plans(self, candidates: list) -> None:
-        if not candidates:
-            return
-        self._progress.update({
-            "state": "opening_plan",
-            "done": 0,
-            "total": len(candidates),
-            "message": "根据09:30-11:30上午盘生成13:00-14:00进场与止损区间",
-        })
-        with ThreadPoolExecutor(max_workers=min(6, len(candidates))) as executor:
-            futures = {
-                executor.submit(self.df.get_intraday_minute, item["code"]): item
-                for item in candidates
-            }
-            for index, future in enumerate(as_completed(futures), start=1):
-                item = futures[future]
-                try:
-                    item["opening_plan"] = build_opening_entry_plan(future.result())
-                except Exception as exc:
-                    item["opening_plan"] = {
-                        "window": "09:30-11:30",
-                        "actionable": False,
-                        "status": "上午盘计划失败",
-                        "reason": str(exc),
-                        "entry_zone": None,
-                        "stop_zone": None,
-                    }
-                self._progress.update({
-                    "done": index,
-                    "current_code": item["code"],
-                })
+    def _set_progress(self, state, done, total, message, callback):
+        self.progress = {"state": state, "done": done, "total": total, "message": message}
+        if callback:
+            callback(dict(self.progress))
 
-    def _candidate_pool(self, stocks: pd.DataFrame) -> pd.DataFrame:
-        """过滤不可执行标的；排序只控制请求批次，不参与财务评分。"""
+    @staticmethod
+    def _now() -> str:
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    @staticmethod
+    def _candidate_pool(stocks: pd.DataFrame) -> pd.DataFrame:
         conditions = (
-            (stocks["price"] >= SCREEN["price_min"]) &
-            (stocks["price"] <= SCREEN["price_max"]) &
-            (stocks["market_cap"] >= LONG_TERM["market_cap_min"]) &
-            (stocks["amount"] >= LONG_TERM["average_amount_min"] * 1e8) &
-            (stocks["turnover_rate"] <= LONG_TERM["turnover_max"])
+            (stocks["price"] >= SCREEN["price_min"])
+            & (stocks["price"] <= SCREEN["price_max"])
+            & (stocks["market_cap"] >= LONG_TERM["market_cap_min"])
+            & (stocks["amount"] >= LONG_TERM["average_amount_min"] * 1e8)
+            & (stocks["turnover_rate"] <= LONG_TERM["turnover_max"])
         )
-        if SCREEN["exclude_st"]:
+        if SCREEN.get("exclude_st"):
             conditions &= ~stocks["is_st"]
-        if SCREEN["exclude_kcb"]:
+        if SCREEN.get("exclude_kcb"):
             conditions &= stocks["board"] != "科创板"
-        if SCREEN["exclude_bj"]:
+        if SCREEN.get("exclude_bj"):
             conditions &= stocks["board"] != "北交所"
         return stocks[conditions].copy().sort_values("amount", ascending=False)
 
-    def _evaluate(self, financial: dict) -> dict:
+    @staticmethod
+    def _evaluate(financial: dict) -> dict:
         roe = float(financial.get("annualized_roe") or 0)
         revenue_growth = float(financial.get("revenue_growth") or 0)
         profit_growth = float(financial.get("profit_growth") or 0)
         gross_margin = financial.get("gross_margin")
         eps = float(financial.get("eps") or 0)
-        cash_ps = float(financial.get("operating_cf_per_share") or 0)
+        cash_per_share = float(financial.get("operating_cf_per_share") or 0)
         pe = float(financial.get("pe") or 0)
         pb = float(financial.get("pb") or 0)
 
         roe_score = _clip(roe * 5)
         margin_score = _clip(float(gross_margin) * 2) if gross_margin is not None else roe_score
         quality = round(roe_score * 0.7 + margin_score * 0.3)
-
         growth = round(_growth_score(revenue_growth) * 0.4 + _growth_score(profit_growth) * 0.6)
-
-        if pe <= 0:
-            pe_score = 10
-        elif pe <= 12:
-            pe_score = 90
-        elif pe <= 25:
-            pe_score = 78
-        elif pe <= 40:
-            pe_score = 52
-        elif pe <= 70:
-            pe_score = 28
-        else:
-            pe_score = 10
-        if pb <= 0:
-            pb_score = 35
-        elif pb <= 2:
-            pb_score = 90
-        elif pb <= 5:
-            pb_score = 65
-        elif pb <= 10:
-            pb_score = 40
-        else:
-            pb_score = 18
+        pe_score = 10 if pe <= 0 else 90 if pe <= 12 else 78 if pe <= 25 else 52 if pe <= 40 else 28 if pe <= 70 else 10
+        pb_score = 35 if pb <= 0 else 90 if pb <= 2 else 65 if pb <= 5 else 40 if pb <= 10 else 18
         valuation = round(pe_score * 0.65 + pb_score * 0.35)
-
-        if eps <= 0:
-            cashflow = 10 if cash_ps >= 0 else 0
-        else:
-            coverage = cash_ps / eps
-            cashflow = round(_clip(coverage * 70))
-
+        cashflow = 10 if eps <= 0 and cash_per_share >= 0 else 0 if eps <= 0 else round(_clip(cash_per_share / eps * 70))
         weights = LONG_TERM["weights"]
-        score = round(
-            quality * weights["quality"] +
-            growth * weights["growth"] +
-            valuation * weights["valuation"] +
-            cashflow * weights["cashflow"]
+        total = round(
+            quality * weights["quality"] + growth * weights["growth"]
+            + valuation * weights["valuation"] + cashflow * weights["cashflow"]
         )
-        reasons = [
-            f"{financial.get('report_date', '--')} 报告期",
-            f"ROE年化参考 {roe:.1f}%",
-            f"营收/净利同比 {revenue_growth:+.1f}%/{profit_growth:+.1f}%",
-        ]
+
         risks = []
         if eps <= 0:
             risks.append("每股收益非正")
         if revenue_growth < 0 or profit_growth < 0:
             risks.append("盈利增长承压")
         if pe <= 0 or pe > 50:
-            risks.append("估值指标异常或偏高")
-        if eps > 0 and cash_ps < eps * 0.5:
+            risks.append("估值异常或偏高")
+        if eps > 0 and cash_per_share < eps * 0.5:
             risks.append("经营现金流覆盖偏低")
         if gross_margin is None:
-            risks.append("毛利率字段不适用于或未披露")
+            risks.append("毛利率未披露或不适用")
 
         return {
-            "code": financial["code"],
-            "name": financial.get("name", ""),
-            "board": financial.get("board", ""),
-            "price": financial.get("price", 0),
-            "market_cap": financial.get("market_cap", 0),
-            "report_date": financial.get("report_date", ""),
-            "notice_date": financial.get("notice_date", ""),
-            "fundamental_score": score,
-            "quality_score": quality,
-            "growth_score": growth,
-            "valuation_score": valuation,
-            "cashflow_score": cashflow,
-            "roe": financial.get("roe", 0),
-            "annualized_roe": financial.get("annualized_roe", 0),
-            "revenue_growth": revenue_growth,
-            "profit_growth": profit_growth,
-            "gross_margin": gross_margin,
-            "eps": eps,
-            "operating_cf_per_share": cash_ps,
-            "pe": pe,
-            "pb": pb,
-            "main_net": financial.get("main_net", 0),
-            "main_net_pct": financial.get("main_net_pct", 0),
-            "fundamental_reason": "；".join(reasons),
-            "risk": "；".join(risks) if risks else "未触发量化财务警示，仍需核验公告",
+            "code": str(financial["code"]).zfill(6), "name": financial.get("name", ""),
+            "industry": financial.get("industry") or financial.get("board", ""),
+            "report_date": financial.get("report_date", ""), "notice_date": financial.get("notice_date", ""),
+            "price": financial.get("price", 0), "market_cap": financial.get("market_cap", 0),
+            "fundamental_score": total, "quality_score": quality, "growth_score": growth,
+            "valuation_score": valuation, "cashflow_score": cashflow,
+            "roe": financial.get("roe", 0), "annualized_roe": roe,
+            "revenue_growth": revenue_growth, "profit_growth": profit_growth,
+            "gross_margin": gross_margin, "eps": eps, "operating_cf_per_share": cash_per_share,
+            "pe": pe, "pb": pb,
+            "risk": "；".join(risks) if risks else "未触发财务量化警示，仍需核验公告",
             "data_source": financial.get("data_source", ""),
         }
 
-    def _technical_analysis(self, code: str) -> dict:
-        kline = self.df.get_kline(code, count=80)
-        if kline.empty:
-            return {
-                "technical_available": False,
-                "technical_score": 0,
-                "technical_reason": "技术数据不可用",
-                "trend_confirmation": "趋势数据不可用",
-            }
-        today = datetime.now(SHANGHAI).date()
-        completed = kline[pd.to_datetime(kline["date"]).dt.date < today]
-        if completed.empty:
-            return {
-                "technical_available": False,
-                "technical_score": 0,
-                "technical_reason": "前一交易日完整K线不可用",
-                "trend_confirmation": "前一交易日趋势数据不可用",
-            }
-        latest = completed.iloc[-1]
-        previous = completed.iloc[-2] if len(completed) > 1 else latest
-        close = float(latest.get("close") or 0)
-        previous_close = float(previous.get("close") or 0)
-        session_change = (
-            (close / previous_close - 1) * 100
-            if previous_close > 0 and len(completed) > 1
-            else float(latest.get("change_pct") or 0)
-        )
-        ma20 = latest.get("MA20")
-        ma60 = latest.get("MA60")
-        score = 0
-        reasons = []
-        if pd.notna(ma20) and pd.notna(ma60) and close > ma20 > ma60:
-            trend = "站上MA20/MA60，中期趋势确认"
-            score += 35
-            reasons.append("中期均线多头")
-        elif pd.notna(ma20) and close > ma20:
-            trend = "站上MA20，等待长期趋势确认"
-            score += 20
-            reasons.append("站上MA20")
-        else:
-            trend = "未站上MA20，仅保留基本面观察"
 
-        dif = latest.get("MACD_DIF")
-        dea = latest.get("MACD_DEA")
-        if pd.notna(dif) and pd.notna(dea) and dif > dea:
-            score += 15
-            reasons.append("MACD多头")
-            if dif > 0:
-                score += 5
-
-        rsi = latest.get("RSI")
-        if pd.notna(rsi) and 40 <= float(rsi) <= 70:
-            score += 10
-            reasons.append("RSI健康区间")
-
-        k_value = latest.get("KDJ_K")
-        d_value = latest.get("KDJ_D")
-        if pd.notna(k_value) and pd.notna(d_value) and k_value > d_value:
-            score += 10
-            reasons.append("KDJ多头")
-
-        ma5 = latest.get("MA5")
-        ma10 = latest.get("MA10")
-        previous_ma5 = previous.get("MA5")
-        previous_ma10 = previous.get("MA10")
-        if pd.notna(ma5) and pd.notna(ma10) and ma5 > ma10:
-            score += 10
-            reasons.append("短期均线支持")
-            if (pd.notna(previous_ma5) and pd.notna(previous_ma10)
-                    and previous_ma5 <= previous_ma10):
-                score += 5
-                reasons.append("短期金叉")
-
-        volume = float(latest.get("volume") or 0)
-        volume_ma5 = float(latest.get("VOL_MA5") or 0)
-        volume_ratio = volume / volume_ma5 if volume_ma5 > 0 else 0
-        if volume_ratio >= 1.2 and close >= float(latest.get("open") or close):
-            score += 10
-            reasons.append("量价配合")
-
-        return {
-            "technical_available": True,
-            "technical_score": round(_clip(score)),
-            "technical_reason": "；".join(reasons) if reasons else "技术信号偏弱",
-            "trend_confirmation": trend,
-            "volume_ratio": round(volume_ratio, 2),
-            "previous_session": {
-                "date": pd.to_datetime(latest.get("date")).strftime("%Y-%m-%d"),
-                "open": round(float(latest.get("open") or 0), 2),
-                "close": round(close, 2),
-                "high": round(float(latest.get("high") or 0), 2),
-                "low": round(float(latest.get("low") or 0), 2),
-                "change_pct": round(session_change, 2),
-                "volume_ratio": round(volume_ratio, 2),
-            },
-        }
-
-    def _composite_score(self, item: dict) -> int:
-        weights = LONG_TERM["composite_weights"]
-        return round(
-            float(item.get("fundamental_score", 0)) * weights["fundamental"] +
-            float(item.get("technical_score", 0)) * weights["technical"]
-        )
-
-    def _select_recommendations(self, ranked: list, ai_advisor=None) -> tuple:
-        news = self.df.get_financial_news()
-        external_news = (
-            self.df.get_external_news()
-            if hasattr(self.df, "get_external_news") else news
-        )
-        combined_news = []
-        seen_news = set()
-        for item in [*external_news, *news]:
-            key = item.get("url") or item.get("title")
-            if key and key not in seen_news:
-                seen_news.add(key)
-                combined_news.append(item)
-        self._selection_news = combined_news
-        external_context = {}
-        if hasattr(self.df, "get_external_market_context"):
-            external_context = self.df.get_external_market_context(news=external_news)
-        rotation_kwargs = {
-            "top_n": LONG_TERM["theme_board_limit"],
-        }
-        if external_context:
-            rotation_kwargs["external_context"] = external_context
-        try:
-            rotation = self.df.get_rotation_matches(
-                [item["code"] for item in ranked], **rotation_kwargs
-            )
-        except TypeError as exc:
-            if "external_context" not in str(exc):
-                raise
-            rotation_kwargs.pop("external_context", None)
-            rotation = self.df.get_rotation_matches(
-                [item["code"] for item in ranked], **rotation_kwargs
-            )
-        matches = rotation.get("matches", {})
-        boards = rotation.get("boards", [])
-        market_data_available = bool(boards)
-        context = self.df.get_market_context()
-        context["external_market"] = external_context
-        rotation_analysis = _build_rule_rotation_analysis(context, boards)
-        if ai_advisor is not None and ai_advisor.is_configured and boards:
-            self._progress.update({
-                "state": "rotation_ai",
-                "message": "结合每日资金、国际环境与政策研判板块轮动",
-            })
-            try:
-                rotation_analysis = ai_advisor.analyze_sector_rotation(
-                    context=context,
-                    news=combined_news,
-                    boards=boards,
-                )
-            except Exception as exc:
-                rotation_analysis = {
-                    **_build_rule_rotation_analysis(context, boards),
-                    "mode": "rule_fallback",
-                    "reason": f"AI板块轮动分析失败，已回退资金+外部规则评分：{exc}",
-                }
-
-        if rotation_analysis.get("available"):
-            rotation_analysis.setdefault("external_market", external_context)
-        else:
-            fallback_reason = rotation_analysis.get("reason", "")
-            fallback_mode = rotation_analysis.get("mode", "rule_external")
-            rotation_analysis = {
-                **_build_rule_rotation_analysis(context, boards),
-                "mode": fallback_mode,
-                "reason": fallback_reason or "AI不可用，使用资金+外盘+事件规则评分。",
-            }
-        rotation_analysis["analysis_window"] = context.get("analysis_window", {})
-
-        ai_boards = {
-            board["name"]: board
-            for board in rotation_analysis.get("boards", [])
-            if isinstance(board, dict) and board.get("name")
-        }
-        ai_weight = float(LONG_TERM.get("rotation_ai_weight", 0.25))
-        external_weight = float(LONG_TERM.get("rotation_external_weight", 0.20))
-        for board in boards:
-            rule_score = float(board.get("flow_score") or 0)
-            board["rule_flow_score"] = round(rule_score)
-            if external_context.get("available"):
-                external_score = float(board.get("external_score") or 50)
-                rule_score = (
-                    rule_score * (1 - external_weight) +
-                    external_score * external_weight
-                )
-            board["rule_external_score"] = round(rule_score)
-            ai_board = ai_boards.get(board.get("name"))
-            if rotation_analysis.get("available") and ai_board:
-                ai_score = float(ai_board.get("rotation_score") or 0)
-                board["ai_rotation_score"] = round(ai_score)
-                board["ai_state"] = ai_board.get("state", "待确认")
-                board["ai_confidence"] = ai_board.get("confidence", "低")
-                board["ai_reason"] = ai_board.get("reason", "")
-                board["ai_trigger"] = ai_board.get("trigger", "")
-                board["ai_invalidation"] = ai_board.get("invalidation", "")
-                board["rotation_score"] = round(
-                    rule_score * (1 - ai_weight) + ai_score * ai_weight
-                )
-            else:
-                board["rotation_score"] = round(rule_score)
-        boards.sort(key=lambda board: board.get("rotation_score", 0), reverse=True)
-
-        weights = LONG_TERM["selection_weights"]
-        for item in ranked:
-            stock_matches = sorted(
-                matches.get(item["code"], []),
-                key=lambda board: board.get("rotation_score", board.get("flow_score", 0)),
-                reverse=True,
-            )
-            individual_score = _clip(50 + float(item.get("main_net_pct") or 0) * 3)
-            if stock_matches:
-                theme_score = float(
-                    stock_matches[0].get("rotation_score", stock_matches[0].get("flow_score", 0))
-                )
-                item["board_strength_score"] = round(_clip(theme_score))
-                market_score = theme_score * 0.8 + individual_score * 0.2
-            elif market_data_available:
-                item["board_strength_score"] = None
-                market_score = individual_score * 0.3
-            else:
-                item["board_strength_score"] = None
-                market_score = 50
-            item["market_flow_score"] = round(_clip(market_score))
-            item["matched_themes"] = []
-            for board in stock_matches[:3]:
-                recent_flow = board.get("recent_main_net_inflow")
-                recent_text = (
-                    f"近5日净流入{recent_flow:+.2f}亿"
-                    if recent_flow is not None else
-                    f"当日净流入{board.get('main_net_inflow', 0):+.2f}亿"
-                )
-                ai_text = ""
-                if board.get("ai_state"):
-                    ai_text = f"，AI:{board['ai_state']}/{board.get('ai_confidence', '低')}"
-                external_text = ""
-                if board.get("external_signal_count"):
-                    reasons = "/".join(board.get("external_reasons", [])[:2])
-                    external_text = (
-                        f"，外部{board.get('external_score', 50):.0f}分"
-                        f":{reasons or '事件映射'}"
-                    )
-                item["matched_themes"].append(
-                    f"{board['name']}({board['type']}, {recent_text}{external_text}{ai_text})"
-                )
-            item["selection_score"] = round(
-                item["composite_score"] * weights["composite"] +
-                item["market_flow_score"] * weights["market_flow"]
-            )
-        selected = sorted(
-            ranked,
-            key=lambda item: (item["selection_score"], item["composite_score"]),
-            reverse=True,
-        )
-        return selected, boards, rotation_analysis
-
-    def _build_hot_core_candidates(self, boards: list) -> list:
-        """从强势板块龙头/次龙头形成独立候选，不复用基本面硬淘汰。"""
-        eligible_boards = [
-            board for board in boards
-            if float(board.get("rotation_score") or 0)
-            >= LONG_TERM["hot_core_minimum_board_score"]
-            and float(board.get("main_net_inflow") or 0) > 0
-            and board.get("leaders")
-        ][:LONG_TERM["hot_core_board_limit"]]
-        by_code = {}
-        for board in eligible_boards:
-            for leader in board.get("leaders", [])[:2]:
-                raw_code = str(leader.get("code") or "").strip()
-                if not raw_code:
-                    continue
-                code = raw_code.zfill(6)
-                entry = by_code.setdefault(code, {
-                    **leader,
-                    "core_boards": [],
-                    "leadership_role": leader.get("role", "核心票"),
-                })
-                if leader.get("role") == "龙头":
-                    entry["leadership_role"] = "龙头"
-                entry["leadership_score"] = max(
-                    float(entry.get("leadership_score") or 0),
-                    float(leader.get("leadership_score") or 0),
-                )
-                entry["core_boards"].append({
-                    "name": board.get("name", ""),
-                    "type": board.get("type", ""),
-                    "role": leader.get("role", ""),
-                    "rotation_score": board.get("rotation_score", 0),
-                    "main_net_inflow": board.get("main_net_inflow", 0),
-                    "external_reasons": board.get("external_reasons", []),
-                })
-        if not by_code:
-            return []
-
-        financials = self.df.get_financials_batch(list(by_code))
-        results = []
-        for code, leader in by_code.items():
-            financial = financials.get(code, {})
-            if financial.get("available"):
-                item = self._evaluate(financial)
-                item["fundamental_available"] = True
-            else:
-                item = {
-                    **leader,
-                    "code": code,
-                    "fundamental_available": False,
-                    "fundamental_score": 0,
-                    "risk": "财务指标暂不可用，须核验最新公告",
-                }
-            item.update(self._technical_analysis(code))
-            item.update({
-                "candidate_channel": "hot_core",
-                "leadership_role": leader["leadership_role"],
-                "leadership_score": round(leader["leadership_score"]),
-                "core_boards": leader["core_boards"],
-                "matched_themes": [
-                    f"{board['name']}({board['type']}, {board['role']}, 轮动{board['rotation_score']}分)"
-                    for board in leader["core_boards"]
-                ],
-            })
-            strongest = max(
-                leader["core_boards"], key=lambda board: board["rotation_score"]
-            )
-            item["hot_board"] = strongest["name"]
-            item["board_rotation_score"] = strongest["rotation_score"]
-            item["related_news"] = self._match_stock_news(item)
-            item["hot_core_score"] = round(
-                item["leadership_score"] * 0.40 +
-                float(item["board_rotation_score"]) * 0.25 +
-                float(item.get("technical_score") or 0) * 0.20 +
-                float(item.get("fundamental_score") or 0) * 0.15
-            )
-            results.append(item)
-        results.sort(
-            key=lambda item: (item["hot_core_score"], item["leadership_score"]),
-            reverse=True,
-        )
-        results = results[:LONG_TERM["hot_core_count"]]
-        for rank, item in enumerate(results, start=1):
-            item["hot_core_rank"] = rank
-        return results
-
-    def _match_stock_news(self, item: dict) -> list:
-        code = str(item.get("code") or "")
-        name = str(item.get("name") or "")
-        matches = []
-        for news in self._selection_news:
-            text = f"{news.get('title', '')} {news.get('summary', '')}"
-            if (name and name in text) or (code and code in text):
-                matches.append({
-                    "title": news.get("title", ""),
-                    "time": news.get("time", ""),
-                    "source": news.get("source", ""),
-                    "url": news.get("url", ""),
-                })
-        return matches[:3]
+LongTermFundamentalScreener = FundamentalScorer

@@ -44,8 +44,14 @@ jobs:
           key: quant-daily-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             quant-daily-${{ runner.os }}-
-      - name: Run factor research and send report
-        run: python quant_pipeline.py --send-email
+      - name: Run factor research
+        run: python quant_pipeline.py
+      - name: Cache latest quant report for noon digest
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: output/quant
+          key: quant-report-${{ runner.os }}-${{ github.run_id }}
       - name: Upload quant report
         if: always()
         uses: actions/upload-artifact@v4

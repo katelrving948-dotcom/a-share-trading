@@ -1,185 +1,53 @@
-# A股中长期研究与交易系统
+# A股三核研究系统
 
-**全面选股 · 综合评分 · 资金精选 · DeepSeek 建议**
+系统只保留三个核心部分：推送总体链路、基本面评分、技术面量化因子。系统不提供自动下单、自选股、固定十股选择、持仓诊断、仓位建议、交易计划或止盈止损指令。
 
-系统面向至少持仓一周、重点观察 1 至 6 个月的 A 股研究流程。行情用于建立可交易股票池与确认入场趋势，排序依据以已披露财务指标为主。
-
-当前版本已移除本地模拟交易账户。风控诊断只根据已配置的国信真实资金、真实持仓和真实成交接口进行评估；未取得券商数据时不显示虚拟账户值。历史回测仍保留，仅用于离线验证策略。
-
-## 启动
+## 启动网站
 
 ```bash
 pip install -r requirements-quant.txt
 python server.py
 ```
 
-浏览器访问 `http://localhost:5000`。
+访问 `http://localhost:5000`。Render 使用 `render.yaml` 启动同一个 `server.py`。
 
-## Streamlit Cloud 部署
+网站只有三个页面：
 
-仓库已提供 Streamlit 入口 `streamlit_app.py`。上传到 GitHub 后，在 Streamlit Community Cloud 新建应用：
+1. **推送中心**：展示工作日12:00链路、任务状态、邮件预览和基本面/技术面交集观察池。
+2. **基本面评分**：展示质量35%、成长30%、估值20%、现金流15%的透明评分及扣分原因。
+3. **技术面量化**：展示动量、趋势、波动率、量比、RSI、布林带位置、ATR和滚动样本外回测。
 
-1. Repository 选择本项目仓库，Branch 选择 `main`。
-2. Main file path 填 `streamlit_app.py`。
-3. 需要 AI 建议时，在 Streamlit Secrets 中配置 `DEEPSEEK_API_KEY="你的key"`。
-4. 云端版默认用于研究、自选、持仓诊断、尾盘潜伏和预期计划；不建议在公开云端配置国信真实交易 AK/SK。
+## 12:00 推送链路
 
-本地预览 Streamlit 版：
+`cron-job.org → Render /api/cron/daily-email → GitHub Actions → email_digest.py → 邮件服务`
 
-```bash
-streamlit run streamlit_app.py
-```
+推送分析窗口为前一交易日完整盘面和当天09:30–11:30上午盘，供13:00–14:00复核。邮件读取基本面评分和前一收盘后生成的技术因子，只展示同时达到两类阈值的自然交集；没有交集时允许为空。
 
-## 完整网页部署（与本地界面一致）
+Render 环境变量：`CRON_SECRET`、`GITHUB_ACTIONS_TOKEN`。GitHub Actions 使用邮件 Secrets `MAIL_USERNAME`、`MAIL_PASSWORD`、`MAIL_TO`，并可配置 `EMAIL_UNIVERSE_LIMIT`、`PUSH_FUNDAMENTAL_MIN`、`PUSH_TECHNICAL_MIN`、`PUSH_DISPLAY_LIMIT`。
 
-仓库根目录提供 `render.yaml`，用于部署 `server.py` 完整网页版本。连接 Render 后选择 **New > Blueprint**，导入本仓库即可；健康检查使用 `/api/status`，服务会自动读取平台提供的 `PORT`。
+`dispatched` 只说明GitHub工作流已触发；收件箱仍是最终送达凭证。
 
-公开部署不要配置国信真实交易 AK/SK，也不要启用 `GUOSEN_ENABLE_LIVE_TRADING`。免费实例的本地文件是临时存储，持仓、自选股和预期计划可能在重启或重新部署后恢复为仓库初始内容。
+## 基本面评分
 
-### 每日邮件选股
+运行入口位于 `fundamental.py`，统一快照由 `research_core.py` 写入 `output/research/fundamental_latest.json`。评分数据来自已披露财务指标，不使用AI补齐缺失值，也不混入短期技术信号和板块热点。
 
-推荐使用免费的 cron-job.org 调用 Render 上的受保护接口，绕过 GitHub Actions 定时调度可能出现的延迟或丢失：
-
-1. 在 Render 的 **Environment** 中保留 `CRON_SECRET`，并添加 `GITHUB_ACTIONS_TOKEN`（仅授权本仓库 Actions 读写的 Fine-grained Token）。
-2. 在 cron-job.org 新建任务，请求地址填写 `https://a-share-trading.onrender.com/api/cron/daily-email`，方法选择 `POST`。
-3. 添加请求头 `Authorization: Bearer 你的CRON_SECRET`，按北京时间设置为工作日 **12:00** 执行。接口会立即返回无正文的 `204` 并触发 GitHub Actions，由 GitHub 运行选股并通过 QQ SMTP 发信；实际到信可能因 Render 唤醒、行情请求和工作流排队晚于 12:00。
-4. 如使用 Render 免费实例，可提前调用 `GET /api/cron/wake` 唤醒服务；该接口同样返回无正文的 `204`。
-5. 可用同一个请求头访问 `GET /api/cron/daily-email/status`，查看当前进度和最近一次结果。Render 免费实例重启或休眠后该状态会重置，收件箱仍是最终送达凭证。
-
-`CRON_SECRET`、`GITHUB_ACTIONS_TOKEN` 和邮箱授权码不得写入仓库或添加到请求 URL。Render 免费服务会阻止 SMTP 端口，因此 Render 只负责触发工作流，不直接发送邮件。
-
-GitHub Actions 工作流保留为手动备用，不再设置自动时段，避免与 cron-job.org 重复发送。默认扫描按流动性排序的前 500 只股票；如需手动备用，可在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 中配置：
-
-- Secrets：`MAIL_USERNAME`（QQ 邮箱完整地址）、`MAIL_PASSWORD`（QQ 邮箱 SMTP 授权码，不是 QQ 密码）、`MAIL_TO`（一个或多个收件地址；多个地址用英文逗号分隔）。
-- Variables（可选）：`MAIL_SMTP_HOST`（默认 `smtp.qq.com`）、`MAIL_SMTP_PORT`（默认 `465`）、`EMAIL_UNIVERSE_LIMIT`（扫描数量，默认 500）、`EMAIL_STOCK_COUNT`（邮件候选数，默认 10）。
-
-先在 QQ 邮箱的 **设置 → 账号与安全 → 安全设置** 中开启 POP3/SMTP 或 IMAP/SMTP 服务并生成授权码。QQ 密码不能用于 SMTP。配置完成后可在 **Actions → Daily stock selection email → Run workflow** 手动测试。定时任务可能因 GitHub 调度繁忙而延迟数分钟，法定节假日如仍触发，邮件内容应结合当日是否开市复核。
-
-## 选股逻辑
-
-选股页采用以下可复核流程：
-
-1. **建立初筛池**：排除 ST、北交所标的和流动性不足股票；要求市值不低于 50 亿元、日成交额不低于 0.2 亿元、换手率不高于 12%。对通过初筛的全部股票继续分析，不设 500 只截断。
-2. **全面基本面分析**：对初筛池每只股票调用东方财富财务指标接口 `RPT_LICO_FN_CPD`，取得最新报告期、ROE、营收同比、归母净利同比、每股收益、每股经营现金流和毛利率等字段；PE/PB 与市值来自行情快照。
-3. **固定规则评分**：质量 35%（ROE/毛利率）、增长 30%（营收和净利同比）、估值 20%（PE/PB）、现金流 15%（每股经营现金流对 EPS 的覆盖）。缺失或异常数据会形成风险提示，不由 AI 猜测补齐。
-4. **综合分析排名**：对基本面达到阈值的股票计算 K 线趋势、MACD、RSI、KDJ 和量价评分，按基本面 70% 与技术面 30% 形成综合分排名。
-5. **内外联动轮动评分**：匹配当日资金领先的行业/概念板块，并在接口可用时纳入近五日资金轨迹；同时读取道指、标普500、纳斯达克100、中国金龙、恒指、原油、黄金和铜的最近快照，从财经快讯中提取地缘、美元流动性、贸易限制与关键矿产事件。板块规则分以资金为主体，外部结构分占 20%，并把受外部冲击但尚未进入资金前列的板块加入候选池。
-6. **资金热点精选十股**：综合分 80% 与内外联动后的市场热点分 20% 形成精选分，选出 10 只。外盘数据不可用时自动退回资金规则，外部催化没有A股资金确认时只标记为轮动线索。
-7. **DeepSeek 投资建议**：配置 `DEEPSEEK_API_KEY` 后，将固定选出的 10 只及其财务、技术、资金、外盘与事件依据提交给 DeepSeek，由模型逐只生成建议；AI轮动分以 25% 受控权重叠加，模型不能虚构行情、替换候选或改写基础评分。
-
-页面会显示每只综合候选的报告期、基本面分、技术分、综合分和资金匹配依据，并独立给出板块强度、个股质量、入场成熟度三道门槛。排名只负责形成观察池；三道门槛全部通过后才显示“可执行观察”，否则明确显示“等待确认”或“不交易”。该结果不预测次日涨跌，也不构成投资建议。
-
-邮件和网页默认按 5 万元参考本金展示纪律边界：单笔计划亏损上限 250 元、单票计划仓位上限 1 万元、单日亏损 500 元停止新开仓、单周亏损 1000 元停止新开仓、每天最多新开 1 只且禁止浮盈临时加仓。仓位上限会根据进场区与结构止损距离进一步缩小；跳空或流动性不足时实际亏损仍可能超过计划值。参数集中在 `config.py` 的 `PUSH_DISCIPLINE` 中。
-
-“尾盘潜伏”页面向尾盘交易习惯，采用单独的短线流程：先剔除今日未完成日K，只按昨日完整日K、量能、均线、MACD 和 RSI 建立候选池；再用今日分时趋势、主力资金净流入和当日资金领先板块成分映射做验证；最后在 14:25 后给出尾盘确认计划和 T+1 观察标的。它用于避免开盘后追已经兑现的利好或资金抬轿，不替代中长期选股页。
-
-每日邮件按“前一交易日完整盘面 + 当日09:30-11:30上午盘”分层分析，计划在工作日 12:00 触发，供 13:00-14:00 的交易时段参考。技术评分只使用前一交易日及更早的完整日K，避免把午间尚未完成的当日日K误当成收盘信号；当日上午使用全市场涨跌分布、板块资金和候选股完整上午分时做确认。邮件会标明数据截至时间和上午盘是否完整，下午开盘后仍须重新核验价格、量能与板块强度。
-
-中长期精选前 10 名会追加“上午盘执行计划”：优先固定观察 09:30-11:30 的区间、分时均价、末端位置、上涨分钟占比与振幅；若上午盘数据未完整返回，才降级使用 09:30-10:00 首30分钟窗口并明确标注。结构合格时给出分时均价附近的回踩进场区间、突破确认价、禁止追价上限、结构止损区间，以及按实际风险距离计算的不低于 1.5R/2.5R 两档止盈区间；当前价超过禁追线或跌破结构位时仍保留价位供复核，但明确显示“暂不追涨/结构已失效”。普通A股存在 T+1 约束，止盈止损属于条件计划，跳空或流动性不足可能导致实际成交偏离。该计划不改变基本面与综合排名，也不会自动提交委托。
-
-“预期计划”页面把短线心法落到交易前记录和盘中校验：可从自选股、持仓诊断和尾盘潜伏结果导入标的，填写预期逻辑、触发条件、失效条件、计划买入价、止损止盈和仓位；系统再用实时行情、K线结构、资金流和来源匹配计算计划完整度、赚钱效应、执行纪律和当前状态。新手配置默认单票 5% 仓位、5% 止损、10% 止盈，并提示偏离计划价过多时放弃，帮助区分计划内交易与盘中冲动。
-
-## 数据来源
-
-| 数据 | 来源 | 用途 |
-| --- | --- | --- |
-| 全市场快照 | 东方财富实时优先，延时行情与新浪财经回退 | 研究池、PE/PB、市值与流动性 |
-| 财务指标 | 东方财富数据中心财务指标 API（逐股请求） | 全量基本面评分与报告期展示 |
-| 行业/概念资金及成分股 | 东方财富板块资金/成分接口 | 资金热点匹配与精选十股 |
-| 板块近期资金轨迹 | 东方财富板块资金历史接口（不可用时显式降级为当日流向） | 轮动辅助评分 |
-| 美股/中概/恒指/原油/黄金/铜 | 东方财富全球延时行情接口 | 隔夜风险偏好、跨市场映射与外部结构分 |
-| 财经快讯事件 | 东方财富快讯（保留时间与来源） | 地缘、美元流动性、贸易限制和关键矿产短期冲击；关键词结果须复核原文 |
-| 即时行情 | 腾讯财经优先，新浪财经后备 | 行情查看 |
-| 历史 K 线 | 腾讯财经优先，东方财富后备 | 趋势确认和回测 |
-| 本地最近成功快照 | `.cache/` | 在线行情源异常时降级展示 |
-
-当前没有直接接入 CME FedWatch 概率、美国官方经济日历或霍尔木兹/曼德海峡实时通行量；页面会明确显示这一覆盖边界，不用模型常识补成“实时事实”。
-
-## 独立量化因子与滚动优化
-
-量化通道与原有基本面选股、板块门槛和实时买点完全并行，不会自动放宽原有交易条件，也不会自动下单。它用于检验技术因子在历史样本和样本外区间的稳定性，不能把回测结果解释成交易“确定性”。
-
-直接运行：
+## 技术面量化
 
 ```bash
-pip install -r requirements.txt
 python quant_pipeline.py
 ```
 
-发送独立量化报告邮件：
+默认工作日16:30由 `.github/workflows/quant-factor-research.yml` 运行。数据源为AkShare，配置 `TUSHARE_TOKEN` 后可优先使用Tushare。输出位于 `output/quant/`，包含HTML报告、摘要、信号、样本外净值、滚动折次和最新因子。
+
+回测按T日收盘评分、T+1收益验证，考虑佣金万三、印花税千一和双边0.1%滑点。滚动优化使用过去504个交易日训练、未来126个交易日验证。
+
+网站可通过受保护的 `/api/technical/sync` 从最新GitHub Actions Artifact同步量化快照。12点邮件工作流通过Actions缓存读取前一日量化结果。
+
+## 验证
 
 ```bash
-python quant_pipeline.py --send-email
+python -m unittest discover -s tests -v
+python -m py_compile server.py research_core.py fundamental.py email_digest.py quant_data.py quant_factors.py quant_backtest.py quant_optimizer.py quant_pipeline.py
 ```
 
-本地常驻定时任务默认在北京时间工作日 16:30 执行：
-
-```bash
-python quant_scheduler.py
-```
-
-系统默认使用 AkShare；配置 `TUSHARE_TOKEN` 后，`QUANT_DATA_PROVIDER=auto` 会优先使用 Tushare。日线按股票增量缓存在 `.cache/quant_daily/`，默认取非 ST、非北交所且成交额靠前的 500 只股票；`QUANT_UNIVERSE_LIMIT=0` 可取消数量限制，但首次全市场回补会产生大量请求。也可以通过 `QUANT_SYMBOLS=000001,600519` 固定研究池。主要环境变量：
-
-- `QUANT_DATA_PROVIDER`：`auto`、`akshare` 或 `tushare`。
-- `QUANT_UNIVERSE_LIMIT`：默认 500；设为 0 表示数据源返回的全部股票。
-- `QUANT_TOP_N`：每日因子排名等权持有数量，默认 20。
-- `QUANT_HISTORY_YEARS`：下载历史年数，默认 4 年。
-- `QUANT_INCLUDE_BJ`：设为 `1` 时纳入北交所。
-- `QUANT_OUTPUT_DIR`：默认 `output/quant`。
-
-因子包括动量、价格相对均线趋势、年化波动率、量比、RSI、布林带位置、ATR及ATR占价格比例。回测在 T 日收盘后计算排名，持仓权重从 T+1 日收益开始生效，避免使用未来数据；交易成本为买卖佣金万三、卖出印花税千一、双边滑点 0.1%。优化按过去 504 个交易日训练、随后 126 个交易日验证，每 126 日向前滚动一次；默认滚动搜索 20/60/120 日动量窗口与 20/60/120 日均线周期共 9 组组合，以训练期夏普最大化选择参数，并单独汇总样本外净值、年化收益、最大回撤和夏普比率。
-
-输出目录包含 `quant_report.html`、`quant_summary.json`、`quant_signals.csv`、`quant_oos_equity.csv`、`quant_folds.csv` 和 `quant_factors_latest.csv`。GitHub Actions 工作流 `.github/workflows/quant-factor-research.yml` 在工作日北京时间 16:30 运行，报告作为 Artifact 保存 30 天并通过现有邮箱配置发送；GitHub 调度可能延迟，节假日和数据源异常仍需检查日志。
-
-## 模块文档
-
-- [系统模块与数据边界](docs/ARCHITECTURE.md)：模块职责、接口分组、真实账户边界和修改测试顺序。
-- [选股与策略优化指南](docs/SELECTION_AND_STRATEGY.md)：后续优化核心交易策略或基本面选股逻辑的落点。
-- [尾盘潜伏选股策略](docs/TAIL_END_SCREENER.md)：昨日初筛、今日分时/资金验证和尾盘执行规则。
-- [国信证券真实账户接入与上线步骤](docs/GUOSEN_INTEGRATION.md)：申请、联调、风控核验、实盘启用和停机步骤。
-
-## 国信证券真实账户与下单接入
-
-“国信下单”页面实现国信开放 API 的 `AK/SK` HMAC 签名网关、连接测试、资金/持仓/成交/委托查询、真实账户风险诊断、订单预检以及受保护的真实限价委托提交。
-
-国信证券公开资料说明了两种边界：
-
-- **国信开放 API** 需要申请应用、获得 API 项目授权后，才能取得具体的证券交易接口路径和请求字段。本系统页面中的路径与委托 JSON 模板必须按你的授权项目文档填写。
-- **国信 iQuant** 是国信客户端内运行的 Python 策略交易平台，支持自动交易，但其客户端策略 API 不是任意网页可直接调用的公开 HTTP 下单端点。
-
-推荐的配置方式是环境变量，避免在源码或浏览器持久保存交易密钥：
-
-```powershell
-$env:GUOSEN_API_BASE_URL="https://你的授权网关"
-$env:GUOSEN_API_AK="你的AK"
-$env:GUOSEN_API_SK="你的SK"
-$env:GUOSEN_ACCOUNT_ID="你的资金账号"
-$env:GUOSEN_ACCOUNT_QUERY_FIELD="授权接口要求的账号查询参数名（若需要）"
-$env:GUOSEN_STATUS_PATH="/授权文档中的联通测试路径"
-$env:GUOSEN_ACCOUNT_PATH="/授权文档中的资金查询路径"
-$env:GUOSEN_POSITIONS_PATH="/授权文档中的持仓查询路径"
-$env:GUOSEN_TRADES_PATH="/授权文档中的成交查询路径"
-$env:GUOSEN_ORDERS_PATH="/授权文档中的委托查询路径"
-$env:GUOSEN_ORDER_PATH="/授权文档中的委托路径"
-$env:GUOSEN_ORDER_TEMPLATE='{"account":"{{account_id}}","symbol":"{{market_code}}","side":"{{side}}","price":{{price}},"quantity":{{quantity}}}'
-```
-
-真实委托默认被服务端阻断。先在国信测试环境核验所有查询路径、响应字段单位、订单模板和风险页面展示；确认后再显式解锁：
-
-```powershell
-$env:GUOSEN_ENABLE_LIVE_TRADING="YES"
-python server.py
-```
-
-页面提交真实订单时仍必须输入确认口令 `CONFIRM_LIVE_ORDER`。系统只接受限价单，且买入数量必须为 100 股整数倍；成交后的真实持仓仍受 A 股 `T+1` 等交易规则约束。
-
-官方参考：
-
-- [国信开放 API 平台文档](https://openapi.guosen.com.cn/doc/)
-- [国信 iQuant 产品页](https://www.guosen.com.cn/gs/iquant/index.html)
-
-## 安全说明
-
-- `DEEPSEEK_API_KEY`、国信 `AK/SK` 和资金账号不得提交到版本库。
-- 使用曾经写入源码或发送给他人的密钥前，应先在相应平台轮换。
-- 自动化实盘交易需要自行核验授权范围、订单状态回报、资金风控、停复牌与涨跌停限制。
+评分和回测仅用于研究，不构成投资建议，也不能提高未来收益的确定性。

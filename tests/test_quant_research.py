@@ -11,7 +11,6 @@ from quant_data import QuantDailyData, QuantDataConfig
 from quant_factors import FactorParams, calculate_factors
 from quant_optimizer import OptimizationConfig, walk_forward_optimize
 from quant_pipeline import _save_outputs
-from quant_scheduler import SHANGHAI, next_run
 
 
 def synthetic_prices(stock_count=8, days=180):
@@ -141,12 +140,6 @@ class QuantResearchTest(unittest.TestCase):
             report = Path(files["report"]).read_text(encoding="utf-8")
             self.assertIn("样本外表现", report)
             self.assertIn("不代表提高了交易结果的确定性", report)
-
-    def test_scheduler_uses_next_weekday_after_close(self):
-        friday_after_close = pd.Timestamp("2026-08-14 17:00", tz=SHANGHAI).to_pydatetime()
-        scheduled = next_run(friday_after_close)
-        self.assertEqual(scheduled.strftime("%Y-%m-%d %H:%M"), "2026-08-17 16:30")
-
 
 if __name__ == "__main__":
     unittest.main()

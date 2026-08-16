@@ -1,6 +1,0 @@
-# Web仪表盘依赖（部署用）
-# pip install -r requirements-web.txt --break-system-packages
-
-flask>=2.3
-gunicorn>=21.2  # 部署到Linux服务器时需要
-streamlit>=1.37  # Streamlit Cloud部署入口

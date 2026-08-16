@@ -1,7 +1,13 @@
-name: Daily stock selection email
+name: Daily dual-score research email
 
 on:
   workflow_dispatch:
+    inputs:
+      force_send:
+        description: Send even if today's marker exists
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: daily-stock-email
@@ -13,15 +19,18 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      actions: read
     env:
       MAIL_SMTP_HOST: ${{ vars.MAIL_SMTP_HOST || 'smtp.qq.com' }}
       MAIL_SMTP_PORT: ${{ vars.MAIL_SMTP_PORT || '465' }}
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       MAIL_TO: ${{ secrets.MAIL_TO }}
-      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
       EMAIL_UNIVERSE_LIMIT: ${{ vars.EMAIL_UNIVERSE_LIMIT || '500' }}
-      EMAIL_STOCK_COUNT: ${{ vars.EMAIL_STOCK_COUNT || '10' }}
+      PUSH_FUNDAMENTAL_MIN: ${{ vars.PUSH_FUNDAMENTAL_MIN || '60' }}
+      PUSH_TECHNICAL_MIN: ${{ vars.PUSH_TECHNICAL_MIN || '60' }}
+      PUSH_DISPLAY_LIMIT: ${{ vars.PUSH_DISPLAY_LIMIT || '20' }}
       SITE_URL: https://a-share-trading.onrender.com
       PYTHONUNBUFFERED: "1"
 
@@ -41,15 +50,30 @@ jobs:
           key: daily-stock-email-${{ steps.beijing_date.outputs.date }}
 
       - uses: actions/setup-python@v5
-        if: github.event_name != 'schedule' || steps.sent_cache.outputs.cache-hit != 'true'
+        if: inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true'
         with:
           python-version: "3.13"
           cache: pip
       - name: Install dependencies
-        if: github.event_name != 'schedule' || steps.sent_cache.outputs.cache-hit != 'true'
+        if: inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true'
         run: pip install -r requirements.txt
+      - name: Restore latest technical factor snapshot
+        if: inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: output/quant
+          key: quant-report-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            quant-report-${{ runner.os }}-
+      - name: Download latest technical artifact when cache is empty
+        if: (inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true') && hashFiles('output/quant/quant_summary.json') == ''
+        shell: bash
+        run: |
+          run_id=$(gh run list --workflow quant-factor-research.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          test -n "$run_id"
+          gh run download "$run_id" --pattern 'quant-factor-report-*' --dir output/quant
       - name: Generate and send email
-        if: github.event_name != 'schedule' || steps.sent_cache.outputs.cache-hit != 'true'
+        if: inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true'
         run: python email_digest.py
       - name: Record successful send
         if: success() && steps.sent_cache.outputs.cache-hit != 'true'
