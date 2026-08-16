@@ -49,12 +49,13 @@ def run_factor_backtest(
     costs: BacktestCosts | None = None,
     start_date=None,
     end_date=None,
+    score_weights: dict[str, float] | None = None,
 ) -> dict:
     """Rank at close on day T, then apply those weights to day T+1 returns."""
     if top_n <= 0:
         raise ValueError("top_n 必须大于0")
     costs = costs or BacktestCosts()
-    scored = add_cross_sectional_score(factors)
+    scored = add_cross_sectional_score(factors, weights=score_weights)
     if start_date is not None:
         scored = scored[scored["date"] >= pd.Timestamp(start_date)]
     if end_date is not None:
@@ -113,4 +114,5 @@ def run_factor_backtest(
         "equity": equity.reset_index(drop=True),
         "signals": signals,
         "costs": costs.to_dict(),
+        "score_weights": score_weights or {},
     }

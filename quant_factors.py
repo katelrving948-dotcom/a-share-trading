@@ -23,6 +23,16 @@ class FactorParams:
 
 
 REQUIRED_COLUMNS = {"date", "code", "open", "high", "low", "close", "volume"}
+SCORE_COLUMNS = {
+    "momentum": "score_momentum",
+    "trend": "score_trend",
+    "low_volatility": "score_low_volatility",
+    "volume_ratio": "score_volume_ratio",
+    "rsi": "score_rsi",
+    "bollinger": "score_bollinger",
+    "low_atr": "score_low_atr",
+}
+DEFAULT_SCORE_WEIGHTS = {name: 1 / len(SCORE_COLUMNS) for name in SCORE_COLUMNS}
 
 
 def _rsi(close: pd.Series, window: int) -> pd.Series:
@@ -106,7 +116,10 @@ def calculate_factors(prices: pd.DataFrame, params: FactorParams | None = None) 
     return result.sort_values(["date", "code"]).reset_index(drop=True)
 
 
-def add_cross_sectional_score(factors: pd.DataFrame) -> pd.DataFrame:
+def add_cross_sectional_score(
+    factors: pd.DataFrame,
+    weights: dict[str, float] | None = None,
+) -> pd.DataFrame:
     """Build a transparent equal-weight score from the requested factor family."""
     frame = factors.copy()
     required = [
@@ -127,9 +140,15 @@ def add_cross_sectional_score(factors: pd.DataFrame) -> pd.DataFrame:
     frame["score_rsi"] = frame.groupby("date")["rsi_health"].rank(pct=True)
     frame["score_bollinger"] = grouped["bollinger_position"].rank(pct=True)
     frame["score_low_atr"] = 1 - grouped["atr_pct"].rank(pct=True)
-    score_columns = [
-        "score_momentum", "score_trend", "score_low_volatility", "score_volume_ratio",
-        "score_rsi", "score_bollinger", "score_low_atr",
-    ]
-    frame["factor_score"] = frame[score_columns].mean(axis=1)
+    raw_weights = weights or DEFAULT_SCORE_WEIGHTS
+    selected_weights = {
+        name: max(0.0, float(raw_weights.get(name, 0))) for name in SCORE_COLUMNS
+    }
+    total_weight = sum(selected_weights.values())
+    if total_weight <= 0:
+        raise ValueError("因子权重合计必须大于0")
+    frame["factor_score"] = sum(
+        frame[column] * (selected_weights[name] / total_weight)
+        for name, column in SCORE_COLUMNS.items()
+    )
     return frame.drop(columns="rsi_health")

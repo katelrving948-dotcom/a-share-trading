@@ -23,6 +23,17 @@ def payload(observations=None):
         "capital_strength": {"label": "强", "strong_board_count": 1, "top_three_main_net_inflow": 20},
         "quant_model_gate": {"passed": True, "reason": "样本外总闸门通过"},
         "rotation_boards": [{"rank": 1, "name": "半导体", "type": "行业", "main_net_inflow": 12, "rotation_score": 72, "effect": "资金流入且上涨扩散", "leaders": [{"name": "测试龙头", "leadership_role": "龙头"}]}],
+        "hot_core_candidates": [{
+            "code": "000002", "name": "板块核心", "board_name": "半导体", "leadership_role": "龙头",
+            "board_strength_score": 72, "fundamental_score": 68, "technical_score": 75,
+            "trade_decision": {"status": "等待触发"},
+            "morning_plan": {
+                "levels_available": True, "status": "等待回踩或突破确认",
+                "entry_zone": {"low": 10.1, "high": 10.3}, "breakout_trigger": 10.5,
+                "max_chase_price": 10.7, "stop_zone": {"low": 9.8, "high": 9.9},
+                "take_profit_zones": [{"low": 10.9, "high": 11.1}, {"low": 11.4, "high": 11.7}],
+            },
+        }],
         "observations": observations or [],
     }
 
@@ -43,6 +54,10 @@ class EmailDigestTest(unittest.TestCase):
         self.assertIn("外盘、美股与地缘事件影响", html)
         self.assertIn("每日资金强度、板块效应与龙头", html)
         self.assertIn("量化次日验证与每日优化日志", html)
+        self.assertIn("000002 板块核心", plain)
+        self.assertIn("进场10.10-10.30", plain)
+        self.assertIn("止损9.80-9.90", html)
+        self.assertIn("止盈一10.90-11.10", html)
         self.assertIn("table-layout:fixed", html)
         self.assertEqual(html.count('width="7%"'), 2)
         self.assertEqual(html.count('width="22%"'), 2)

@@ -81,7 +81,7 @@ class ResearchCoreTest(unittest.TestCase):
         self.assertEqual([row["code"] for row in result], ["000001"])
         self.assertEqual(result[0]["combined_score"], 72.5)
 
-    def test_negative_oos_performance_closes_quant_selection_gate(self):
+    def test_negative_oos_performance_keeps_candidate_visible_but_closes_entry_gate(self):
         technical = {"summary": {"oos_metrics": {
             "annual_return": -5.2, "max_drawdown": -35.1,
             "sharpe_ratio": -0.12, "trading_days": 378,
@@ -93,7 +93,17 @@ class ResearchCoreTest(unittest.TestCase):
         )
 
         self.assertFalse(gate["passed"])
-        self.assertEqual(result, [])
+        self.assertEqual(len(result), 1)
+        self.assertFalse(result[0]["quant_model_passed"])
+        result[0].update({
+            "board_strength_score": 80,
+            "morning_plan": {
+                "actionable": True,
+                "status": "上午强势承接",
+                "execution_state": "当前价进入回踩进场区",
+            },
+        })
+        self.assertEqual(build_trade_decision(result[0])["status"], "不交易")
 
 
 if __name__ == "__main__":

@@ -263,8 +263,7 @@ def score_intersection(fundamental: dict, technical: dict) -> list[dict]:
     fundamental_min = float(os.getenv("PUSH_FUNDAMENTAL_MIN", "60"))
     technical_min = float(os.getenv("PUSH_TECHNICAL_MIN", "60"))
     display_limit = max(1, int(os.getenv("PUSH_DISPLAY_LIMIT", "20")))
-    if not quant_model_gate(technical)["passed"]:
-        return []
+    model_gate = quant_model_gate(technical)
     technical_by_code = {str(row.get("code", "")).zfill(6): row for row in technical.get("rows", [])}
     merged = []
     for item in fundamental.get("rows", []):
@@ -294,7 +293,7 @@ def score_intersection(fundamental: dict, technical: dict) -> list[dict]:
             "rsi": factor.get("rsi"),
             "bollinger_position": factor.get("bollinger_position"),
             "atr_pct": factor.get("atr_pct"),
-            "quant_model_passed": True,
+            "quant_model_passed": model_gate["passed"],
         })
     merged.sort(key=lambda row: row["combined_score"], reverse=True)
     for rank, row in enumerate(merged[:display_limit], start=1):
@@ -570,6 +569,29 @@ def build_market_research(
             item["code"], (build_morning_entry_plan({}), {"available": False})
         )
         item["trade_decision"] = build_trade_decision(item)
+        plan = item["morning_plan"]
+        entry_score = (
+            90 if (item["trade_decision"].get("entry_gate") or {}).get("passed")
+            else 60 if plan.get("levels_available") and plan.get("actionable")
+            else 20
+        )
+        board_score = float(item.get("board_strength_score") or 0)
+        item["selection_components"] = {
+            "fundamental": round(float(item.get("fundamental_score") or 0), 2),
+            "quant": round(float(item.get("technical_score") or 0), 2),
+            "board": round(board_score, 2),
+            "morning_structure": entry_score,
+        }
+        item["selection_score"] = round(
+            float(item.get("fundamental_score") or 0) * 0.30
+            + float(item.get("technical_score") or 0) * 0.30
+            + board_score * 0.30
+            + entry_score * 0.10,
+            2,
+        )
+    observations.sort(key=lambda item: item.get("selection_score", 0), reverse=True)
+    for rank, item in enumerate(observations, start=1):
+        item["rank"] = rank
 
     fundamental_by_code = {
         str(row.get("code", "")).zfill(6): row for row in fundamental.get("rows", [])
@@ -577,6 +599,7 @@ def build_market_research(
     technical_by_code = {
         str(row.get("code", "")).zfill(6): row for row in technical.get("rows", [])
     }
+    model_gate = quant_model_gate(technical)
     hot_core = []
     seen = set()
     for board in boards:
@@ -589,21 +612,47 @@ def build_market_research(
             seen.add(code)
             fundamental_row = fundamental_by_code.get(code, {})
             technical_row = technical_by_code.get(code, {})
+            technical_score = float(technical_row.get("technical_score") or 0)
+            fundamental_score = fundamental_row.get("fundamental_score")
             hot_core.append({
                 **leader,
                 "code": code,
+                "name": leader.get("name") or fundamental_row.get("name") or technical_row.get("name", ""),
+                "industry": fundamental_row.get("industry") or board.get("name"),
                 "board_name": board.get("name"),
                 "board_type": board.get("type"),
                 "board_strength_score": board.get("rotation_score"),
-                "fundamental_score": fundamental_row.get("fundamental_score"),
-                "technical_score": technical_row.get("technical_score"),
-                "quant_passed": float(technical_row.get("technical_score") or 0) >= 60,
-                "state": "进入双评分复核" if float(technical_row.get("technical_score") or 0) >= 60 else "仅作板块龙头观察",
+                "primary_board": board,
+                "matched_boards": [board],
+                "fundamental_score": fundamental_score,
+                "technical_score": technical_score,
+                "combined_score": round((float(fundamental_score or 0) + technical_score) / 2, 2),
+                "atr_pct": technical_row.get("atr_pct"),
+                "quant_model_passed": model_gate["passed"],
+                "quant_passed": technical_score >= 60 and model_gate["passed"],
+                "candidate_channel": "hot_core",
+                "state": (
+                    "进入双评分复核" if technical_score >= 60 and model_gate["passed"]
+                    else "量化模型总闸门关闭，保留板块龙头观察"
+                    if technical_score >= 60 else "仅作板块龙头观察"
+                ),
             })
             if len(hot_core) >= 10:
                 break
         if len(hot_core) >= 10:
             break
+    missing_hot_core = [item for item in hot_core if item["code"] not in enriched]
+    if missing_hot_core:
+        with ThreadPoolExecutor(max_workers=min(6, len(missing_hot_core))) as executor:
+            futures = [executor.submit(intraday_enrichment, item) for item in missing_hot_core]
+            for future in as_completed(futures):
+                code, plan, flow = future.result()
+                enriched[code] = (plan, flow)
+    for item in hot_core:
+        item["morning_plan"], item["intraday_fund_flow"] = enriched.get(
+            item["code"], (build_morning_entry_plan({}), {"available": False})
+        )
+        item["trade_decision"] = build_trade_decision(item)
     return {
         "market": market,
         "external_market": external,
@@ -622,7 +671,7 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
     market_research = build_market_research(observations, fundamental, technical)
     now = datetime.now(SHANGHAI)
     return {
-        "subject": f"{now:%Y-%m-%d} A股午间全链路观察",
+        "subject": f"{now:%Y-%m-%d} A股分层观察日报（板块+个股+买点）",
         "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
         "schedule": "工作日12:00",
         "analysis_window": "前一交易日完整盘面 + 当日09:30-11:30上午盘",

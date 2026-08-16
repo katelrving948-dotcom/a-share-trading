@@ -36,7 +36,8 @@ main{padding:28px;max-width:1500px;width:100%;margin:auto}.page{display:none}.pa
     </div>
     <div class="card"><h2>外盘、美股与事件影响</h2><div class="status" id="pushExternal">读取中…</div></div>
     <div class="card"><h2>每日资金强度 · 板块效应 · 龙头</h2><div class="status" id="capitalStatus">读取中…</div><div class="scroll" style="margin-top:10px"><table><thead><tr><th>#</th><th>板块</th><th>主力净流入</th><th>强度</th><th>板块效应</th><th>龙头/次龙头</th></tr></thead><tbody id="pushSectorRows"></tbody></table></div></div>
-    <div class="card"><h2>邮件内容预览 · 全链路交集观察池</h2><p class="muted" id="pushRule"></p><div class="scroll"><table><thead><tr><th>#</th><th>股票</th><th>行业</th><th>基本面</th><th>量化</th><th>板块</th><th>结论</th><th>进场/止损/止盈</th></tr></thead><tbody id="pushRows"></tbody></table></div></div>
+    <div class="card"><h2>热门核心观察池 · 强势板块龙头/次龙头</h2><div class="scroll"><table><thead><tr><th>#</th><th>股票</th><th>板块/角色</th><th>板块强度</th><th>基本面</th><th>量化</th><th>结论</th><th>进场/止损/止盈</th></tr></thead><tbody id="pushHotRows"></tbody></table></div></div>
+    <div class="card"><h2>邮件内容预览 · 中长期基本面+量化观察池</h2><p class="muted" id="pushRule"></p><div class="scroll"><table><thead><tr><th>#</th><th>股票</th><th>行业</th><th>基本面</th><th>量化</th><th>板块</th><th>综合选股</th><th>结论</th><th>进场/止损/止盈</th></tr></thead><tbody id="pushRows"></tbody></table></div></div>
   </section>
 
   <section class="page" id="page-fundamental">
@@ -69,7 +70,7 @@ let fundData=[],techData=[];
 function planText(x){const p=x.morning_plan||{},e=p.entry_zone||{},s=p.stop_zone||{},t=p.take_profit_zones||[];if(!p.levels_available)return esc(p.status||'暂无价位');return `进场 ${num(e.low,2)}-${num(e.high,2)}；止损 ${num(s.low,2)}-${num(s.high,2)}；止盈 ${num(t[0]?.low,2)} / ${num(t[1]?.low,2)}；${esc(p.execution_state||'等待触发')}`}
 async function loadPush(){try{
   const [s,p]=await Promise.all([api.get('/api/push/status'),api.get('/api/push/preview')]);
-  const c=p.capital_strength||{},ext=p.external_market||{},boards=p.rotation_boards||[],gate=p.quant_model_gate||{};
+  const c=p.capital_strength||{},ext=p.external_market||{},boards=p.rotation_boards||[],hot=p.hot_core_candidates||[],gate=p.quant_model_gate||{};
   document.getElementById('pushMetrics').innerHTML=metric('计划时间',p.schedule)+metric('交集观察',p.observation_count+'只')+metric('资金强度',c.label||'--')+metric('强板块',c.strong_board_count??0,'个');
   document.getElementById('pushStatus').textContent=`状态：${s.state}\n开始：${s.started_at||'--'}\n完成：${s.completed_at||'--'}\n错误：${s.error||'无'}\n说明：${s.delivery_boundary}`;
   document.getElementById('pushRule').textContent=p.rules.meaning+'；量化模型总闸门：'+(gate.passed?'通过':'关闭')+'（'+(gate.reason||'--')+'）；展示上限 '+p.rules.display_limit+' 只。';
@@ -78,7 +79,8 @@ async function loadPush(){try{
   document.getElementById('pushExternal').textContent=`覆盖：${ext.coverage||'暂不可用'}\n${markets||'外盘行情暂不可用'}\n${events||'暂无事件信号'}\n边界：外部变化必须由A股资金和板块扩散确认。`;
   document.getElementById('capitalStatus').textContent=`资金强度：${c.label||'--'}；强板块：${c.strong_board_count??0}个；前三主力净流入合计：${num(c.top_three_main_net_inflow,2)}亿元。\n${c.method||''}`;
   document.getElementById('pushSectorRows').innerHTML=boards.length?boards.slice(0,12).map(x=>`<tr><td>${x.rank}</td><td><strong>${esc(x.name)}</strong><br>${esc(x.type)}</td><td>${num(x.main_net_inflow,2)}亿</td><td class="score">${num(x.rotation_score,0)}</td><td>${esc(x.effect)}</td><td>${(x.leaders||[]).map(y=>`${esc(y.name)}(${esc(y.leadership_role)})`).join('、')||'--'}</td></tr>`).join(''):'<tr><td colspan="6">暂无有效板块资金数据。</td></tr>';
-  document.getElementById('pushRows').innerHTML=p.observations.length?p.observations.map(x=>`<tr><td>${x.rank}</td><td><strong>${esc(x.code)}</strong><br>${esc(x.name)}</td><td>${esc(x.industry)}</td><td class="score">${num(x.fundamental_score,0)}</td><td class="score">${num(x.technical_score)}</td><td>${esc(x.primary_board?.name||'未匹配')} / ${num(x.board_strength_score,0)}</td><td class="${x.trade_decision?.status==='可执行观察'?'ok':'warn'}">${esc(x.trade_decision?.status||'等待确认')}</td><td>${planText(x)}</td></tr>`).join(''):'<tr><td colspan="8">当前没有同时达标的股票，或评分快照尚未生成。</td></tr>';
+  document.getElementById('pushHotRows').innerHTML=hot.length?hot.map((x,i)=>`<tr><td>${i+1}</td><td><strong>${esc(x.code)}</strong><br>${esc(x.name)}</td><td>${esc(x.board_name)} / ${esc(x.leadership_role)}</td><td class="score">${num(x.board_strength_score,0)}</td><td>${num(x.fundamental_score,0)}</td><td>${num(x.technical_score)}</td><td class="${x.trade_decision?.status==='可执行观察'?'ok':'warn'}">${esc(x.trade_decision?.status||x.state)}</td><td>${planText(x)}</td></tr>`).join(''):'<tr><td colspan="8">本次未形成强势板块龙头观察名单。</td></tr>';
+  document.getElementById('pushRows').innerHTML=p.observations.length?p.observations.map(x=>`<tr><td>${x.rank}</td><td><strong>${esc(x.code)}</strong><br>${esc(x.name)}</td><td>${esc(x.industry)}</td><td class="score">${num(x.fundamental_score,0)}</td><td class="score">${num(x.technical_score)}</td><td>${esc(x.primary_board?.name||'未匹配')} / ${num(x.board_strength_score,0)}</td><td class="score">${num(x.selection_score??x.combined_score)}</td><td class="${x.trade_decision?.status==='可执行观察'?'ok':'warn'}">${esc(x.trade_decision?.status||'等待确认')}</td><td>${planText(x)}</td></tr>`).join(''):'<tr><td colspan="9">当前没有同时达标的股票，或评分快照尚未生成。</td></tr>';
 }catch(e){document.getElementById('pushStatus').textContent='读取失败：'+e.message}}
 document.getElementById('pushReload').onclick=loadPush;document.getElementById('pushRun').onclick=async()=>{const b=document.getElementById('pushRun');b.disabled=true;try{const secret=document.getElementById('cronSecret').value;await api.post('/api/push/run',{}, {'Authorization':'Bearer '+secret});await loadPush()}catch(e){alert(e.message)}finally{b.disabled=false}};
 

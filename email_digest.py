@@ -48,11 +48,12 @@ def build_email(payload: dict) -> EmailMessage:
         decision = item.get("trade_decision") or {}
         stock_flow = item.get("intraday_fund_flow") or {}
         plan_text = _plan_text(item)
+        selection_score = item.get("selection_score", item.get("combined_score"))
         plain_rows.append(
             f"{item.get('rank', '-')}. {item.get('code')} {item.get('name', '')} | "
             f"基本面{_number(item.get('fundamental_score'), 0)} | "
             f"技术面{_number(item.get('technical_score'), 1)} | "
-            f"综合{_number(item.get('combined_score'), 1)} | "
+            f"综合选股{_number(selection_score, 1)} | "
             f"板块{primary_board.get('name') or '未匹配'}({_number(item.get('board_strength_score'), 0)}) | "
             f"个股主力净占比{_number(stock_flow.get('main_net_pct'), 2, '%')} | "
             f"结论{decision.get('status', '等待确认')}\n  {plan_text}"
@@ -64,7 +65,7 @@ def build_email(payload: dict) -> EmailMessage:
             f'<td width="23%" style="width:23%;padding:10px 8px;border-bottom:1px solid #e4e9f0;text-align:left;vertical-align:middle;word-break:break-word">{html.escape(str(item.get("industry", "") or "--"))}</td>'
             f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("fundamental_score"), 0)}</td>'
             f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("technical_score"), 1)}</td>'
-            f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap"><strong>{_number(item.get("combined_score"), 1)}</strong></td>'
+            f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap"><strong>{_number(selection_score, 1)}</strong></td>'
             "</tr>"
             '<tr><td colspan="6" style="padding:8px 10px 13px;border-bottom:2px solid #cfd8e5;background:#f8fafc;line-height:1.7">'
             f'<strong>{html.escape(str(decision.get("status") or "等待确认"))}</strong> · '
@@ -106,8 +107,15 @@ def build_email(payload: dict) -> EmailMessage:
         )
         for board in boards[:8]
     ]
+    hot_core_plain = [
+        f"{index}. {item.get('code')} {item.get('name')}（{item.get('board_name')}/{item.get('leadership_role')}） | "
+        f"板块{_number(item.get('board_strength_score'), 0)} | 基本面{_number(item.get('fundamental_score'), 0)} | "
+        f"量化{_number(item.get('technical_score'), 1)} | {item.get('trade_decision', {}).get('status', '等待确认')}\n"
+        f"  {_plan_text(item)}"
+        for index, item in enumerate(hot_core, start=1)
+    ]
     empty_text = (
-        f"量化模型未通过样本外总闸门，停止生成选股与进场标的：{model_gate.get('reason')}"
+        f"量化模型未通过样本外总闸门，候选仍展示但不给予进场许可：{model_gate.get('reason')}"
         if not model_gate.get("passed")
         else "今日没有股票同时达到两类评分阈值，保留空观察池。"
     )
@@ -127,8 +135,10 @@ def build_email(payload: dict) -> EmailMessage:
         f"资金强度：{capital.get('label', '--')}；强板块{capital.get('strong_board_count', 0)}个；"
         f"前三板块主力净流入合计{_number(capital.get('top_three_main_net_inflow'), 2)}亿。\n"
         + ("\n".join(board_plain) if board_plain else "暂无有效板块资金数据")
+        + "\n\n热门核心观察池（强势板块龙头/次龙头）\n"
+        + ("\n".join(hot_core_plain) if hot_core_plain else "本次未形成满足条件的板块龙头/次龙头")
         + "\n\n"
-        "双评分交集观察池\n"
+        "中长期基本面+量化观察池\n"
         + ("\n".join(plain_rows) if plain_rows else empty_text)
         + "\n\n"
         f"规则：基本面≥{rules.get('fundamental_min')}，技术面≥{rules.get('technical_min')}；"
@@ -168,10 +178,17 @@ def build_email(payload: dict) -> EmailMessage:
         '</tr>'
         for board in boards[:8]
     ) or '<tr><td colspan="5" style="padding:10px">暂无有效板块资金数据。</td></tr>'
-    hot_core_html = "、".join(
-        f'{html.escape(str(item.get("name") or item.get("code")))}（{html.escape(str(item.get("board_name") or ""))}，{html.escape(str(item.get("state") or ""))}）'
-        for item in hot_core
-    ) or "本次未形成强势板块龙头观察名单。"
+    hot_core_html = "".join(
+        '<div style="padding:11px 12px;border-bottom:1px solid #f2dcc1;line-height:1.7">'
+        f'<strong>{index}. {html.escape(str(item.get("code") or ""))} {html.escape(str(item.get("name") or ""))}</strong> · '
+        f'{html.escape(str(item.get("board_name") or "--"))}/{html.escape(str(item.get("leadership_role") or "板块核心"))}<br>'
+        f'<span style="font-size:12px;color:#7c2d12">板块 {_number(item.get("board_strength_score"), 0)} · '
+        f'基本面 {_number(item.get("fundamental_score"), 0)} · 量化 {_number(item.get("technical_score"), 1)} · '
+        f'{html.escape(str((item.get("trade_decision") or {}).get("status") or "等待确认"))}</span><br>'
+        f'<span style="font-size:12px;color:#475569">{html.escape(_plan_text(item))}</span>'
+        '</div>'
+        for index, item in enumerate(hot_core, start=1)
+    ) or '<div style="padding:11px 12px">本次未形成强势板块龙头观察名单。</div>'
     validation_html = (
         f'{validation.get("signal_date")} → {validation.get("validation_date")}：'
         f'命中率{_number(validation.get("hit_rate"), 2, "%")}，平均{_number(validation.get("average_return"), 3, "%")}，'
@@ -210,8 +227,10 @@ def build_email(payload: dict) -> EmailMessage:
               <thead><tr style="background:#edf2f8"><th width="6%" style="padding:8px">#</th><th width="18%" style="padding:8px;text-align:left">板块</th><th width="18%" style="padding:8px">资金/强度</th><th width="28%" style="padding:8px;text-align:left">板块效应</th><th width="30%" style="padding:8px;text-align:left">龙头/次龙头</th></tr></thead>
               <tbody>{board_rows}</tbody>
             </table>
-            <div style="margin-top:10px;padding:10px;background:#fff7ed;line-height:1.7"><strong>热门核心观察：</strong>{hot_core_html}</div>
-            <h2 style="font-size:18px;margin-top:24px">双评分交集观察池</h2>
+            <h2 style="font-size:18px;margin-top:24px">热门核心观察池：强势板块龙头与次龙头</h2>
+            <p style="color:#5e6b7d">保留好板块与板块核心票；量化模型不合格时仍展示研究对象，但进场结论为不交易。</p>
+            <div style="border:1px solid #f2dcc1;background:#fff7ed">{hot_core_html}</div>
+            <h2 style="font-size:18px;margin-top:24px">中长期基本面+量化观察池</h2>
             <p style="color:#5e6b7d">基本面≥{rules.get('fundamental_min')}，技术面≥{rules.get('technical_min')}。没有交集时允许为空。</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px">
               <thead><tr style="background:#edf2f8">
@@ -220,7 +239,7 @@ def build_email(payload: dict) -> EmailMessage:
                 <th width="23%" style="width:23%;padding:10px 8px;border-bottom:1px solid #cfd8e5;text-align:left;vertical-align:middle;white-space:nowrap">行业</th>
                 <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">基本面</th>
                 <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">技术面</th>
-                <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">综合</th>
+                <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">综合选股</th>
               </tr></thead>
               <tbody>{table_body}</tbody>
             </table>

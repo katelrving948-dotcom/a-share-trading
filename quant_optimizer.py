@@ -12,6 +12,19 @@ from quant_backtest import BacktestCosts, run_factor_backtest
 from quant_factors import FactorParams, add_cross_sectional_score, calculate_factors
 
 
+WEIGHT_NAMES = (
+    "momentum", "trend", "low_volatility", "volume_ratio",
+    "rsi", "bollinger", "low_atr",
+)
+DEFAULT_WEIGHT_SCHEMES = (
+    (1, 1, 1, 1, 1, 1, 1),
+    (25, 25, 10, 15, 10, 10, 5),
+    (30, 20, 15, 10, 10, 5, 10),
+    (15, 25, 20, 10, 10, 5, 15),
+    (20, 20, 10, 25, 10, 10, 5),
+)
+
+
 @dataclass(frozen=True)
 class OptimizationConfig:
     train_days: int = 504
@@ -24,6 +37,7 @@ class OptimizationConfig:
     rsi_windows: tuple[int, ...] = (14,)
     bollinger_windows: tuple[int, ...] = (20,)
     atr_windows: tuple[int, ...] = (14,)
+    weight_schemes: tuple[tuple[float, ...], ...] = DEFAULT_WEIGHT_SCHEMES
 
     def parameter_grid(self) -> list[FactorParams]:
         return [
@@ -38,6 +52,20 @@ class OptimizationConfig:
                 self.atr_windows,
             )
         ]
+
+    def weight_grid(self) -> list[dict[str, float]]:
+        weights = []
+        for values in self.weight_schemes:
+            if len(values) != len(WEIGHT_NAMES):
+                raise ValueError(f"因子权重必须包含{len(WEIGHT_NAMES)}项")
+            total = sum(max(0.0, float(value)) for value in values)
+            if total <= 0:
+                raise ValueError("因子权重合计必须大于0")
+            weights.append({
+                name: round(max(0.0, float(value)) / total, 6)
+                for name, value in zip(WEIGHT_NAMES, values)
+            })
+        return weights
 
 
 def _aggregate_oos(equities: list[pd.DataFrame]) -> tuple[pd.DataFrame, dict]:
@@ -78,7 +106,9 @@ def walk_forward_optimize(
     folds = []
     oos_equities = []
     last_best_params = None
+    last_best_weights = None
     grid = config.parameter_grid()
+    weight_grid = config.weight_grid()
     for validation_start_index in range(
         config.train_days,
         len(dates) - config.validation_days + 1,
@@ -94,29 +124,37 @@ def walk_forward_optimize(
         best_factors = None
         for params in grid:
             factors = calculate_factors(prices, params)
-            train = run_factor_backtest(
-                factors, top_n=config.top_n, costs=costs,
-                start_date=train_start, end_date=train_end,
-            )
-            sharpe = float(train["metrics"].get("sharpe_ratio") or 0)
-            trial = {
-                "params": params.to_dict(),
-                "train_sharpe": sharpe,
-                "train_annual_return": train["metrics"].get("annual_return", 0),
-                "train_max_drawdown": train["metrics"].get("max_drawdown", 0),
-            }
-            trials.append(trial)
-            if best is None or sharpe > best["train_sharpe"]:
-                best = trial
-                best_factors = factors
+            for score_weights in weight_grid:
+                train = run_factor_backtest(
+                    factors, top_n=config.top_n, costs=costs,
+                    start_date=train_start, end_date=train_end,
+                    score_weights=score_weights,
+                )
+                sharpe = float(train["metrics"].get("sharpe_ratio") or 0)
+                trial = {
+                    "params": {**params.to_dict(), "factor_weights": score_weights},
+                    "train_sharpe": sharpe,
+                    "train_annual_return": train["metrics"].get("annual_return", 0),
+                    "train_max_drawdown": train["metrics"].get("max_drawdown", 0),
+                }
+                trials.append(trial)
+                if best is None or sharpe > best["train_sharpe"]:
+                    best = trial
+                    best_factors = factors
 
         if best is None or best_factors is None:
             continue
         validation = run_factor_backtest(
             best_factors, top_n=config.top_n, costs=costs,
             start_date=validation_start, end_date=validation_end,
+            score_weights=best["params"]["factor_weights"],
         )
-        last_best_params = FactorParams(**best["params"])
+        window_params = {
+            key: value for key, value in best["params"].items()
+            if key in FactorParams.__dataclass_fields__
+        }
+        last_best_params = FactorParams(**window_params)
+        last_best_weights = best["params"]["factor_weights"]
         folds.append({
             "train_start": pd.Timestamp(train_start).strftime("%Y-%m-%d"),
             "train_end": pd.Timestamp(train_end).strftime("%Y-%m-%d"),
@@ -136,16 +174,18 @@ def walk_forward_optimize(
     if last_best_params is None:
         raise RuntimeError("滚动优化未形成有效折次")
     oos_equity, oos_metrics = _aggregate_oos(oos_equities)
-    latest_factors = add_cross_sectional_score(calculate_factors(prices, last_best_params))
+    latest_factors = add_cross_sectional_score(
+        calculate_factors(prices, last_best_params), weights=last_best_weights
+    )
     latest_backtest = run_factor_backtest(
-        latest_factors, top_n=config.top_n, costs=costs,
+        latest_factors, top_n=config.top_n, costs=costs, score_weights=last_best_weights,
     )
     return {
-        "best_params": last_best_params.to_dict(),
+        "best_params": {**last_best_params.to_dict(), "factor_weights": last_best_weights},
         "folds": folds,
         "oos_metrics": oos_metrics,
         "oos_equity": oos_equity,
         "full_backtest": latest_backtest,
         "factors": latest_factors,
-        "grid_size": len(grid),
+        "grid_size": len(grid) * len(weight_grid),
     }

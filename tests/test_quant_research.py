@@ -10,7 +10,7 @@ import pandas as pd
 
 from quant_backtest import BacktestCosts, run_factor_backtest
 from quant_data import QuantDailyData, QuantDataConfig
-from quant_factors import FactorParams, calculate_factors
+from quant_factors import FactorParams, add_cross_sectional_score, calculate_factors
 from quant_journal import build_optimization_entry, validate_previous_signals
 from quant_optimizer import OptimizationConfig, walk_forward_optimize
 from quant_pipeline import _save_outputs
@@ -46,6 +46,7 @@ SMALL_PARAMS = FactorParams(
     bollinger_window=5,
     atr_window=5,
 )
+EQUAL_WEIGHT_SCHEME = ((1, 1, 1, 1, 1, 1, 1),)
 
 
 class QuantResearchTest(unittest.TestCase):
@@ -151,6 +152,13 @@ class QuantResearchTest(unittest.TestCase):
         right = revised[revised["date"] <= cutoff].reset_index(drop=True)
         pd.testing.assert_series_equal(left["momentum"], right["momentum"])
 
+    def test_factor_weights_change_the_composite_score(self):
+        factors = calculate_factors(synthetic_prices(stock_count=4, days=40), SMALL_PARAMS)
+        equal = add_cross_sectional_score(factors)
+        momentum_only = add_cross_sectional_score(factors, {"momentum": 1})
+
+        self.assertFalse(equal["factor_score"].equals(momentum_only["factor_score"]))
+
     def test_vectorized_backtest_selects_top_stocks_and_charges_costs(self):
         factors = calculate_factors(synthetic_prices(), SMALL_PARAMS)
         result = run_factor_backtest(
@@ -178,6 +186,7 @@ class QuantResearchTest(unittest.TestCase):
             rsi_windows=(5,),
             bollinger_windows=(5,),
             atr_windows=(5,),
+            weight_schemes=EQUAL_WEIGHT_SCHEME,
         )
 
         result = walk_forward_optimize(prices, config=config)
@@ -194,6 +203,7 @@ class QuantResearchTest(unittest.TestCase):
             train_days=60, validation_days=20, top_n=3,
             momentum_windows=(5,), trend_windows=(5,), volatility_windows=(5,), volume_windows=(5,),
             rsi_windows=(5,), bollinger_windows=(5,), atr_windows=(5,),
+            weight_schemes=EQUAL_WEIGHT_SCHEME,
         )
         result = walk_forward_optimize(prices, config=config)
         metadata = {
