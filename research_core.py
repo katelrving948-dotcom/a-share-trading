@@ -219,10 +219,52 @@ def sync_latest_quant_artifact() -> dict:
     return {"artifact": artifact.get("name"), "updated_at": artifact.get("updated_at"), "files": sorted(copied)}
 
 
+def quant_model_gate(technical: dict) -> dict:
+    metrics = (technical.get("summary") or {}).get("oos_metrics") or {}
+    required = ("annual_return", "max_drawdown", "sharpe_ratio", "trading_days")
+    if any(metrics.get(key) is None for key in required):
+        return {
+            "passed": False,
+            "evaluated": False,
+            "reason": "量化样本外指标不完整，停止用于选股和进场",
+        }
+    annual = float(metrics.get("annual_return") or 0)
+    drawdown = float(metrics.get("max_drawdown") or 0)
+    sharpe = float(metrics.get("sharpe_ratio") or 0)
+    trading_days = int(metrics.get("trading_days") or 0)
+    min_annual = float(os.getenv("QUANT_MIN_OOS_ANNUAL_RETURN", "0"))
+    min_sharpe = float(os.getenv("QUANT_MIN_OOS_SHARPE", "0"))
+    max_drawdown = float(os.getenv("QUANT_MAX_OOS_DRAWDOWN", "30"))
+    min_days = int(os.getenv("QUANT_MIN_OOS_DAYS", "126"))
+    checks = {
+        "annual_return": annual > min_annual,
+        "sharpe_ratio": sharpe > min_sharpe,
+        "max_drawdown": drawdown >= -max_drawdown,
+        "trading_days": trading_days >= min_days,
+    }
+    passed = all(checks.values())
+    failed = [name for name, ok in checks.items() if not ok]
+    return {
+        "passed": passed,
+        "evaluated": True,
+        "reason": "样本外总闸门通过" if passed else f"样本外总闸门未通过：{', '.join(failed)}",
+        "checks": checks,
+        "thresholds": {
+            "annual_return_gt": min_annual,
+            "sharpe_ratio_gt": min_sharpe,
+            "max_drawdown_gte": -max_drawdown,
+            "trading_days_gte": min_days,
+        },
+        "metrics": metrics,
+    }
+
+
 def score_intersection(fundamental: dict, technical: dict) -> list[dict]:
     fundamental_min = float(os.getenv("PUSH_FUNDAMENTAL_MIN", "60"))
     technical_min = float(os.getenv("PUSH_TECHNICAL_MIN", "60"))
     display_limit = max(1, int(os.getenv("PUSH_DISPLAY_LIMIT", "20")))
+    if not quant_model_gate(technical)["passed"]:
+        return []
     technical_by_code = {str(row.get("code", "")).zfill(6): row for row in technical.get("rows", [])}
     merged = []
     for item in fundamental.get("rows", []):
@@ -252,6 +294,7 @@ def score_intersection(fundamental: dict, technical: dict) -> list[dict]:
             "rsi": factor.get("rsi"),
             "bollinger_position": factor.get("bollinger_position"),
             "atr_pct": factor.get("atr_pct"),
+            "quant_model_passed": True,
         })
     merged.sort(key=lambda row: row["combined_score"], reverse=True)
     for rank, row in enumerate(merged[:display_limit], start=1):
@@ -391,7 +434,8 @@ def build_trade_decision(item: dict) -> dict:
     state = str(plan.get("execution_state") or "")
     board_pass = board_score is not None and float(board_score) >= 60
     fundamental_pass = fundamental_score >= 60
-    quant_pass = technical_score >= 60
+    model_pass = item.get("quant_model_passed", True) is True
+    quant_pass = technical_score >= 60 and model_pass
     entry_pass = bool(plan.get("actionable")) and (
         "进入回踩进场区" in state or "已触发突破确认" in state
     )
@@ -408,14 +452,14 @@ def build_trade_decision(item: dict) -> dict:
     if not fundamental_pass:
         reasons.append("基本面未达到60分")
     if not quant_pass:
-        reasons.append("量化因子未达到60分")
+        reasons.append("量化因子未达到60分或样本外总闸门未通过")
     if board_pass and fundamental_pass and quant_pass and not entry_pass:
         reasons.append(plan.get("status") or "午后进场条件尚未触发")
     return {
         "status": status,
         "board_gate": {"score": board_score, "passed": board_pass},
         "fundamental_gate": {"score": fundamental_score, "passed": fundamental_pass},
-        "quant_gate": {"score": technical_score, "passed": quant_pass},
+        "quant_gate": {"score": technical_score, "model_passed": model_pass, "passed": quant_pass},
         "entry_gate": {"passed": entry_pass, "state": state},
         "reasons": reasons,
         "note": "量化因子参与选股与进场门槛，价位仍须由上午盘结构触发；排名不是买入指令。",
@@ -573,6 +617,7 @@ def build_market_research(
 def build_push_payload(refresh: bool = False, universe_limit: int | None = None) -> dict:
     fundamental = refresh_fundamental(universe_limit) if refresh else load_fundamental()
     technical = load_technical()
+    model_gate = quant_model_gate(technical)
     observations = score_intersection(fundamental, technical)
     market_research = build_market_research(observations, fundamental, technical)
     now = datetime.now(SHANGHAI)
@@ -585,12 +630,14 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
         **market_research,
         "fundamental_summary": fundamental.get("summary", {}),
         "technical_summary": technical.get("summary", {}),
+        "quant_model_gate": model_gate,
         "observations": observations,
         "observation_count": len(observations),
         "rules": {
             "fundamental_min": float(os.getenv("PUSH_FUNDAMENTAL_MIN", "60")),
             "technical_min": float(os.getenv("PUSH_TECHNICAL_MIN", "60")),
             "display_limit": int(os.getenv("PUSH_DISPLAY_LIMIT", "20")),
+            "quant_model_gate": model_gate,
             "meaning": "外盘与事件只作情景输入；按板块资金→基本面→量化因子→上午盘触发顺序形成观察，不自动下单",
         },
     }

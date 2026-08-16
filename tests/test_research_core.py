@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from fundamental import FundamentalScorer
-from research_core import build_morning_entry_plan, build_trade_decision, score_intersection
+from research_core import build_morning_entry_plan, build_trade_decision, quant_model_gate, score_intersection
 
 
 class ResearchCoreTest(unittest.TestCase):
@@ -69,7 +69,10 @@ class ResearchCoreTest(unittest.TestCase):
             {"code": "000002", "name": "技术不达标", "fundamental_score": 80},
             {"code": "000003", "name": "基本面不达标", "fundamental_score": 59},
         ]}
-        technical = {"rows": [
+        technical = {"summary": {"oos_metrics": {
+            "annual_return": 8, "max_drawdown": -12,
+            "sharpe_ratio": 0.8, "trading_days": 252,
+        }}, "rows": [
             {"code": "000001", "technical_score": 70},
             {"code": "000002", "technical_score": 50},
             {"code": "000003", "technical_score": 90},
@@ -77,6 +80,20 @@ class ResearchCoreTest(unittest.TestCase):
         result = score_intersection(fundamental, technical)
         self.assertEqual([row["code"] for row in result], ["000001"])
         self.assertEqual(result[0]["combined_score"], 72.5)
+
+    def test_negative_oos_performance_closes_quant_selection_gate(self):
+        technical = {"summary": {"oos_metrics": {
+            "annual_return": -5.2, "max_drawdown": -35.1,
+            "sharpe_ratio": -0.12, "trading_days": 378,
+        }}, "rows": [{"code": "000001", "technical_score": 90}]}
+
+        gate = quant_model_gate(technical)
+        result = score_intersection(
+            {"rows": [{"code": "000001", "fundamental_score": 90}]}, technical
+        )
+
+        self.assertFalse(gate["passed"])
+        self.assertEqual(result, [])
 
 
 if __name__ == "__main__":

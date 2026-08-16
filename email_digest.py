@@ -87,6 +87,7 @@ def build_email(payload: dict) -> EmailMessage:
     hot_core = payload.get("hot_core_candidates") or []
     validation = technical.get("latest_validation") or {}
     optimization = technical.get("optimization_log_entry") or {}
+    model_gate = payload.get("quant_model_gate") or rules.get("quant_model_gate") or {}
     external_plain = [
         f"{item.get('name')} {float(item.get('change_pct') or 0):+.2f}%（{item.get('as_of') or '时间未知'}）"
         for item in (external.get("markets") or [])
@@ -105,7 +106,11 @@ def build_email(payload: dict) -> EmailMessage:
         )
         for board in boards[:8]
     ]
-    empty_text = "今日没有股票同时达到两类评分阈值，保留空观察池。"
+    empty_text = (
+        f"量化模型未通过样本外总闸门，停止生成选股与进场标的：{model_gate.get('reason')}"
+        if not model_gate.get("passed")
+        else "今日没有股票同时达到两类评分阈值，保留空观察池。"
+    )
     site_url = os.getenv("SITE_URL", "https://a-share-trading.onrender.com")
     plain = (
         f"{payload.get('subject')}\n"

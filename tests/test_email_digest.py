@@ -15,12 +15,13 @@ def payload(observations=None):
         "rules": {"fundamental_min": 60, "technical_min": 60, "display_limit": 20},
         "technical_summary": {
             "metadata": {"signal_date": "2026-08-15"},
-            "oos_metrics": {"annual_return": 12.3, "max_drawdown": -8.2, "sharpe_ratio": 1.1},
+            "oos_metrics": {"annual_return": 12.3, "max_drawdown": -8.2, "sharpe_ratio": 1.1, "trading_days": 252},
             "latest_validation": {"status": "validated", "signal_date": "2026-08-14", "validation_date": "2026-08-15", "hit_rate": 60, "average_return": 0.5, "excess_return": 0.2, "message": "已验证"},
             "optimization_log_entry": {"actions": ["动量窗口20调整为60"], "guardrail": "只在预设参数网格内选择"},
         },
         "external_market": {"coverage": "1/8项外盘行情，1类事件信号", "markets": [{"name": "纳斯达克100", "change_pct": 1.2, "as_of": "2026-08-15"}], "events": [{"name": "地缘政治", "impact_summary": "等待A股资金确认"}]},
         "capital_strength": {"label": "强", "strong_board_count": 1, "top_three_main_net_inflow": 20},
+        "quant_model_gate": {"passed": True, "reason": "样本外总闸门通过"},
         "rotation_boards": [{"rank": 1, "name": "半导体", "type": "行业", "main_net_inflow": 12, "rotation_score": 72, "effect": "资金流入且上涨扩散", "leaders": [{"name": "测试龙头", "leadership_role": "龙头"}]}],
         "observations": observations or [],
     }
