@@ -1,11 +1,11 @@
 {
   "metadata": {
-    "generated_at": "2026-08-16 20:40:31",
+    "generated_at": "2026-08-16 21:26:32",
     "signal_date": "2026-08-14",
     "provider": "akshare",
-    "stock_count": 48,
+    "stock_count": 500,
     "trading_days": 970,
-    "universe_limit": 100,
+    "universe_limit": 500,
     "current_trading_day_confirmed": false
   },
   "best_params": {
@@ -18,10 +18,10 @@
     "atr_window": 14
   },
   "oos_metrics": {
-    "total_return": 135.8638,
-    "annual_return": 77.1906,
-    "max_drawdown": -16.9765,
-    "sharpe_ratio": 2.0491,
+    "total_return": -7.8249,
+    "annual_return": -5.2871,
+    "max_drawdown": -35.1376,
+    "sharpe_ratio": -0.1196,
     "trading_days": 378
   },
   "folds": [
@@ -31,8 +31,8 @@
       "validation_start": "2024-09-10",
       "validation_end": "2025-03-24",
       "best_params": {
-        "momentum_window": 60,
-        "trend_window": 20,
+        "momentum_window": 20,
+        "trend_window": 60,
         "volatility_window": 20,
         "volume_window": 20,
         "rsi_window": 14,
@@ -40,19 +40,19 @@
         "atr_window": 14
       },
       "train_metrics": {
-        "sharpe_ratio": -0.5444,
-        "annual_return": -11.2604,
-        "max_drawdown": -33.2508
+        "sharpe_ratio": -2.1233,
+        "annual_return": -24.0464,
+        "max_drawdown": -39.1649
       },
       "validation_metrics": {
-        "total_return": 34.3442,
-        "annual_return": 80.4835,
-        "max_drawdown": -16.9765,
-        "sharpe_ratio": 1.8132,
+        "total_return": 0.5517,
+        "annual_return": 1.1065,
+        "max_drawdown": -24.5,
+        "sharpe_ratio": 0.185,
         "trading_days": 126,
         "top_n": 20,
-        "average_daily_turnover": 0.4516,
-        "total_trading_cost": 10.192
+        "average_daily_turnover": 1.0857,
+        "total_trading_cost": 24.574
       },
       "trial_count": 9
     },
@@ -62,8 +62,8 @@
       "validation_start": "2025-03-25",
       "validation_end": "2025-09-23",
       "best_params": {
-        "momentum_window": 60,
-        "trend_window": 120,
+        "momentum_window": 20,
+        "trend_window": 20,
         "volatility_window": 20,
         "volume_window": 20,
         "rsi_window": 14,
@@ -71,19 +71,19 @@
         "atr_window": 14
       },
       "train_metrics": {
-        "sharpe_ratio": 0.3,
-        "annual_return": 4.4061,
-        "max_drawdown": -30.4671
+        "sharpe_ratio": -0.9163,
+        "annual_return": -17.5301,
+        "max_drawdown": -41.0328
       },
       "validation_metrics": {
-        "total_return": 39.9345,
-        "annual_return": 95.8166,
-        "max_drawdown": -12.5977,
-        "sharpe_ratio": 3.2161,
+        "total_return": -8.5551,
+        "annual_return": -16.3783,
+        "max_drawdown": -14.7305,
+        "sharpe_ratio": -1.096,
         "trading_days": 126,
         "top_n": 20,
-        "average_daily_turnover": 0.4421,
-        "total_trading_cost": 9.976
+        "average_daily_turnover": 1.1397,
+        "total_trading_cost": 25.798
       },
       "trial_count": 9
     },
@@ -102,19 +102,19 @@
         "atr_window": 14
       },
       "train_metrics": {
-        "sharpe_ratio": 0.9722,
-        "annual_return": 22.6915,
-        "max_drawdown": -22.2098
+        "sharpe_ratio": -0.4071,
+        "annual_return": -9.0637,
+        "max_drawdown": -27.8772
       },
       "validation_metrics": {
-        "total_return": 25.4636,
-        "annual_return": 57.4111,
-        "max_drawdown": -11.8173,
-        "sharpe_ratio": 1.6267,
+        "total_return": 0.2454,
+        "annual_return": 0.4915,
+        "max_drawdown": -14.166,
+        "sharpe_ratio": 0.1314,
         "trading_days": 126,
         "top_n": 20,
-        "average_daily_turnover": 0.4032,
-        "total_trading_cost": 9.094
+        "average_daily_turnover": 1.077,
+        "total_trading_cost": 24.376
       },
       "trial_count": 9
     }
