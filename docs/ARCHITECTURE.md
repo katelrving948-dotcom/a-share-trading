@@ -27,6 +27,12 @@
 | `watchlist.py` | 自选观察列表 | 六位股票代码 | `.cache/watchlist.json` | 与账户数据隔离 |
 | `server.py` | HTTP API 与业务编排 | 页面请求 | JSON/HTML 响应 | API 合约、异常隔离 |
 | `templates/index.html` | 交互界面 | API 返回 | 研究和交易操作界面 | 不回退显示虚拟账户值 |
+| `quant_data.py` | 独立量化日线与增量缓存 | AkShare/Tushare、股票池、日期 | 标准化长表 OHLCV | 复权、覆盖范围、数据源失败 |
+| `quant_factors.py` | 技术因子计算 | 标准化 OHLCV、因子窗口 | 无未来数据的因子 DataFrame | 窗口最小样本、缺失值 |
+| `quant_backtest.py` | 截面向量化回测 | 因子分、前N、费用 | 净值、收益、回撤、夏普、信号 | T+1权重、买卖成本拆分 |
+| `quant_optimizer.py` | 滚动样本外优化 | 参数网格、504/126日窗口 | 最优参数、折次与样本外表现 | 过拟合、训练/验证隔离 |
+| `quant_pipeline.py` | 量化报告与邮件编排 | 数据、优化结果、邮箱配置 | HTML/JSON/CSV与独立邮件 | 节假日重复、报告可追溯 |
+| `quant_scheduler.py` | 本地收盘后调度 | 北京时间工作日16:30 | 量化流程运行 | 进程常驻、失败日志 |
 
 ## 核心数据流
 
@@ -52,6 +58,14 @@
 2. `broker.py` 校验股票代码、方向、价格和 A 股买入数量规则。
 3. 只有服务端启动时显式设置 `GUOSEN_ENABLE_LIVE_TRADING=YES`，且请求携带确认口令，才可请求授权下单路径。
 4. 成交与持仓的最终事实以随后从国信查询到的数据为准。
+
+### 独立量化研究
+
+1. `quant_data.py` 从 AkShare 或 Tushare 获取后复权日线，并按股票增量缓存。
+2. `quant_factors.py` 仅用当日及历史数据计算动量、均线趋势、波动率、量比、RSI、布林位置和 ATR。
+3. `quant_backtest.py` 在 T 日收盘形成权重，T+1 才计入持仓收益，并分别扣除买卖成本。
+4. `quant_optimizer.py` 用过去 504 个交易日选参数，在未来 126 个交易日做样本外验证并滚动前推。
+5. `quant_pipeline.py` 保存报告和下一交易日观察信号；该信号不进入 `broker.py`，不改变原有三道交易门槛。
 
 ## HTTP 接口分组
 

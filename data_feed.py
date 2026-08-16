@@ -17,6 +17,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from typing import Optional, List
+from zoneinfo import ZoneInfo
 
 from config import REQUEST_TIMEOUT, REQUEST_RETRIES, REQUEST_INTERVAL
 
@@ -35,6 +36,7 @@ SINA_MARKET_COUNT_URL = (
 MARKET_CACHE_DIR = os.path.join(os.path.dirname(__file__), ".cache")
 MARKET_CACHE_FILE = os.path.join(MARKET_CACHE_DIR, "market_snapshot.json")
 MARKET_CACHE_META_FILE = os.path.join(MARKET_CACHE_DIR, "market_snapshot.meta.json")
+SHANGHAI = ZoneInfo("Asia/Shanghai")
 
 EXTERNAL_MARKET_QUOTES = (
     ("DJIA", "道琼斯", "美股", "100.DJIA"),
@@ -1306,6 +1308,68 @@ class DataFeed:
             "volume": round(total_volume, 2),
         }
 
+    @classmethod
+    def _summarize_morning_session(cls, rows: list) -> dict:
+        """Summarise the full 09:30-11:30 session used by the noon digest."""
+        timed_rows = [
+            (cls._minute_hhmm(row.get("time")), row)
+            for row in rows
+        ]
+        timed_rows = [(hhmm, row) for hhmm, row in timed_rows if hhmm >= 0]
+        latest_hhmm = max((hhmm for hhmm, _ in timed_rows), default=-1)
+        morning_rows = [row for hhmm, row in timed_rows if 930 <= hhmm <= 1130]
+        completed = latest_hhmm >= 1130 and len(morning_rows) >= 30
+        if not morning_rows:
+            return {
+                "available": False,
+                "completed": False,
+                "status": "无09:30-11:30上午盘分时数据",
+            }
+
+        prices = [float(row["price"]) for row in morning_rows]
+        volumes = [max(0.0, float(row.get("volume") or 0)) for row in morning_rows]
+        open_price = prices[0]
+        close_price = prices[-1]
+        high = max(prices)
+        low = min(prices)
+        price_range = high - low
+        total_volume = sum(volumes)
+        calculated_vwap = (
+            sum(price * volume for price, volume in zip(prices, volumes)) / total_volume
+            if total_volume > 0 else sum(prices) / len(prices)
+        )
+        reported_vwap = float(morning_rows[-1].get("avg_price") or 0)
+        vwap = reported_vwap if reported_vwap > 0 else calculated_vwap
+        up_minutes = sum(
+            1 for index in range(1, len(prices))
+            if prices[index] >= prices[index - 1]
+        )
+        close_position = (
+            (close_price - low) / price_range if price_range > 0 else 0.5
+        )
+        above_vwap = sum(
+            1 for row in morning_rows
+            if float(row["price"]) >= float(row.get("avg_price") or vwap)
+        )
+        return {
+            "available": completed,
+            "completed": completed,
+            "status": "上午盘已完成" if completed else "等待11:30完成上午盘",
+            "sample_count": len(morning_rows),
+            "last_time": str(morning_rows[-1].get("time", "")),
+            "open": round(open_price, 2),
+            "high": round(high, 2),
+            "low": round(low, 2),
+            "close": round(close_price, 2),
+            "vwap": round(vwap, 2),
+            "change_pct": round((close_price / max(open_price, 0.01) - 1) * 100, 2),
+            "range_pct": round(price_range / max(open_price, 0.01) * 100, 2),
+            "up_minute_ratio": round(up_minutes / max(1, len(prices) - 1), 4),
+            "close_position": round(close_position, 4),
+            "above_vwap_ratio": round(above_vwap / len(morning_rows), 4),
+            "volume": round(total_volume, 2),
+        }
+
     def get_intraday_minute(self, code: str) -> dict:
         """获取今日分时分钟数据（腾讯财经），返回分时趋势摘要。"""
         code = str(code).zfill(6)
@@ -1374,6 +1438,7 @@ class DataFeed:
             return {"available": False, "error": "分时数据解析后为空"}
 
         opening_30m = self._summarize_opening_window(rows)
+        morning_session = self._summarize_morning_session(rows)
 
         # 计算分时趋势指标
         prices = [r["price"] for r in rows]
@@ -1433,6 +1498,7 @@ class DataFeed:
             "volume_concentration": volume_concentration,
             "above_avg_ratio": above_avg_ratio,
             "opening_30m": opening_30m,
+            "morning_session": morning_session,
         }
 
     def get_intraday_stock_fund_flow(self, code: str) -> dict:
@@ -1806,6 +1872,36 @@ class DataFeed:
     def get_market_context(self, external_context: dict = None) -> dict:
         """获取AI分析所需的完整市场上下文数据"""
         stocks = self.get_stock_list()
+        now = datetime.now(SHANGHAI)
+        benchmark = self.get_kline("000300", count=10)
+        previous_session = {}
+        has_today_benchmark = False
+        if not benchmark.empty and "date" in benchmark:
+            benchmark_dates = pd.to_datetime(benchmark["date"]).dt.date
+            has_today_benchmark = bool((benchmark_dates == now.date()).any())
+            completed = benchmark[
+                benchmark_dates < now.date()
+            ]
+            if not completed.empty:
+                row = completed.iloc[-1]
+                prior_close = (
+                    float(completed.iloc[-2].get("close") or 0)
+                    if len(completed) > 1 else 0
+                )
+                session_change = (
+                    (float(row.get("close") or 0) / prior_close - 1) * 100
+                    if prior_close > 0 else float(row.get("change_pct") or 0)
+                )
+                previous_session = {
+                    "benchmark": "沪深300",
+                    "date": pd.to_datetime(row.get("date")).strftime("%Y-%m-%d"),
+                    "open": round(float(row.get("open") or 0), 2),
+                    "close": round(float(row.get("close") or 0), 2),
+                    "high": round(float(row.get("high") or 0), 2),
+                    "low": round(float(row.get("low") or 0), 2),
+                    "change_pct": round(session_change, 2),
+                    "volume": round(float(row.get("volume") or 0), 2),
+                }
         context = {
             "market_stats": {
                 "total": len(stocks),
@@ -1822,6 +1918,28 @@ class DataFeed:
             "sector_outflow": [],
             "concept_outflow": [],
             "external_market": external_context or {},
+            "analysis_window": {
+                "strategy": "前一交易日完整盘面 + 当日09:30-11:30上午盘",
+                "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
+                "previous_session": previous_session,
+                "morning_session": {
+                    "as_of": now.strftime("%Y-%m-%d %H:%M:%S"),
+                    "completed": (
+                        has_today_benchmark
+                        and (now.hour > 11 or (now.hour == 11 and now.minute >= 30))
+                    ),
+                    "status": (
+                        "上午盘已收盘"
+                        if has_today_benchmark and (
+                            now.hour > 11 or (now.hour == 11 and now.minute >= 30)
+                        ) else (
+                            "上午盘尚未结束，数据仅为盘中快照"
+                            if has_today_benchmark else "未确认当日开市或上午盘数据"
+                        )
+                    ),
+                },
+                "execution_window": "13:00-14:00",
+            },
         }
 
         cols = ["code", "name", "price", "change_pct", "turnover_rate", "market_cap", "board"]

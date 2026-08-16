@@ -8,6 +8,18 @@ class AIRotationPromptTest(unittest.TestCase):
     @staticmethod
     def _context():
         return {
+            "analysis_window": {
+                "strategy": "前一交易日完整盘面 + 当日09:30-11:30上午盘",
+                "previous_session": {
+                    "benchmark": "沪深300", "date": "2026-08-07",
+                    "open": 4100, "high": 4120, "low": 4050,
+                    "close": 4070, "change_pct": -0.5,
+                },
+                "morning_session": {
+                    "status": "上午盘已收盘", "as_of": "2026-08-08 11:35:00",
+                },
+                "execution_window": "13:00-14:00",
+            },
             "market_stats": {
                 "total": 5000,
                 "up": 3200,
@@ -82,6 +94,9 @@ class AIRotationPromptTest(unittest.TestCase):
         self.assertIn("纳斯达克100: +1.20%", prompt)
         self.assertIn("霍尔木兹海峡通行受阻", prompt)
         self.assertIn("不得把外盘涨跌直接写成A股必然跟涨或跟跌", prompt)
+        self.assertIn("前一交易日完整盘面", prompt)
+        self.assertIn("当日上午盘面", prompt)
+        self.assertIn("13:00-14:00", prompt)
 
     def test_structured_rotation_filters_unknown_boards_and_clamps_score(self):
         advisor = AIAdvisor.__new__(AIAdvisor)

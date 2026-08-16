@@ -42,7 +42,7 @@ class EmailDigestTest(unittest.TestCase):
         )
 
         self.assertIn("2026-07-22", message["Subject"])
-        self.assertIn("分层观察日报", message["Subject"])
+        self.assertIn("午间分层观察", message["Subject"])
         plain_body = message.get_body(preferencelist=("plain",)).get_content()
         self.assertIn("平安银行(000001)", plain_body)
         self.assertIn("可执行观察", plain_body)
@@ -97,6 +97,16 @@ class EmailDigestTest(unittest.TestCase):
 
     def test_build_email_contains_fund_flow_and_sector_rotation(self):
         summary = {
+            "analysis_window": {
+                "previous_session": {
+                    "date": "2026-08-07", "change_pct": -0.5,
+                    "open": 4100, "high": 4120, "low": 4050, "close": 4070,
+                },
+                "morning_session": {
+                    "status": "上午盘已收盘", "as_of": "2026-08-08 11:35:00",
+                },
+                "execution_window": "13:00-14:00",
+            },
             "rotation_boards": [{
                 "name": "半导体",
                 "type": "行业",
@@ -157,6 +167,9 @@ class EmailDigestTest(unittest.TestCase):
         self.assertIn("霍尔木兹海峡通行受阻", plain_body)
         self.assertIn("潜在受益：石油、航运", html_body)
         self.assertIn("https://finance.eastmoney.com/a/example.html", html_body)
+        self.assertIn("前一交易日（2026-08-07）沪深300", plain_body)
+        self.assertIn("上午盘已收盘", html_body)
+        self.assertIn("执行参考：13:00-14:00", plain_body)
 
     def test_build_email_contains_hot_sector_leader_channel(self):
         summary = {

@@ -1,0 +1,56 @@
+name: Quant factor research after close
+
+on:
+  workflow_dispatch:
+  schedule:
+    # GitHub Actions uses UTC: 08:30 UTC = 16:30 Asia/Shanghai.
+    - cron: "30 8 * * 1-5"
+
+concurrency:
+  group: quant-factor-research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    env:
+      TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+      QUANT_DATA_PROVIDER: ${{ vars.QUANT_DATA_PROVIDER || 'auto' }}
+      QUANT_UNIVERSE_LIMIT: ${{ vars.QUANT_UNIVERSE_LIMIT || '500' }}
+      QUANT_TOP_N: ${{ vars.QUANT_TOP_N || '20' }}
+      QUANT_HISTORY_YEARS: ${{ vars.QUANT_HISTORY_YEARS || '4' }}
+      MAIL_SMTP_HOST: ${{ vars.MAIL_SMTP_HOST || 'smtp.qq.com' }}
+      MAIL_SMTP_PORT: ${{ vars.MAIL_SMTP_PORT || '465' }}
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      MAIL_TO: ${{ secrets.MAIL_TO }}
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements-quant.txt
+      - name: Restore quant data cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/quant_daily
+          key: quant-daily-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            quant-daily-${{ runner.os }}-
+      - name: Run factor research and send report
+        run: python quant_pipeline.py --send-email
+      - name: Upload quant report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quant-factor-report-${{ github.run_number }}
+          path: output/quant/
+          if-no-files-found: warn
+          retention-days: 30

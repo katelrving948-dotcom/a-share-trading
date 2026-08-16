@@ -262,6 +262,35 @@ def _build_rotation_digest(summary: dict) -> tuple[str, str, str]:
     return "\n".join(plain_lines), overview_html, detail_html
 
 
+def _build_analysis_window_digest(summary: dict) -> tuple[str, str]:
+    window = summary.get("analysis_window") or {}
+    previous = window.get("previous_session") or {}
+    morning = window.get("morning_session") or {}
+    previous_text = (
+        f"前一交易日（{previous.get('date', '日期待核验')}）沪深300 "
+        f"{_number(previous.get('change_pct'), 2, '%')}，"
+        f"开{_number(previous.get('open'), 2)} / 高{_number(previous.get('high'), 2)} / "
+        f"低{_number(previous.get('low'), 2)} / 收{_number(previous.get('close'), 2)}"
+    )
+    morning_text = (
+        f"当日上午：{morning.get('status') or '时间状态待核验'}，"
+        f"快照截至{morning.get('as_of') or window.get('generated_at') or '时间待核验'}"
+    )
+    execution_text = f"执行参考：{window.get('execution_window') or '13:00-14:00'}"
+    plain = "\n".join(("午间分析口径", previous_text, morning_text, execution_text))
+    section = f"""
+      <div style="margin:12px 0;padding:12px 14px;background:#eff6ff;border:1px solid #93c5fd;border-radius:8px">
+        <div style="font-size:11px;color:#1d4ed8;font-weight:800;letter-spacing:.5px">NOON ANALYSIS WINDOW</div>
+        <div style="font-size:15px;font-weight:800;margin-top:4px">前一交易日复盘 + 当日上午确认</div>
+        <div style="font-size:12px;color:#334155;line-height:1.7;margin-top:5px">
+          {html.escape(previous_text)}<br>{html.escape(morning_text)}<br>
+          <strong>{html.escape(execution_text)}</strong>；下午开盘后仍须核验价格、量能与板块强度。
+        </div>
+      </div>
+    """
+    return plain, section
+
+
 def _build_hot_core_digest(summary: dict) -> tuple[str, str]:
     candidates = summary.get("hot_core_candidates") or []
     if not candidates:
@@ -286,7 +315,7 @@ def _build_hot_core_digest(summary: dict) -> tuple[str, str]:
                 f"首档止盈{_number(first_target.get('low'), 2)}"
             )
         else:
-            plan_text = f"{plan.get('status') or '等待首30分钟数据'}：{plan.get('reason') or '尚未形成执行区间'}"
+            plan_text = f"{plan.get('status') or '等待上午盘数据'}：{plan.get('reason') or '尚未形成执行区间'}"
         plain_rows.append(
             f"{item.get('hot_core_rank')}. {item.get('name')}({item.get('code')}) "
             f"{item.get('hot_board')}{item.get('leadership_role')}，{decision_status}；"
@@ -373,8 +402,8 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
                 f"盈 {_number(first_target.get('low'), 2)} / {_number(second_target.get('low'), 2)}"
             )
         else:
-            plan_text = f"{plan.get('status') or '等待10:00'}：{plan.get('reason') or '首30分钟计划未形成'}"
-            plan_short = f"{plan.get('status') or '等待10:00'} ｜ {plan.get('reason') or '首30分钟计划未形成'}"
+            plan_text = f"{plan.get('status') or '等待上午盘'}：{plan.get('reason') or '上午盘计划未形成'}"
+            plan_short = f"{plan.get('status') or '等待上午盘'} ｜ {plan.get('reason') or '上午盘计划未形成'}"
         plain_rows.append(
             f"{rank}. {item.get('name', '')}({item.get('code', '')}) "
             f"{decision_status}；{_gate_text(decision)}；"
@@ -423,6 +452,7 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
     generated_text = generated_at.astimezone(SHANGHAI).strftime("%Y-%m-%d %H:%M:%S")
     site_url = os.getenv("SITE_URL", "https://a-share-trading.onrender.com")
     rotation_plain, rotation_overview_html, rotation_detail_html = _build_rotation_digest(summary)
+    window_plain, window_html = _build_analysis_window_digest(summary)
     hot_plain, hot_html = _build_hot_core_digest(summary)
     discipline_plain, discipline_html = _build_discipline_digest(summary, candidates)
     body_html = f"""
@@ -432,8 +462,9 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
         <table role="presentation" width="720" cellspacing="0" cellpadding="0" style="width:100%;max-width:720px;background:#ffffff;border-radius:12px;box-shadow:0 4px 18px rgba(23,32,51,.08)">
           <tr><td style="padding:20px 22px 14px">
             <div style="font-size:11px;letter-spacing:1px;color:#2563eb;font-weight:700">A-SHARE DAILY BRIEFING</div>
-            <div style="font-size:27px;font-weight:850;line-height:1.25;margin-top:5px">{date_text} A股分层观察日报</div>
+            <div style="font-size:27px;font-weight:850;line-height:1.25;margin-top:5px">{date_text} A股午间分层观察</div>
             <div style="font-size:13px;color:#475569;margin-top:7px;line-height:1.6">顺序固定为市场环境 → 板块强度 → 个股质量 → 实时买点；排名只形成观察池。<br>{scope} · 基本面观察 {len(candidates)} 只 · 热门核心观察 {len(summary.get('hot_core_candidates') or [])} 只 · {generated_text}</div>
+            {window_html}
             <div style="margin-top:18px;margin-bottom:8px;font-size:16px;font-weight:800">今日市场速览</div>
             {rotation_overview_html}
             {discipline_html}
@@ -473,10 +504,11 @@ def build_email(candidates: list, summary: dict, generated_at: datetime) -> Emai
     """
 
     message = EmailMessage()
-    message["Subject"] = f"{date_text} A股分层观察日报（板块+个股+买点）"
+    message["Subject"] = f"{date_text} A股午间分层观察（昨盘+上午盘）"
     message.set_content(
-        f"{date_text} A股分层观察日报\n排名只形成观察池，不代表买入或次日上涨预测。\n\n"
-        + rotation_plain
+        f"{date_text} A股午间分层观察\n排名只形成观察池，不代表买入或下午上涨预测。\n\n"
+        + window_plain
+        + "\n\n" + rotation_plain
         + "\n\n" + discipline_plain
         + "\n\n中长期观察池\n"
         + "\n".join(plain_rows)

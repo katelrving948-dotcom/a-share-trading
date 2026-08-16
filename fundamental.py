@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 
 from config import LONG_TERM, PUSH_DISCIPLINE, SCREEN
-from data_feed import DataFeed
+from data_feed import DataFeed, SHANGHAI
 
 
 def _clip(value: float) -> float:
@@ -41,7 +41,7 @@ def build_trade_decision(item: dict) -> dict:
     )
     if not levels_available:
         entry_score = None
-        entry_label = plan_status or "等待10:00数据"
+        entry_label = plan_status or "等待上午盘数据"
     elif not plan_actionable:
         entry_score = 10
         entry_label = plan_status or "当前不进场"
@@ -211,12 +211,16 @@ def _build_rule_rotation_analysis(context: dict, boards: list) -> dict:
 
 
 def build_opening_entry_plan(intraday: dict) -> dict:
-    """Turn the completed 09:30-10:00 window into a bounded execution plan."""
-    window = (intraday or {}).get("opening_30m") or {}
+    """Turn the completed morning session into a bounded afternoon plan."""
+    intraday = intraday or {}
+    morning = intraday.get("morning_session") or {}
+    window = morning if morning.get("completed") else (intraday.get("opening_30m") or {})
+    window_name = "09:30-11:30" if morning.get("completed") else "09:30-10:00"
+    observation_label = "上午盘" if morning.get("completed") else "首30分钟"
     base = {
-        "window": "09:30-10:00",
+        "window": window_name,
         "actionable": False,
-        "status": window.get("status") or "首30分钟数据不可用",
+        "status": window.get("status") or "上午盘数据不可用",
         "entry_zone": None,
         "breakout_trigger": None,
         "max_chase_price": None,
@@ -224,13 +228,13 @@ def build_opening_entry_plan(intraday: dict) -> dict:
         "take_profit_zones": [],
         "risk_pct": None,
         "reference_price": None,
-        "execution_state": "等待首30分钟完成",
+        "execution_state": f"等待{observation_label}完成",
         "levels_available": False,
         "execution_note": (
             "普通A股当日买入通常不能当日卖出；止损止盈为条件计划，"
             "跳空或流动性不足可能导致实际成交偏离。"
         ),
-        "reason": "等待首30分钟形成完整价格区间。",
+        "reason": f"等待{observation_label}形成完整价格区间。",
         "opening": window,
     }
     if not window.get("completed"):
@@ -248,18 +252,18 @@ def build_opening_entry_plan(intraday: dict) -> dict:
         close_position = float(window.get("close_position") or 0)
         above_vwap_ratio = float(window.get("above_vwap_ratio") or 0)
     except (KeyError, TypeError, ValueError):
-        base.update(status="首30分钟数据不完整", reason="缺少开盘区间或分时均价。")
+        base.update(status=f"{observation_label}数据不完整", reason="缺少价格区间或分时均价。")
         return base
 
     if min(open_price, high, low, close, vwap) <= 0 or high < low:
-        base.update(status="首30分钟数据异常", reason="价格字段无效，不能计算进场计划。")
+        base.update(status=f"{observation_label}数据异常", reason="价格字段无效，不能计算进场计划。")
         return base
 
     if range_pct > 4.5 or change_pct > 3.5:
         base.update(
             status="暂不追涨",
             reason=(
-                f"首30分钟涨幅{change_pct:+.2f}%、振幅{range_pct:.2f}%，"
+                f"{observation_label}涨幅{change_pct:+.2f}%、振幅{range_pct:.2f}%，"
                 "波动或涨幅过大；等待回落重新形成支撑。"
             ),
         )
@@ -270,9 +274,9 @@ def build_opening_entry_plan(intraday: dict) -> dict:
         base.update(
             status="暂不进场",
             reason=(
-                f"10:00价格相对区间位置{close_position:.0%}，"
+                f"观察窗末价格相对区间位置{close_position:.0%}，"
                 f"位于分时均价上方的时间占比{above_vwap_ratio:.0%}；"
-                "首30分钟承接不足。"
+                "观察窗承接不足。"
             ),
         )
         return base
@@ -311,7 +315,7 @@ def build_opening_entry_plan(intraday: dict) -> dict:
     status = "强势回踩" if strong else "均价承接确认"
     if current_price < stop_high:
         actionable = False
-        status = "首30分钟结构已失效"
+        status = f"{observation_label}结构已失效"
         execution_state = "当前价已跌入止损区下方，不按原计划进场"
     elif current_price > max_chase_price:
         actionable = False
@@ -337,7 +341,7 @@ def build_opening_entry_plan(intraday: dict) -> dict:
         "stop_zone": {
             "low": round(stop_low, 2),
             "high": round(stop_high, 2),
-            "label": "跌入区间视为首30分钟结构失效",
+            "label": f"跌入区间视为{observation_label}结构失效",
         },
         "take_profit_zones": [
             {
@@ -363,7 +367,7 @@ def build_opening_entry_plan(intraday: dict) -> dict:
         "reference_price": round(current_price, 2),
         "execution_state": execution_state,
         "reason": (
-            f"首30分钟收盘{close:.2f}，分时均价{vwap:.2f}，"
+            f"{observation_label}末价{close:.2f}，分时均价{vwap:.2f}，"
             f"收在区间{close_position:.0%}位置，上涨分钟占比{up_ratio:.0%}。"
         ),
     })
@@ -526,6 +530,7 @@ class LongTermFundamentalScreener:
             "rotation_ai_weight": LONG_TERM.get("rotation_ai_weight", 0),
             "rotation_boards": rotation_boards[:8],
             "rotation_analysis": rotation_analysis,
+            "analysis_window": rotation_analysis.get("analysis_window", {}),
             "push_discipline": {
                 **PUSH_DISCIPLINE,
                 "allowed_loss_per_trade": round(
@@ -557,7 +562,7 @@ class LongTermFundamentalScreener:
             "state": "opening_plan",
             "done": 0,
             "total": len(candidates),
-            "message": "根据09:30-10:00分时生成进场与止损区间",
+            "message": "根据09:30-11:30上午盘生成13:00-14:00进场与止损区间",
         })
         with ThreadPoolExecutor(max_workers=min(6, len(candidates))) as executor:
             futures = {
@@ -570,9 +575,9 @@ class LongTermFundamentalScreener:
                     item["opening_plan"] = build_opening_entry_plan(future.result())
                 except Exception as exc:
                     item["opening_plan"] = {
-                        "window": "09:30-10:00",
+                        "window": "09:30-11:30",
                         "actionable": False,
-                        "status": "首30分钟计划失败",
+                        "status": "上午盘计划失败",
                         "reason": str(exc),
                         "entry_zone": None,
                         "stop_zone": None,
@@ -707,9 +712,24 @@ class LongTermFundamentalScreener:
                 "technical_reason": "技术数据不可用",
                 "trend_confirmation": "趋势数据不可用",
             }
-        latest = kline.iloc[-1]
-        previous = kline.iloc[-2] if len(kline) > 1 else latest
+        today = datetime.now(SHANGHAI).date()
+        completed = kline[pd.to_datetime(kline["date"]).dt.date < today]
+        if completed.empty:
+            return {
+                "technical_available": False,
+                "technical_score": 0,
+                "technical_reason": "前一交易日完整K线不可用",
+                "trend_confirmation": "前一交易日趋势数据不可用",
+            }
+        latest = completed.iloc[-1]
+        previous = completed.iloc[-2] if len(completed) > 1 else latest
         close = float(latest.get("close") or 0)
+        previous_close = float(previous.get("close") or 0)
+        session_change = (
+            (close / previous_close - 1) * 100
+            if previous_close > 0 and len(completed) > 1
+            else float(latest.get("change_pct") or 0)
+        )
         ma20 = latest.get("MA20")
         ma60 = latest.get("MA60")
         score = 0
@@ -769,6 +789,15 @@ class LongTermFundamentalScreener:
             "technical_reason": "；".join(reasons) if reasons else "技术信号偏弱",
             "trend_confirmation": trend,
             "volume_ratio": round(volume_ratio, 2),
+            "previous_session": {
+                "date": pd.to_datetime(latest.get("date")).strftime("%Y-%m-%d"),
+                "open": round(float(latest.get("open") or 0), 2),
+                "close": round(close, 2),
+                "high": round(float(latest.get("high") or 0), 2),
+                "low": round(float(latest.get("low") or 0), 2),
+                "change_pct": round(session_change, 2),
+                "volume_ratio": round(volume_ratio, 2),
+            },
         }
 
     def _composite_score(self, item: dict) -> int:
@@ -845,6 +874,7 @@ class LongTermFundamentalScreener:
                 "mode": fallback_mode,
                 "reason": fallback_reason or "AI不可用，使用资金+外盘+事件规则评分。",
             }
+        rotation_analysis["analysis_window"] = context.get("analysis_window", {})
 
         ai_boards = {
             board["name"]: board

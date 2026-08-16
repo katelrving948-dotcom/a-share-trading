@@ -1,11 +1,56 @@
 import unittest
+from datetime import datetime, timedelta
 from unittest.mock import Mock
 
+import pandas as pd
+
 from data_feed import DataFeed
-from fundamental import build_opening_entry_plan, build_trade_decision
+from data_feed import SHANGHAI
+from fundamental import (
+    LongTermFundamentalScreener,
+    build_opening_entry_plan,
+    build_trade_decision,
+)
 
 
 class OpeningEntryPlanTest(unittest.TestCase):
+    def test_technical_analysis_excludes_incomplete_current_daily_bar(self):
+        today = datetime.now(SHANGHAI).date()
+        rows = pd.DataFrame([
+            {
+                "date": today - timedelta(days=2), "open": 9.8, "close": 10.0,
+                "high": 10.1, "low": 9.7, "volume": 100, "change_pct": 2.0,
+                "MA5": 9.5, "MA10": 9.4, "MA20": 9.0, "MA60": 8.5,
+                "MACD_DIF": 0.2, "MACD_DEA": 0.1, "RSI": 55,
+                "KDJ_K": 60, "KDJ_D": 50, "VOL_MA5": 100,
+            },
+            {
+                "date": today - timedelta(days=1), "open": 10.0, "close": 10.1,
+                "high": 10.2, "low": 9.9, "volume": 100, "change_pct": 1.0,
+                "MA5": 10.0, "MA10": 9.9, "MA20": 9.8, "MA60": 9.5,
+                "MACD_DIF": 0.2, "MACD_DEA": 0.1, "RSI": 55,
+                "KDJ_K": 60, "KDJ_D": 50, "VOL_MA5": 100,
+            },
+            {
+                "date": today, "open": 10.1, "close": 11.0,
+                "high": 11.2, "low": 10.0, "volume": 500, "change_pct": 8.9,
+                "MA5": 10.2, "MA10": 10.0, "MA20": 9.9, "MA60": 9.6,
+                "MACD_DIF": 1.0, "MACD_DEA": 0.1, "RSI": 70,
+                "KDJ_K": 90, "KDJ_D": 50, "VOL_MA5": 100,
+            },
+        ])
+        screener = LongTermFundamentalScreener.__new__(LongTermFundamentalScreener)
+        screener.df = Mock()
+        screener.df.get_kline.return_value = rows
+
+        result = screener._technical_analysis("000001")
+
+        self.assertEqual(
+            result["previous_session"]["date"],
+            (today - timedelta(days=1)).strftime("%Y-%m-%d"),
+        )
+        self.assertAlmostEqual(result["previous_session"]["close"], 10.1)
+
     def test_current_tencent_minute_payload_builds_opening_window(self):
         response = Mock()
         response.__bool__ = Mock(return_value=True)
@@ -76,6 +121,29 @@ class OpeningEntryPlanTest(unittest.TestCase):
         )
         self.assertGreaterEqual(plan["take_profit_zones"][0]["risk_reward"], 1.5)
         self.assertGreaterEqual(plan["take_profit_zones"][1]["risk_reward"], 2.5)
+
+    def test_completed_morning_session_replaces_opening_window_for_noon_plan(self):
+        rows = []
+        for hour, start, end in ((9, 30, 59), (10, 0, 59), (11, 0, 30)):
+            for minute in range(start, end + 1):
+                offset = len(rows)
+                rows.append({
+                    "time": f"{hour:02d}{minute:02d}",
+                    "price": 10.0 + offset * 0.001,
+                    "volume": 100,
+                    "avg_price": 10.05,
+                })
+
+        morning = DataFeed._summarize_morning_session(rows)
+        plan = build_opening_entry_plan({
+            "opening_30m": DataFeed._summarize_opening_window(rows),
+            "morning_session": morning,
+            "close_price": morning["close"],
+        })
+
+        self.assertTrue(morning["completed"])
+        self.assertEqual(morning["last_time"], "1130")
+        self.assertEqual(plan["window"], "09:30-11:30")
 
     def test_price_above_chase_limit_keeps_levels_but_blocks_entry(self):
         opening = {
