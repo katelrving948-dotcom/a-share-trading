@@ -124,19 +124,36 @@ class QuantDailyData:
             return pd.DataFrame(columns=PRICE_COLUMNS)
 
     def _fetch_akshare(self, code: str, name: str, start: date, end: date) -> pd.DataFrame:
-        raw = self._module.stock_zh_a_hist(
-            symbol=code,
-            period="daily",
-            start_date=start.strftime("%Y%m%d"),
-            end_date=end.strftime("%Y%m%d"),
-            adjust=self.config.adjust,
-            timeout=20,
-        )
+        source = os.getenv("AKSHARE_HISTORY_SOURCE", "auto").lower().strip()
+        raw = None
+        if source != "tx":
+            try:
+                raw = self._module.stock_zh_a_hist(
+                    symbol=code,
+                    period="daily",
+                    start_date=start.strftime("%Y%m%d"),
+                    end_date=end.strftime("%Y%m%d"),
+                    adjust=self.config.adjust,
+                    timeout=20,
+                )
+            except Exception:
+                if source == "em":
+                    raise
+        if raw is None:
+            prefix = "sh" if code.startswith(("6", "9")) else ("bj" if code.startswith(("4", "8")) else "sz")
+            raw = self._module.stock_zh_a_hist_tx(
+                symbol=f"{prefix}{code}",
+                start_date=start.strftime("%Y%m%d"),
+                end_date=end.strftime("%Y%m%d"),
+                adjust=self.config.adjust,
+                timeout=20,
+            )
         if raw is None or raw.empty:
             return pd.DataFrame(columns=PRICE_COLUMNS)
         frame = raw.rename(columns={
             "日期": "date", "股票代码": "code", "开盘": "open", "最高": "high",
             "最低": "low", "收盘": "close", "成交量": "volume", "成交额": "amount",
+            "turnover": "turnover_rate",
         })
         frame["code"] = code
         frame["name"] = name

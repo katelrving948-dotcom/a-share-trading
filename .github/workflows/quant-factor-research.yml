@@ -19,6 +19,7 @@ jobs:
     env:
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
       QUANT_DATA_PROVIDER: ${{ vars.QUANT_DATA_PROVIDER || 'auto' }}
+      AKSHARE_HISTORY_SOURCE: tx
       QUANT_UNIVERSE_LIMIT: ${{ vars.QUANT_UNIVERSE_LIMIT || '500' }}
       QUANT_TOP_N: ${{ vars.QUANT_TOP_N || '20' }}
       QUANT_HISTORY_YEARS: ${{ vars.QUANT_HISTORY_YEARS || '4' }}

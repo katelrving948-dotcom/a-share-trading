@@ -48,6 +48,25 @@ SMALL_PARAMS = FactorParams(
 
 
 class QuantResearchTest(unittest.TestCase):
+    def test_tencent_history_source_is_normalized_to_ohlcv(self):
+        loader = QuantDailyData.__new__(QuantDailyData)
+        loader.config = QuantDataConfig()
+        loader._module = type("TencentAkshare", (), {
+            "stock_zh_a_hist_tx": staticmethod(lambda **kwargs: pd.DataFrame([{
+                "date": "2026-08-14", "open": 10, "high": 11, "low": 9,
+                "close": 10.5, "volume": 1000, "amount": 10500, "turnover": 0.01,
+            }]))
+        })()
+
+        with patch.dict("os.environ", {"AKSHARE_HISTORY_SOURCE": "tx"}):
+            result = loader._fetch_akshare(
+                "000001", "平安银行", date(2026, 8, 1), date(2026, 8, 14)
+            )
+
+        self.assertEqual(result.iloc[0]["code"], "000001")
+        self.assertEqual(result.iloc[0]["name"], "平安银行")
+        self.assertEqual(result.iloc[0]["close"], 10.5)
+
     def test_akshare_universe_falls_back_to_fundamental_snapshot(self):
         with tempfile.TemporaryDirectory() as directory:
             snapshot = Path(directory) / "fundamental.json"
