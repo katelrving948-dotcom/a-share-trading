@@ -1,0 +1,127 @@
+{
+  "metadata": {
+    "generated_at": "2026-08-16 20:40:31",
+    "signal_date": "2026-08-14",
+    "provider": "akshare",
+    "stock_count": 48,
+    "trading_days": 970,
+    "universe_limit": 100,
+    "current_trading_day_confirmed": false
+  },
+  "best_params": {
+    "momentum_window": 60,
+    "trend_window": 120,
+    "volatility_window": 20,
+    "volume_window": 20,
+    "rsi_window": 14,
+    "bollinger_window": 20,
+    "atr_window": 14
+  },
+  "oos_metrics": {
+    "total_return": 135.8638,
+    "annual_return": 77.1906,
+    "max_drawdown": -16.9765,
+    "sharpe_ratio": 2.0491,
+    "trading_days": 378
+  },
+  "folds": [
+    {
+      "train_start": "2022-08-15",
+      "train_end": "2024-09-09",
+      "validation_start": "2024-09-10",
+      "validation_end": "2025-03-24",
+      "best_params": {
+        "momentum_window": 60,
+        "trend_window": 20,
+        "volatility_window": 20,
+        "volume_window": 20,
+        "rsi_window": 14,
+        "bollinger_window": 20,
+        "atr_window": 14
+      },
+      "train_metrics": {
+        "sharpe_ratio": -0.5444,
+        "annual_return": -11.2604,
+        "max_drawdown": -33.2508
+      },
+      "validation_metrics": {
+        "total_return": 34.3442,
+        "annual_return": 80.4835,
+        "max_drawdown": -16.9765,
+        "sharpe_ratio": 1.8132,
+        "trading_days": 126,
+        "top_n": 20,
+        "average_daily_turnover": 0.4516,
+        "total_trading_cost": 10.192
+      },
+      "trial_count": 9
+    },
+    {
+      "train_start": "2023-02-23",
+      "train_end": "2025-03-24",
+      "validation_start": "2025-03-25",
+      "validation_end": "2025-09-23",
+      "best_params": {
+        "momentum_window": 60,
+        "trend_window": 120,
+        "volatility_window": 20,
+        "volume_window": 20,
+        "rsi_window": 14,
+        "bollinger_window": 20,
+        "atr_window": 14
+      },
+      "train_metrics": {
+        "sharpe_ratio": 0.3,
+        "annual_return": 4.4061,
+        "max_drawdown": -30.4671
+      },
+      "validation_metrics": {
+        "total_return": 39.9345,
+        "annual_return": 95.8166,
+        "max_drawdown": -12.5977,
+        "sharpe_ratio": 3.2161,
+        "trading_days": 126,
+        "top_n": 20,
+        "average_daily_turnover": 0.4421,
+        "total_trading_cost": 9.976
+      },
+      "trial_count": 9
+    },
+    {
+      "train_start": "2023-08-28",
+      "train_end": "2025-09-23",
+      "validation_start": "2025-09-24",
+      "validation_end": "2026-04-08",
+      "best_params": {
+        "momentum_window": 60,
+        "trend_window": 120,
+        "volatility_window": 20,
+        "volume_window": 20,
+        "rsi_window": 14,
+        "bollinger_window": 20,
+        "atr_window": 14
+      },
+      "train_metrics": {
+        "sharpe_ratio": 0.9722,
+        "annual_return": 22.6915,
+        "max_drawdown": -22.2098
+      },
+      "validation_metrics": {
+        "total_return": 25.4636,
+        "annual_return": 57.4111,
+        "max_drawdown": -11.8173,
+        "sharpe_ratio": 1.6267,
+        "trading_days": 126,
+        "top_n": 20,
+        "average_daily_turnover": 0.4032,
+        "total_trading_cost": 9.094
+      },
+      "trial_count": 9
+    }
+  ],
+  "costs": {
+    "commission": 0.0003,
+    "stamp_tax": 0.001,
+    "slippage": 0.001
+  }
+}

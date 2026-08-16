@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from quant_backtest import BacktestCosts, run_factor_backtest
-from quant_factors import FactorParams, calculate_factors
+from quant_factors import FactorParams, add_cross_sectional_score, calculate_factors
 
 
 @dataclass(frozen=True)
@@ -136,7 +136,7 @@ def walk_forward_optimize(
     if last_best_params is None:
         raise RuntimeError("滚动优化未形成有效折次")
     oos_equity, oos_metrics = _aggregate_oos(oos_equities)
-    latest_factors = calculate_factors(prices, last_best_params)
+    latest_factors = add_cross_sectional_score(calculate_factors(prices, last_best_params))
     latest_backtest = run_factor_backtest(
         latest_factors, top_n=config.top_n, costs=costs,
     )

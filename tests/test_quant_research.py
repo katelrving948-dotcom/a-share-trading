@@ -140,6 +140,8 @@ class QuantResearchTest(unittest.TestCase):
             report = Path(files["report"]).read_text(encoding="utf-8")
             self.assertIn("样本外表现", report)
             self.assertIn("不代表提高了交易结果的确定性", report)
+            saved_factors = pd.read_csv(files["factors"])
+            self.assertIn("factor_score", saved_factors.columns)
 
 if __name__ == "__main__":
     unittest.main()

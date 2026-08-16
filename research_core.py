@@ -7,6 +7,8 @@ import math
 import os
 import shutil
 import tempfile
+import threading
+import time
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -23,6 +25,12 @@ SHANGHAI = ZoneInfo("Asia/Shanghai")
 RESEARCH_DIR = Path(os.getenv("RESEARCH_OUTPUT_DIR", "output/research"))
 QUANT_DIR = Path(os.getenv("QUANT_OUTPUT_DIR", "output/quant"))
 FUNDAMENTAL_FILE = RESEARCH_DIR / "fundamental_latest.json"
+PUBLIC_SNAPSHOT_BASE = os.getenv(
+    "SNAPSHOT_PUBLIC_BASE_URL",
+    "https://raw.githubusercontent.com/katelrving948-dotcom/a-share-trading/main/output",
+).rstrip("/")
+_snapshot_sync_lock = threading.Lock()
+_snapshot_sync_checked_at = 0.0
 
 
 def _clean(value):
@@ -44,6 +52,67 @@ def save_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(_clean(payload), ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _generated_at(payload: dict) -> str:
+    return str(payload.get("summary", payload).get("generated_at") or payload.get("metadata", {}).get("generated_at") or "")
+
+
+def _read_json(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _download_public(relative_path: str) -> bytes:
+    request = Request(
+        f"{PUBLIC_SNAPSHOT_BASE}/{relative_path}",
+        headers={"User-Agent": "a-share-research-hub", "Cache-Control": "no-cache"},
+    )
+    with urlopen(request, timeout=8) as response:
+        return response.read()
+
+
+def _replace_bytes(path: Path, content: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as handle:
+        handle.write(content)
+        temporary = Path(handle.name)
+    temporary.replace(path)
+
+
+def sync_public_snapshots(force: bool = False) -> None:
+    """Refresh committed daily snapshots without requiring a Render redeploy."""
+    global _snapshot_sync_checked_at
+    if os.getenv("SNAPSHOT_REMOTE_ENABLED", "1") == "0":
+        return
+    interval = max(60, int(os.getenv("SNAPSHOT_SYNC_INTERVAL", "300")))
+    with _snapshot_sync_lock:
+        now = time.monotonic()
+        if not force and now - _snapshot_sync_checked_at < interval:
+            return
+        _snapshot_sync_checked_at = now
+        try:
+            remote_fundamental_bytes = _download_public("research/fundamental_latest.json")
+            remote_fundamental = json.loads(remote_fundamental_bytes.decode("utf-8"))
+            if _generated_at(remote_fundamental) > _generated_at(_read_json(FUNDAMENTAL_FILE)):
+                _replace_bytes(FUNDAMENTAL_FILE, remote_fundamental_bytes)
+        except (OSError, ValueError, json.JSONDecodeError):
+            pass
+
+        try:
+            remote_summary_bytes = _download_public("quant/quant_summary.json")
+            remote_summary = json.loads(remote_summary_bytes.decode("utf-8"))
+            summary_path = QUANT_DIR / "quant_summary.json"
+            if _generated_at(remote_summary) > _generated_at(_read_json(summary_path)):
+                factors = _download_public("quant/quant_factors_latest.csv")
+                signals = _download_public("quant/quant_signals.csv")
+                _replace_bytes(QUANT_DIR / "quant_factors_latest.csv", factors)
+                _replace_bytes(QUANT_DIR / "quant_signals.csv", signals)
+                _replace_bytes(summary_path, remote_summary_bytes)
+        except (OSError, ValueError, json.JSONDecodeError):
+            pass
+
+
 def refresh_fundamental(universe_limit: int | None = None, progress_callback=None) -> dict:
     scorer = FundamentalScorer(DataFeed())
     rows = scorer.score(universe_limit=universe_limit, progress_callback=progress_callback)
@@ -53,6 +122,7 @@ def refresh_fundamental(universe_limit: int | None = None, progress_callback=Non
 
 
 def load_fundamental() -> dict:
+    sync_public_snapshots()
     if not FUNDAMENTAL_FILE.exists():
         return {"summary": {"state": "missing", "message": "尚未生成基本面快照"}, "rows": []}
     try:
@@ -62,6 +132,7 @@ def load_fundamental() -> dict:
 
 
 def load_technical() -> dict:
+    sync_public_snapshots()
     summary_path = QUANT_DIR / "quant_summary.json"
     factors_path = QUANT_DIR / "quant_factors_latest.csv"
     signals_path = QUANT_DIR / "quant_signals.csv"

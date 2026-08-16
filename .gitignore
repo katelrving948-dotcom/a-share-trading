@@ -3,6 +3,8 @@ __pycache__/
 .DS_Store
 charts/
 *.csv
+!output/quant/quant_factors_latest.csv
+!output/quant/quant_signals.csv
 *.html
 .cache/
 artifacts/

@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
-      contents: read
+      contents: write
       actions: read
     env:
       MAIL_SMTP_HOST: ${{ vars.MAIL_SMTP_HOST || 'smtp.qq.com' }}
@@ -75,6 +75,17 @@ jobs:
       - name: Generate and send email
         if: inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true'
         run: python email_digest.py
+      - name: Publish latest website snapshot
+        if: always() && hashFiles('output/research/fundamental_latest.json') != ''
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f output/research/fundamental_latest.json
+          git diff --cached --quiet && exit 0
+          git commit -m "data: update fundamental snapshot"
+          git pull --rebase origin main
+          git push origin HEAD:main
       - name: Record successful send
         if: success() && steps.sent_cache.outputs.cache-hit != 'true'
         shell: bash
