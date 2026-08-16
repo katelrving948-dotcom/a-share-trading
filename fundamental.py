@@ -4,11 +4,15 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Callable
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
 from config import LONG_TERM, SCREEN
 from data_feed import DataFeed
+
+
+SHANGHAI = ZoneInfo("Asia/Shanghai")
 
 
 def _clip(value: float, low: float = 0.0, high: float = 100.0) -> float:
@@ -91,7 +95,7 @@ class FundamentalScorer:
 
     @staticmethod
     def _now() -> str:
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return datetime.now(SHANGHAI).strftime("%Y-%m-%d %H:%M:%S")
 
     @staticmethod
     def _candidate_pool(stocks: pd.DataFrame) -> pd.DataFrame:
