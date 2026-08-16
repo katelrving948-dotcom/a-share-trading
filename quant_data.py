@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 import logging
 import os
 import time
@@ -56,8 +57,19 @@ class QuantDailyData:
 
     def list_universe(self) -> pd.DataFrame:
         if self.provider_name == "akshare":
-            raw = self._module.stock_zh_a_spot_em()
-            frame = raw.rename(columns={"代码": "code", "名称": "name", "成交额": "amount"})
+            try:
+                raw = self._module.stock_zh_a_spot_em()
+                frame = raw.rename(columns={"代码": "code", "名称": "name", "成交额": "amount"})
+            except Exception as exc:
+                snapshot = Path(os.getenv("QUANT_UNIVERSE_SNAPSHOT", "output/research/fundamental_latest.json"))
+                if not snapshot.exists():
+                    raise RuntimeError(f"股票池接口失败且没有基本面快照：{exc}") from exc
+                payload = json.loads(snapshot.read_text(encoding="utf-8"))
+                frame = pd.DataFrame(payload.get("rows", []))
+                if frame.empty or not {"code", "name"}.issubset(frame.columns):
+                    raise RuntimeError("基本面快照不包含可用股票池") from exc
+                frame["amount"] = 0.0
+                LOGGER.warning("AkShare股票池接口失败，改用中午基本面快照：%s", exc)
         else:
             token = os.environ["TUSHARE_TOKEN"]
             pro = self._module.pro_api(token)

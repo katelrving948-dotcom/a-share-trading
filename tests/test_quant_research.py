@@ -1,7 +1,9 @@
 import tempfile
 import unittest
+import json
 from datetime import date
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -46,6 +48,25 @@ SMALL_PARAMS = FactorParams(
 
 
 class QuantResearchTest(unittest.TestCase):
+    def test_akshare_universe_falls_back_to_fundamental_snapshot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "fundamental.json"
+            snapshot.write_text(json.dumps({"rows": [
+                {"code": "000001", "name": "平安银行"},
+                {"code": "600000", "name": "浦发银行"},
+            ]}, ensure_ascii=False), encoding="utf-8")
+            loader = QuantDailyData.__new__(QuantDailyData)
+            loader.config = QuantDataConfig(universe_limit=2)
+            loader.provider_name = "akshare"
+            loader._module = type("BrokenAkshare", (), {
+                "stock_zh_a_spot_em": staticmethod(lambda: (_ for _ in ()).throw(ConnectionError("offline")))
+            })()
+
+            with patch.dict("os.environ", {"QUANT_UNIVERSE_SNAPSHOT": str(snapshot)}):
+                result = loader.list_universe()
+
+            self.assertEqual(result["code"].tolist(), ["000001", "600000"])
+
     def test_first_real_data_batch_keeps_datetime_for_cache_filter(self):
         with tempfile.TemporaryDirectory() as directory:
             loader = QuantDailyData.__new__(QuantDailyData)
