@@ -2,6 +2,7 @@ import json
 import threading
 import time
 import unittest
+from datetime import datetime
 from http.server import ThreadingHTTPServer
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -46,7 +47,7 @@ class CronEmailEndpointTest(unittest.TestCase):
         self.assertEqual(context.exception.code, 401)
 
     @patch("server._dispatch_daily_email_workflow")
-    @patch.dict("os.environ", {"CRON_SECRET": "test-secret"}, clear=False)
+    @patch.dict("os.environ", {"CRON_SECRET": "test-secret", "CRON_WINDOW_BYPASS": "1"}, clear=False)
     def test_accepts_valid_secret_and_dispatches_workflow(self, dispatch_workflow):
         with self._post("Bearer test-secret") as response:
             body = response.read().decode("utf-8")
@@ -59,6 +60,11 @@ class CronEmailEndpointTest(unittest.TestCase):
                 break
             time.sleep(0.05)
         dispatch_workflow.assert_called_once_with()
+
+    def test_scheduled_push_only_accepts_weekday_noon_window(self):
+        self.assertTrue(server._scheduled_push_allowed(datetime(2026, 8, 17, 12, 0)))
+        self.assertFalse(server._scheduled_push_allowed(datetime(2026, 8, 17, 10, 0)))
+        self.assertFalse(server._scheduled_push_allowed(datetime(2026, 8, 16, 12, 0)))
 
 
 if __name__ == "__main__":

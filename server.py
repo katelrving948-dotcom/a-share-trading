@@ -13,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
+from zoneinfo import ZoneInfo
 
 from research_core import (
     build_push_payload, load_fundamental, load_technical,
@@ -23,6 +24,7 @@ from research_core import (
 ROOT = Path(__file__).resolve().parent
 TEMPLATE = ROOT / "templates" / "index.html"
 STATIC_DIR = ROOT / "static"
+SHANGHAI = ZoneInfo("Asia/Shanghai")
 
 _state_lock = threading.RLock()
 _push_state = {"state": "idle", "started_at": None, "completed_at": None, "error": None}
@@ -30,7 +32,14 @@ _fundamental_state = {"state": "idle", "started_at": None, "completed_at": None,
 
 
 def _now() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return datetime.now(SHANGHAI).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _scheduled_push_allowed(now: datetime | None = None) -> bool:
+    if os.getenv("CRON_WINDOW_BYPASS", "0") == "1":
+        return True
+    current = now or datetime.now(SHANGHAI)
+    return current.weekday() < 5 and 1150 <= current.hour * 100 + current.minute <= 1230
 
 
 def _snapshot(target: dict) -> dict:
@@ -159,6 +168,17 @@ class ApiHandler(BaseHTTPRequestHandler):
             if path in ("/api/push/run", "/api/cron/daily-email"):
                 if not self._authorized():
                     return self._json({"error": "未授权"}, 401)
+                if path == "/api/cron/daily-email" and not _scheduled_push_allowed():
+                    _update(
+                        _push_state,
+                        state="skipped",
+                        completed_at=_now(),
+                        error=None,
+                        reason="非工作日12:00推送窗口，未提前生成或发送",
+                    )
+                    self.send_response(204)
+                    self.end_headers()
+                    return
                 started = _start_push_dispatch(force=path == "/api/push/run")
                 if path == "/api/cron/daily-email":
                     self.send_response(204 if started else 409)
