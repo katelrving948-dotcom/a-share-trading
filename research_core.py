@@ -10,6 +10,7 @@ import tempfile
 import threading
 import time
 import zipfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from urllib.request import Request, urlopen
@@ -163,6 +164,8 @@ def load_technical() -> dict:
             "oos_metrics": summary.get("oos_metrics", {}),
             "costs": summary.get("costs", {}),
             "factor_count": len(rows),
+            "latest_validation": summary.get("latest_validation", {}),
+            "optimization_log_entry": summary.get("optimization_log_entry", {}),
         },
         "rows": rows,
         "signals": signals,
@@ -199,6 +202,7 @@ def sync_latest_quant_artifact() -> dict:
         expected = {
             "quant_report.html", "quant_summary.json", "quant_signals.csv",
             "quant_oos_equity.csv", "quant_folds.csv", "quant_factors_latest.csv",
+            "quant_optimization_log.json",
         }
         QUANT_DIR.mkdir(parents=True, exist_ok=True)
         copied = []
@@ -255,27 +259,330 @@ def score_intersection(fundamental: dict, technical: dict) -> list[dict]:
     return merged[:display_limit]
 
 
-def market_context() -> dict:
-    feed = DataFeed()
+def build_morning_entry_plan(intraday: dict, atr_pct: float | None = None) -> dict:
+    """Build a conditional afternoon plan from the completed morning session."""
+    morning = (intraday or {}).get("morning_session") or {}
+    opening = (intraday or {}).get("opening_30m") or {}
+    window = morning if morning.get("completed") else opening
+    window_label = "09:30-11:30" if morning.get("completed") else "09:30-10:00"
+    base = {
+        "window": window_label,
+        "actionable": False,
+        "levels_available": False,
+        "status": window.get("status") or "上午盘分时数据不可用",
+        "entry_zone": None,
+        "breakout_trigger": None,
+        "max_chase_price": None,
+        "stop_zone": None,
+        "take_profit_zones": [],
+        "risk_pct": None,
+        "reference_price": None,
+        "execution_state": "等待上午盘数据完成",
+        "reason": "需要完整上午盘价格、均价与量价承接数据。",
+        "morning": window,
+        "quant_atr_pct": round(float(atr_pct or 0) * 100, 2),
+        "execution_note": "普通A股当日买入通常不能当日卖出；价位是条件计划，跳空时可能无法按计划成交。",
+    }
+    trade_date = str((intraday or {}).get("trade_date") or "").replace("-", "")[:8]
+    today = datetime.now(SHANGHAI).strftime("%Y%m%d")
+    if trade_date and trade_date != today:
+        base.update(
+            status="非当日分时数据",
+            execution_state="等待下一个交易日上午盘",
+            reason=f"分时数据属于{trade_date}，当前日期为{today}，不生成当日进场价位。",
+        )
+        return base
+    if not window.get("completed"):
+        return base
     try:
-        metrics = feed.get_market_metrics() or {}
+        open_price = float(window["open"])
+        high = float(window["high"])
+        low = float(window["low"])
+        close = float(window["close"])
+        vwap = float(window["vwap"])
+        change_pct = float(window.get("change_pct") or 0)
+        range_pct = float(window.get("range_pct") or 0)
+        up_ratio = float(window.get("up_minute_ratio") or 0)
+        close_position = float(window.get("close_position") or 0)
+        above_vwap_ratio = float(window.get("above_vwap_ratio") or 0)
+    except (KeyError, TypeError, ValueError):
+        base.update(status="上午盘数据不完整", reason="缺少价格区间或分时均价，不能计算价位。")
+        return base
+    if min(open_price, high, low, close, vwap) <= 0 or high < low:
+        base.update(status="上午盘数据异常", reason="价格字段无效，停止生成价位。")
+        return base
+    if change_pct > 5 or range_pct > 8:
+        base.update(
+            status="暂不追涨",
+            reason=f"上午涨幅{change_pct:+.2f}%、振幅{range_pct:.2f}%，等待重新形成支撑。",
+        )
+        return base
+    if close < vwap * 0.995 or close_position < 0.35 or above_vwap_ratio < 0.40:
+        base.update(
+            status="暂不进场",
+            reason=(
+                f"午盘价位于上午区间{close_position:.0%}位置，"
+                f"站上均价时间占比{above_vwap_ratio:.0%}，承接尚未确认。"
+            ),
+        )
+        return base
+
+    strong = close >= vwap and close_position >= 0.65 and up_ratio >= 0.50
+    entry_low = max(low, vwap * (0.995 if strong else 0.990))
+    entry_high = min(high, vwap * (1.005 if strong else 1.002))
+    if entry_high < entry_low:
+        base.update(status="暂不进场", reason="上午均价与价格区间无法形成有效回踩区。")
+        return base
+    entry_mid = (entry_low + entry_high) / 2
+    factor_atr = max(0.0, float(atr_pct or 0))
+    risk_fraction = min(0.05, max(0.015, factor_atr * 1.2, range_pct / 100 * 0.6))
+    stop_high = min(low * 0.997, entry_low * (1 - risk_fraction))
+    stop_low = stop_high * 0.995
+    risk_per_share = max(entry_mid - stop_high, entry_mid * 0.005)
+    target_one = entry_mid + risk_per_share * 1.5
+    target_two = entry_mid + risk_per_share * 2.5
+    current_price = float((intraday or {}).get("close_price") or close)
+    breakout = high * 1.002
+    max_chase = high * 1.015
+    actionable = True
+    execution_state = "等待回踩进场区或放量突破确认"
+    status = "上午强势承接" if strong else "上午均价承接"
+    if current_price < stop_high:
+        actionable = False
+        status = "上午结构已失效"
+        execution_state = "当前价已跌破结构止损位，不按原计划进场"
+    elif current_price > max_chase:
+        actionable = False
+        status = "当前价格暂不追涨"
+        execution_state = "当前价超过禁追线，等待重新形成支撑"
+    elif entry_low <= current_price <= entry_high:
+        execution_state = "当前价进入回踩进场区"
+    elif current_price >= breakout:
+        execution_state = "已触发突破确认"
+    base.update({
+        "actionable": actionable,
+        "levels_available": True,
+        "status": status,
+        "entry_zone": {"low": round(entry_low, 2), "high": round(entry_high, 2)},
+        "breakout_trigger": round(breakout, 2),
+        "max_chase_price": round(max_chase, 2),
+        "stop_zone": {"low": round(stop_low, 2), "high": round(stop_high, 2)},
+        "take_profit_zones": [
+            {"name": "第一止盈", "low": round(target_one, 2), "high": round(target_one * 1.008, 2), "risk_reward": 1.5},
+            {"name": "第二止盈", "low": round(target_two, 2), "high": round(target_two * 1.012, 2), "risk_reward": 2.5},
+        ],
+        "risk_pct": round((entry_mid - stop_high) / entry_mid * 100, 2),
+        "reference_price": round(current_price, 2),
+        "execution_state": execution_state,
+        "reason": (
+            f"上午收盘{close:.2f}，均价{vwap:.2f}，收在区间{close_position:.0%}位置；"
+            f"量化ATR参与止损距离计算。"
+        ),
+    })
+    return base
+
+
+def build_trade_decision(item: dict) -> dict:
+    """Apply sector, fundamental, quant and live-entry gates in order."""
+    board_score = item.get("board_strength_score")
+    fundamental_score = float(item.get("fundamental_score") or 0)
+    technical_score = float(item.get("technical_score") or 0)
+    plan = item.get("morning_plan") or {}
+    state = str(plan.get("execution_state") or "")
+    board_pass = board_score is not None and float(board_score) >= 60
+    fundamental_pass = fundamental_score >= 60
+    quant_pass = technical_score >= 60
+    entry_pass = bool(plan.get("actionable")) and (
+        "进入回踩进场区" in state or "已触发突破确认" in state
+    )
+    blocked = any(word in f"{plan.get('status', '')}{state}" for word in ("暂不", "失效", "异常"))
+    if blocked or not (board_pass and fundamental_pass and quant_pass):
+        status = "不交易"
+    elif entry_pass:
+        status = "可执行观察"
+    else:
+        status = "等待确认"
+    reasons = []
+    if not board_pass:
+        reasons.append("板块资金/效应未达到60分")
+    if not fundamental_pass:
+        reasons.append("基本面未达到60分")
+    if not quant_pass:
+        reasons.append("量化因子未达到60分")
+    if board_pass and fundamental_pass and quant_pass and not entry_pass:
+        reasons.append(plan.get("status") or "午后进场条件尚未触发")
+    return {
+        "status": status,
+        "board_gate": {"score": board_score, "passed": board_pass},
+        "fundamental_gate": {"score": fundamental_score, "passed": fundamental_pass},
+        "quant_gate": {"score": technical_score, "passed": quant_pass},
+        "entry_gate": {"passed": entry_pass, "state": state},
+        "reasons": reasons,
+        "note": "量化因子参与选股与进场门槛，价位仍须由上午盘结构触发；排名不是买入指令。",
+    }
+
+
+def _capital_strength(market: dict, boards: list[dict]) -> dict:
+    sector_rows = market.get("sector_flow") or []
+    positive = [row for row in sector_rows if float(row.get("main_net_inflow") or 0) > 0]
+    top_three = sum(float(row.get("main_net_inflow") or 0) for row in sector_rows[:3])
+    average_change = sum(float(row.get("change_pct") or 0) for row in sector_rows[:10]) / max(1, len(sector_rows[:10]))
+    if len(positive) >= 8 and top_three > 0 and average_change > 0:
+        label = "强"
+    elif len(positive) >= 4 and top_three > 0:
+        label = "中等"
+    else:
+        label = "弱或分化"
+    return {
+        "label": label,
+        "positive_sector_count": len(positive),
+        "observed_sector_count": len(sector_rows),
+        "top_three_main_net_inflow": round(top_three, 2),
+        "top_ten_average_change_pct": round(average_change, 2),
+        "strong_board_count": sum(float(board.get("rotation_score") or 0) >= 60 for board in boards),
+        "method": "综合当日主力净流入、上涨扩散度、近5日持续性和板块涨跌表现；单位沿用数据源亿元。",
+    }
+
+
+def build_market_research(
+    observations: list[dict],
+    fundamental: dict,
+    technical: dict,
+    feed: DataFeed | None = None,
+) -> dict:
+    """Build the external-market → sector → stock → entry research chain."""
+    feed = feed or DataFeed()
+    try:
+        news = feed.get_financial_news()
+    except Exception:
+        news = []
+    try:
+        external = feed.get_external_market_context(news=news, force_refresh=True)
     except Exception as exc:
-        metrics = {"available": False, "message": str(exc)}
-    return _clean(metrics)
+        external = {"available": False, "markets": [], "events": [], "limitations": [str(exc)]}
+    try:
+        market = feed.get_market_context(external_context=external)
+    except Exception as exc:
+        market = {"market_stats": {}, "sector_flow": [], "message": str(exc)}
+    codes = [item["code"] for item in observations]
+    try:
+        rotation = feed.get_rotation_matches(codes, top_n=8, external_context=external)
+    except Exception as exc:
+        rotation = {"boards": [], "matches": {code: [] for code in codes}, "message": str(exc)}
+
+    sector_by_name = {row.get("name"): row for row in market.get("sector_flow", [])}
+    boards = rotation.get("boards") or []
+    for board in boards:
+        flow_score = float(board.get("flow_score") or 0)
+        external_score = float(board.get("external_score") or 50)
+        has_external_signal = bool(board.get("external_signal_count"))
+        board["rotation_score"] = round(flow_score * 0.8 + external_score * 0.2) if has_external_signal else round(flow_score)
+        breadth = sector_by_name.get(board.get("name"), {})
+        board["rise_count"] = breadth.get("rise_count")
+        board["fall_count"] = breadth.get("fall_count")
+        flow = float(board.get("main_net_inflow") or 0)
+        change = float(board.get("change_pct") or 0)
+        board["effect"] = (
+            "资金流入且上涨扩散，板块效应较强" if flow > 0 and change > 0
+            else "资金流入但价格未确认" if flow > 0
+            else "资金流出，板块效应偏弱"
+        )
+    boards.sort(key=lambda row: float(row.get("rotation_score") or 0), reverse=True)
+    for rank, board in enumerate(boards, start=1):
+        board["rank"] = rank
+
+    matches = rotation.get("matches") or {}
+    for item in observations:
+        stock_boards = sorted(
+            matches.get(item["code"], []),
+            key=lambda row: float(row.get("rotation_score") or row.get("flow_score") or 0),
+            reverse=True,
+        )
+        item["matched_boards"] = stock_boards[:3]
+        strongest = stock_boards[0] if stock_boards else None
+        item["board_strength_score"] = strongest.get("rotation_score") if strongest else None
+        item["primary_board"] = strongest
+
+    def intraday_enrichment(item: dict) -> tuple[str, dict, dict]:
+        try:
+            intraday = feed.get_intraday_minute(item["code"])
+        except Exception as exc:
+            intraday = {"available": False, "error": str(exc)}
+        try:
+            flow = feed.get_intraday_stock_fund_flow(item["code"])
+        except Exception as exc:
+            flow = {"available": False, "error": str(exc)}
+        return item["code"], build_morning_entry_plan(intraday, item.get("atr_pct")), flow
+
+    enriched = {}
+    if observations:
+        with ThreadPoolExecutor(max_workers=min(6, len(observations))) as executor:
+            futures = [executor.submit(intraday_enrichment, item) for item in observations]
+            for future in as_completed(futures):
+                code, plan, flow = future.result()
+                enriched[code] = (plan, flow)
+    for item in observations:
+        item["morning_plan"], item["intraday_fund_flow"] = enriched.get(
+            item["code"], (build_morning_entry_plan({}), {"available": False})
+        )
+        item["trade_decision"] = build_trade_decision(item)
+
+    fundamental_by_code = {
+        str(row.get("code", "")).zfill(6): row for row in fundamental.get("rows", [])
+    }
+    technical_by_code = {
+        str(row.get("code", "")).zfill(6): row for row in technical.get("rows", [])
+    }
+    hot_core = []
+    seen = set()
+    for board in boards:
+        if float(board.get("rotation_score") or 0) < 60 or float(board.get("main_net_inflow") or 0) <= 0:
+            continue
+        for leader in board.get("leaders") or []:
+            code = str(leader.get("code", "")).zfill(6)
+            if not code or code in seen:
+                continue
+            seen.add(code)
+            fundamental_row = fundamental_by_code.get(code, {})
+            technical_row = technical_by_code.get(code, {})
+            hot_core.append({
+                **leader,
+                "code": code,
+                "board_name": board.get("name"),
+                "board_type": board.get("type"),
+                "board_strength_score": board.get("rotation_score"),
+                "fundamental_score": fundamental_row.get("fundamental_score"),
+                "technical_score": technical_row.get("technical_score"),
+                "quant_passed": float(technical_row.get("technical_score") or 0) >= 60,
+                "state": "进入双评分复核" if float(technical_row.get("technical_score") or 0) >= 60 else "仅作板块龙头观察",
+            })
+            if len(hot_core) >= 10:
+                break
+        if len(hot_core) >= 10:
+            break
+    return {
+        "market": market,
+        "external_market": external,
+        "rotation_boards": boards[:12],
+        "capital_strength": _capital_strength(market, boards),
+        "hot_core_candidates": hot_core,
+        "news_count": len(news),
+    }
 
 
 def build_push_payload(refresh: bool = False, universe_limit: int | None = None) -> dict:
     fundamental = refresh_fundamental(universe_limit) if refresh else load_fundamental()
     technical = load_technical()
     observations = score_intersection(fundamental, technical)
+    market_research = build_market_research(observations, fundamental, technical)
     now = datetime.now(SHANGHAI)
     return {
-        "subject": f"{now:%Y-%m-%d} A股双评分午间观察",
+        "subject": f"{now:%Y-%m-%d} A股午间全链路观察",
         "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
         "schedule": "工作日12:00",
         "analysis_window": "前一交易日完整盘面 + 当日09:30-11:30上午盘",
         "execution_window": "13:00-14:00复核使用",
-        "market": market_context(),
+        **market_research,
         "fundamental_summary": fundamental.get("summary", {}),
         "technical_summary": technical.get("summary", {}),
         "observations": observations,
@@ -284,6 +591,6 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
             "fundamental_min": float(os.getenv("PUSH_FUNDAMENTAL_MIN", "60")),
             "technical_min": float(os.getenv("PUSH_TECHNICAL_MIN", "60")),
             "display_limit": int(os.getenv("PUSH_DISPLAY_LIMIT", "20")),
-            "meaning": "两类评分的自然交集，仅为观察池；不生成交易计划或自动下单",
+            "meaning": "外盘与事件只作情景输入；按板块资金→基本面→量化因子→上午盘触发顺序形成观察，不自动下单",
         },
     }

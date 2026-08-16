@@ -22,7 +22,7 @@ main{padding:28px;max-width:1500px;width:100%;margin:auto}.page{display:none}.pa
   <button class="active" data-page="push">01 推送中心</button>
   <button data-page="fundamental">02 基本面评分</button>
   <button data-page="technical">03 技术面量化</button>
-  <div class="note">系统只输出评分和观察结果，不提供自动下单、仓位、买点或止盈止损计划。</div>
+  <div class="note">顺序固定为外盘情景 → A股资金与板块 → 基本面与量化因子 → 上午盘条件价位。系统不自动下单。</div>
 </nav>
 <main>
   <section class="page active" id="page-push">
@@ -34,7 +34,9 @@ main{padding:28px;max-width:1500px;width:100%;margin:auto}.page{display:none}.pa
       <div class="toolbar"><input id="cronSecret" type="password" placeholder="CRON_SECRET（仅本次请求）"><button id="pushRun">触发测试推送</button><button class="secondary" id="pushReload">刷新状态/预览</button></div>
       <div class="status" id="pushStatus">读取中…</div>
     </div>
-    <div class="card"><h2>邮件内容预览 · 双评分交集观察池</h2><p class="muted" id="pushRule"></p><div class="scroll"><table><thead><tr><th>#</th><th>代码</th><th>名称</th><th>行业</th><th>基本面</th><th>技术面</th><th>综合</th></tr></thead><tbody id="pushRows"></tbody></table></div></div>
+    <div class="card"><h2>外盘、美股与事件影响</h2><div class="status" id="pushExternal">读取中…</div></div>
+    <div class="card"><h2>每日资金强度 · 板块效应 · 龙头</h2><div class="status" id="capitalStatus">读取中…</div><div class="scroll" style="margin-top:10px"><table><thead><tr><th>#</th><th>板块</th><th>主力净流入</th><th>强度</th><th>板块效应</th><th>龙头/次龙头</th></tr></thead><tbody id="pushSectorRows"></tbody></table></div></div>
+    <div class="card"><h2>邮件内容预览 · 全链路交集观察池</h2><p class="muted" id="pushRule"></p><div class="scroll"><table><thead><tr><th>#</th><th>股票</th><th>行业</th><th>基本面</th><th>量化</th><th>板块</th><th>结论</th><th>进场/止损/止盈</th></tr></thead><tbody id="pushRows"></tbody></table></div></div>
   </section>
 
   <section class="page" id="page-fundamental">
@@ -51,6 +53,7 @@ main{padding:28px;max-width:1500px;width:100%;margin:auto}.page{display:none}.pa
     <div class="hero"><h1>技术面量化</h1><p>收盘后更新横截面因子、滚动参数优化和样本外回测；T日评分从T+1收益开始验证。</p></div>
     <div class="grid g4" id="techMetrics"></div>
     <div class="card"><div class="toolbar"><button id="techReload">读取本地结果</button><button class="secondary" id="techSync">同步GitHub最新报告</button><input id="techSearch" placeholder="代码或名称筛选"></div><div class="status" id="techStatus">读取中…</div></div>
+    <div class="card"><h2>次日验证与每日优化日志</h2><div class="status" id="techJournal">读取中…</div></div>
     <div class="card"><h2>最新因子评分</h2><div class="scroll"><table><thead><tr><th>排名</th><th>股票</th><th>技术分</th><th>动量</th><th>趋势</th><th>波动率</th><th>量比</th><th>RSI</th><th>布林位置</th><th>ATR%</th></tr></thead><tbody id="techRows"></tbody></table></div></div>
   </section>
 </main></div>
@@ -63,7 +66,20 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.query
 const initial=location.hash.slice(1);if(initial&&document.querySelector(`[data-page="${initial}"]`))document.querySelector(`[data-page="${initial}"]`).click();
 
 let fundData=[],techData=[];
-async function loadPush(){try{const [s,p]=await Promise.all([api.get('/api/push/status'),api.get('/api/push/preview')]);document.getElementById('pushMetrics').innerHTML=metric('计划时间',p.schedule)+metric('交集观察',p.observation_count+'只')+metric('基本面阈值',p.rules.fundamental_min+'分')+metric('技术面阈值',p.rules.technical_min+'分');document.getElementById('pushStatus').textContent=`状态：${s.state}\n开始：${s.started_at||'--'}\n完成：${s.completed_at||'--'}\n错误：${s.error||'无'}\n说明：${s.delivery_boundary}`;document.getElementById('pushRule').textContent=p.rules.meaning+'；展示上限 '+p.rules.display_limit+' 只。';document.getElementById('pushRows').innerHTML=p.observations.length?p.observations.map(x=>`<tr><td>${x.rank}</td><td>${esc(x.code)}</td><td>${esc(x.name)}</td><td>${esc(x.industry)}</td><td class="score">${num(x.fundamental_score,0)}</td><td class="score">${num(x.technical_score)}</td><td class="ok">${num(x.combined_score)}</td></tr>`).join(''):'<tr><td colspan="7">当前没有同时达标的股票，或评分快照尚未生成。</td></tr>'}catch(e){document.getElementById('pushStatus').textContent='读取失败：'+e.message}}
+function planText(x){const p=x.morning_plan||{},e=p.entry_zone||{},s=p.stop_zone||{},t=p.take_profit_zones||[];if(!p.levels_available)return esc(p.status||'暂无价位');return `进场 ${num(e.low,2)}-${num(e.high,2)}；止损 ${num(s.low,2)}-${num(s.high,2)}；止盈 ${num(t[0]?.low,2)} / ${num(t[1]?.low,2)}；${esc(p.execution_state||'等待触发')}`}
+async function loadPush(){try{
+  const [s,p]=await Promise.all([api.get('/api/push/status'),api.get('/api/push/preview')]);
+  const c=p.capital_strength||{},ext=p.external_market||{},boards=p.rotation_boards||[];
+  document.getElementById('pushMetrics').innerHTML=metric('计划时间',p.schedule)+metric('交集观察',p.observation_count+'只')+metric('资金强度',c.label||'--')+metric('强板块',c.strong_board_count??0,'个');
+  document.getElementById('pushStatus').textContent=`状态：${s.state}\n开始：${s.started_at||'--'}\n完成：${s.completed_at||'--'}\n错误：${s.error||'无'}\n说明：${s.delivery_boundary}`;
+  document.getElementById('pushRule').textContent=p.rules.meaning+'；展示上限 '+p.rules.display_limit+' 只。';
+  const markets=(ext.markets||[]).map(x=>`${x.name} ${Number(x.change_pct||0)>=0?'+':''}${num(x.change_pct,2)}%（${x.as_of||'--'}）`).join(' · ');
+  const events=(ext.events||[]).map(x=>`${x.name||x.event||'事件'}：${x.impact_summary||'等待A股资金确认'}`).join('\n');
+  document.getElementById('pushExternal').textContent=`覆盖：${ext.coverage||'暂不可用'}\n${markets||'外盘行情暂不可用'}\n${events||'暂无事件信号'}\n边界：外部变化必须由A股资金和板块扩散确认。`;
+  document.getElementById('capitalStatus').textContent=`资金强度：${c.label||'--'}；强板块：${c.strong_board_count??0}个；前三主力净流入合计：${num(c.top_three_main_net_inflow,2)}亿元。\n${c.method||''}`;
+  document.getElementById('pushSectorRows').innerHTML=boards.length?boards.slice(0,12).map(x=>`<tr><td>${x.rank}</td><td><strong>${esc(x.name)}</strong><br>${esc(x.type)}</td><td>${num(x.main_net_inflow,2)}亿</td><td class="score">${num(x.rotation_score,0)}</td><td>${esc(x.effect)}</td><td>${(x.leaders||[]).map(y=>`${esc(y.name)}(${esc(y.leadership_role)})`).join('、')||'--'}</td></tr>`).join(''):'<tr><td colspan="6">暂无有效板块资金数据。</td></tr>';
+  document.getElementById('pushRows').innerHTML=p.observations.length?p.observations.map(x=>`<tr><td>${x.rank}</td><td><strong>${esc(x.code)}</strong><br>${esc(x.name)}</td><td>${esc(x.industry)}</td><td class="score">${num(x.fundamental_score,0)}</td><td class="score">${num(x.technical_score)}</td><td>${esc(x.primary_board?.name||'未匹配')} / ${num(x.board_strength_score,0)}</td><td class="${x.trade_decision?.status==='可执行观察'?'ok':'warn'}">${esc(x.trade_decision?.status||'等待确认')}</td><td>${planText(x)}</td></tr>`).join(''):'<tr><td colspan="8">当前没有同时达标的股票，或评分快照尚未生成。</td></tr>';
+}catch(e){document.getElementById('pushStatus').textContent='读取失败：'+e.message}}
 document.getElementById('pushReload').onclick=loadPush;document.getElementById('pushRun').onclick=async()=>{const b=document.getElementById('pushRun');b.disabled=true;try{const secret=document.getElementById('cronSecret').value;await api.post('/api/push/run',{}, {'Authorization':'Bearer '+secret});await loadPush()}catch(e){alert(e.message)}finally{b.disabled=false}};
 
 function renderFund(){const q=document.getElementById('fundSearch').value.trim().toLowerCase();const rows=fundData.filter(x=>!q||String(x.code).includes(q)||String(x.name).toLowerCase().includes(q)).slice(0,300);document.getElementById('fundRows').innerHTML=rows.map(x=>`<tr><td>${x.fundamental_rank}</td><td><strong>${esc(x.code)}</strong><br>${esc(x.name)}</td><td>${esc(x.report_date)}</td><td class="score">${num(x.fundamental_score,0)}</td><td>${num(x.quality_score,0)}</td><td>${num(x.growth_score,0)}</td><td>${num(x.valuation_score,0)}</td><td>${num(x.cashflow_score,0)}</td><td>${num(x.annualized_roe)}%</td><td>${num(x.revenue_growth)}%</td><td>${num(x.profit_growth)}%</td><td>${num(x.pe)}/${num(x.pb)}</td><td title="${esc(x.risk)}">${esc(x.risk)}</td></tr>`).join('')||'<tr><td colspan="13">尚无基本面快照</td></tr>'}
@@ -71,7 +87,7 @@ async function loadFund(){try{const d=await api.get('/api/fundamental');fundData
 document.getElementById('fundSearch').oninput=renderFund;document.getElementById('fundReload').onclick=loadFund;document.getElementById('fundRun').onclick=async()=>{const b=document.getElementById('fundRun');b.disabled=true;try{await api.post('/api/fundamental/run',{universe_limit:500});document.getElementById('fundStatus').textContent='评分任务已启动，可稍后刷新查看进度。'}catch(e){alert(e.message)}finally{b.disabled=false}};
 
 function renderTech(){const q=document.getElementById('techSearch').value.trim().toLowerCase();const rows=techData.filter(x=>!q||String(x.code).includes(q)||String(x.name||'').toLowerCase().includes(q)).slice(0,500);document.getElementById('techRows').innerHTML=rows.map(x=>`<tr><td>${x.technical_rank??'--'}</td><td><strong>${esc(String(x.code).padStart(6,'0'))}</strong><br>${esc(x.name||'')}</td><td class="score">${num(x.technical_score)}</td><td>${num(Number(x.momentum)*100)}%</td><td>${num(Number(x.trend)*100)}%</td><td>${num(Number(x.volatility)*100)}%</td><td>${num(x.volume_ratio,2)}</td><td>${num(x.rsi,1)}</td><td>${num(x.bollinger_position,2)}</td><td>${num(Number(x.atr_pct)*100)}%</td></tr>`).join('')||'<tr><td colspan="10">尚无量化快照，请等待16:30任务。</td></tr>'}
-async function loadTech(){try{const d=await api.get('/api/technical');techData=d.rows||[];const s=d.summary||{},m=s.oos_metrics||{},meta=s.metadata||{};document.getElementById('techMetrics').innerHTML=metric('覆盖股票',s.factor_count??0,'只')+metric('样本外年化',num(m.annual_return,2)+'%')+metric('最大回撤',num(m.max_drawdown,2)+'%')+metric('夏普',num(m.sharpe_ratio,2));document.getElementById('techStatus').textContent=`生成：${meta.generated_at||'--'} · 信号日：${meta.signal_date||'--'} · 数据源：${meta.provider||'--'} · 最优参数：${JSON.stringify(s.best_params||{})}`;renderTech()}catch(e){document.getElementById('techStatus').textContent='读取失败：'+e.message}}
+async function loadTech(){try{const d=await api.get('/api/technical');techData=d.rows||[];const s=d.summary||{},m=s.oos_metrics||{},meta=s.metadata||{},v=s.latest_validation||{},o=s.optimization_log_entry||{};document.getElementById('techMetrics').innerHTML=metric('覆盖股票',s.factor_count??0,'只')+metric('样本外年化',num(m.annual_return,2)+'%')+metric('最大回撤',num(m.max_drawdown,2)+'%')+metric('夏普',num(m.sharpe_ratio,2));document.getElementById('techStatus').textContent=`生成：${meta.generated_at||'--'} · 信号日：${meta.signal_date||'--'} · 数据源：${meta.provider||'--'} · 最优参数：${JSON.stringify(s.best_params||{})}`;document.getElementById('techJournal').textContent=`次日验证：${v.message||'尚未生成'}\n信号日：${v.signal_date||'--'} → 验证日：${v.validation_date||'--'}；命中率：${num(v.hit_rate,2)}%；平均收益：${num(v.average_return,3)}%；超额：${num(v.excess_return,3)}%。\n今日优化：\n${(o.actions||['尚未生成']).map(x=>'• '+x).join('\n')}\n约束：${o.guardrail||'单日验证只记录，不直接改写因子定义。'}`;renderTech()}catch(e){document.getElementById('techStatus').textContent='读取失败：'+e.message}}
 document.getElementById('techSearch').oninput=renderTech;document.getElementById('techReload').onclick=loadTech;
 document.getElementById('techSync').onclick=async()=>{const b=document.getElementById('techSync');b.disabled=true;try{const secret=document.getElementById('cronSecret').value;await api.post('/api/technical/sync',{}, {'Authorization':'Bearer '+secret});await loadTech();await loadPush()}catch(e){alert(e.message)}finally{b.disabled=false}};
 api.get('/api/status').then(()=>document.getElementById('live').textContent='● 服务正常').catch(()=>{document.getElementById('live').textContent='● 服务异常';document.getElementById('live').className='bad'});loadPush();loadFund();loadTech();

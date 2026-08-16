@@ -1395,7 +1395,9 @@ class DataFeed:
                 }
             data_section = (payload.get("data") or {}).get(symbol) or {}
             nested_data = data_section.get("data")
+            trade_date = data_section.get("date")
             if isinstance(nested_data, dict):
+                trade_date = nested_data.get("date") or trade_date
                 mins_raw = nested_data.get("data") or []
             else:
                 mins_raw = data_section.get("MINS") or nested_data or []
@@ -1483,6 +1485,7 @@ class DataFeed:
 
         return {
             "available": True,
+            "trade_date": str(trade_date or "").replace("-", "")[:8],
             "minute_count": len(rows),
             "open_price": round(first_price, 2),
             "close_price": round(last_price, 2),

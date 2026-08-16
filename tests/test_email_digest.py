@@ -13,7 +13,15 @@ def payload(observations=None):
         "execution_window": "13:00-14:00复核使用",
         "market": {"up": 2000, "down": 2800, "limit_up": 40, "limit_down": 8},
         "rules": {"fundamental_min": 60, "technical_min": 60, "display_limit": 20},
-        "technical_summary": {"metadata": {"signal_date": "2026-08-15"}, "oos_metrics": {"annual_return": 12.3, "max_drawdown": -8.2, "sharpe_ratio": 1.1}},
+        "technical_summary": {
+            "metadata": {"signal_date": "2026-08-15"},
+            "oos_metrics": {"annual_return": 12.3, "max_drawdown": -8.2, "sharpe_ratio": 1.1},
+            "latest_validation": {"status": "validated", "signal_date": "2026-08-14", "validation_date": "2026-08-15", "hit_rate": 60, "average_return": 0.5, "excess_return": 0.2, "message": "已验证"},
+            "optimization_log_entry": {"actions": ["动量窗口20调整为60"], "guardrail": "只在预设参数网格内选择"},
+        },
+        "external_market": {"coverage": "1/8项外盘行情，1类事件信号", "markets": [{"name": "纳斯达克100", "change_pct": 1.2, "as_of": "2026-08-15"}], "events": [{"name": "地缘政治", "impact_summary": "等待A股资金确认"}]},
+        "capital_strength": {"label": "强", "strong_board_count": 1, "top_three_main_net_inflow": 20},
+        "rotation_boards": [{"rank": 1, "name": "半导体", "type": "行业", "main_net_inflow": 12, "rotation_score": 72, "effect": "资金流入且上涨扩散", "leaders": [{"name": "测试龙头", "leadership_role": "龙头"}]}],
         "observations": observations or [],
     }
 
@@ -29,8 +37,11 @@ class EmailDigestTest(unittest.TestCase):
         self.assertIn("双评分午间观察", message["Subject"])
         self.assertIn("000001 平安银行", plain)
         self.assertIn("基本面78", plain)
-        self.assertIn("不生成仓位、进场价、止盈止损或自动委托", plain)
+        self.assertIn("不自动委托；排名不等于买点", plain)
         self.assertIn("没有交集时允许为空", html)
+        self.assertIn("外盘、美股与地缘事件影响", html)
+        self.assertIn("每日资金强度、板块效应与龙头", html)
+        self.assertIn("量化次日验证与每日优化日志", html)
         self.assertIn("table-layout:fixed", html)
         self.assertEqual(html.count('width="7%"'), 2)
         self.assertEqual(html.count('width="22%"'), 2)

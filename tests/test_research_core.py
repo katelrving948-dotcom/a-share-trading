@@ -2,10 +2,50 @@ import unittest
 from unittest.mock import patch
 
 from fundamental import FundamentalScorer
-from research_core import score_intersection
+from research_core import build_morning_entry_plan, build_trade_decision, score_intersection
 
 
 class ResearchCoreTest(unittest.TestCase):
+    def test_morning_plan_uses_quant_atr_for_conditional_levels(self):
+        plan = build_morning_entry_plan({
+            "close_price": 10.2,
+            "morning_session": {
+                "completed": True, "status": "上午盘已完成",
+                "open": 10, "high": 10.4, "low": 9.9, "close": 10.2, "vwap": 10.1,
+                "change_pct": 2, "range_pct": 5, "up_minute_ratio": 0.6,
+                "close_position": 0.6, "above_vwap_ratio": 0.6,
+            },
+        }, atr_pct=0.02)
+
+        self.assertTrue(plan["levels_available"])
+        self.assertEqual(plan["window"], "09:30-11:30")
+        self.assertGreater(plan["entry_zone"]["low"], plan["stop_zone"]["high"])
+        self.assertEqual(plan["quant_atr_pct"], 2.0)
+
+    def test_trade_decision_requires_sector_quant_and_live_entry(self):
+        decision = build_trade_decision({
+            "board_strength_score": 70,
+            "fundamental_score": 75,
+            "technical_score": 72,
+            "morning_plan": {
+                "actionable": True,
+                "status": "上午强势承接",
+                "execution_state": "当前价进入回踩进场区",
+            },
+        })
+
+        self.assertEqual(decision["status"], "可执行观察")
+        self.assertTrue(decision["quant_gate"]["passed"])
+
+    def test_stale_intraday_data_does_not_generate_today_levels(self):
+        plan = build_morning_entry_plan({
+            "trade_date": "20260815",
+            "morning_session": {"completed": True},
+        }, atr_pct=0.02)
+
+        self.assertFalse(plan["levels_available"])
+        self.assertEqual(plan["status"], "非当日分时数据")
+
     def test_fundamental_score_has_four_transparent_dimensions(self):
         row = FundamentalScorer._evaluate({
             "code": "1", "name": "样本", "available": True,

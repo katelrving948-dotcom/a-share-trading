@@ -20,16 +20,42 @@ def _number(value, digits=1, suffix="") -> str:
         return "--"
 
 
+def _plan_text(item: dict) -> str:
+    plan = item.get("morning_plan") or {}
+    if not plan.get("levels_available"):
+        return f"{plan.get('status') or '暂无上午盘价位'}：{plan.get('reason') or '等待数据'}"
+    entry = plan.get("entry_zone") or {}
+    stop = plan.get("stop_zone") or {}
+    targets = plan.get("take_profit_zones") or []
+    first = targets[0] if targets else {}
+    second = targets[1] if len(targets) > 1 else {}
+    return (
+        f"进场{_number(entry.get('low'), 2)}-{_number(entry.get('high'), 2)}；"
+        f"突破{_number(plan.get('breakout_trigger'), 2)}；禁追>{_number(plan.get('max_chase_price'), 2)}；"
+        f"止损{_number(stop.get('low'), 2)}-{_number(stop.get('high'), 2)}；"
+        f"止盈一{_number(first.get('low'), 2)}-{_number(first.get('high'), 2)}；"
+        f"止盈二{_number(second.get('low'), 2)}-{_number(second.get('high'), 2)}；"
+        f"{plan.get('execution_state') or plan.get('status', '')}"
+    )
+
+
 def build_email(payload: dict) -> EmailMessage:
     observations = payload.get("observations", [])
     plain_rows = []
     html_rows = []
     for item in observations:
+        primary_board = item.get("primary_board") or {}
+        decision = item.get("trade_decision") or {}
+        stock_flow = item.get("intraday_fund_flow") or {}
+        plan_text = _plan_text(item)
         plain_rows.append(
             f"{item.get('rank', '-')}. {item.get('code')} {item.get('name', '')} | "
             f"基本面{_number(item.get('fundamental_score'), 0)} | "
             f"技术面{_number(item.get('technical_score'), 1)} | "
-            f"综合{_number(item.get('combined_score'), 1)}"
+            f"综合{_number(item.get('combined_score'), 1)} | "
+            f"板块{primary_board.get('name') or '未匹配'}({_number(item.get('board_strength_score'), 0)}) | "
+            f"个股主力净占比{_number(stock_flow.get('main_net_pct'), 2, '%')} | "
+            f"结论{decision.get('status', '等待确认')}\n  {plan_text}"
         )
         html_rows.append(
             "<tr>"
@@ -40,6 +66,13 @@ def build_email(payload: dict) -> EmailMessage:
             f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("technical_score"), 1)}</td>'
             f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap"><strong>{_number(item.get("combined_score"), 1)}</strong></td>'
             "</tr>"
+            '<tr><td colspan="6" style="padding:8px 10px 13px;border-bottom:2px solid #cfd8e5;background:#f8fafc;line-height:1.7">'
+            f'<strong>{html.escape(str(decision.get("status") or "等待确认"))}</strong> · '
+            f'板块：{html.escape(str(primary_board.get("name") or "未匹配"))} / 强度{_number(item.get("board_strength_score"), 0)} · '
+            f'个股主力净占比：{_number(stock_flow.get("main_net_pct"), 2, "%")}<br>'
+            f'<span style="color:#475569">{html.escape(plan_text)}</span><br>'
+            f'<span style="font-size:11px;color:#64748b">量化因子用于筛选门槛，ATR {_number((item.get("atr_pct") or 0) * 100, 2, "%")}参与止损距离。</span>'
+            '</td></tr>'
         )
 
     rules = payload.get("rules", {})
@@ -47,7 +80,31 @@ def build_email(payload: dict) -> EmailMessage:
     metadata = technical.get("metadata", {})
     metrics = technical.get("oos_metrics", {})
     market = payload.get("market", {})
-    breadth = market.get("breadth") or market.get("stats") or market
+    breadth = market.get("market_stats") or market.get("breadth") or market.get("stats") or market
+    external = payload.get("external_market") or {}
+    capital = payload.get("capital_strength") or {}
+    boards = payload.get("rotation_boards") or []
+    hot_core = payload.get("hot_core_candidates") or []
+    validation = technical.get("latest_validation") or {}
+    optimization = technical.get("optimization_log_entry") or {}
+    external_plain = [
+        f"{item.get('name')} {float(item.get('change_pct') or 0):+.2f}%（{item.get('as_of') or '时间未知'}）"
+        for item in (external.get("markets") or [])
+    ]
+    event_plain = [
+        f"{item.get('name') or item.get('event')}：{item.get('impact_summary') or '等待A股资金确认'}"
+        for item in (external.get("events") or [])
+    ]
+    board_plain = [
+        f"{board.get('rank')}. {board.get('name')}({board.get('type')}) "
+        f"资金{_number(board.get('main_net_inflow'), 2)}亿/强度{_number(board.get('rotation_score'), 0)}；"
+        f"{board.get('effect')}；龙头："
+        + "、".join(
+            f"{leader.get('name')}({leader.get('leadership_role')})"
+            for leader in (board.get("leaders") or [])
+        )
+        for board in boards[:8]
+    ]
     empty_text = "今日没有股票同时达到两类评分阈值，保留空观察池。"
     site_url = os.getenv("SITE_URL", "https://a-share-trading.onrender.com")
     plain = (
@@ -58,6 +115,14 @@ def build_email(payload: dict) -> EmailMessage:
         "市场概况\n"
         f"上涨：{breadth.get('up', '--')}；下跌：{breadth.get('down', '--')}；"
         f"涨停：{breadth.get('limit_up', '--')}；跌停：{breadth.get('limit_down', '--')}\n\n"
+        "外盘、美股与事件影响\n"
+        + ("\n".join(external_plain + event_plain) if external_plain or event_plain else "外盘/事件数据暂不可用")
+        + "\n说明：外盘和事件只形成情景推演，必须由A股资金与板块扩散确认。\n\n"
+        "每日资金强度与板块效应\n"
+        f"资金强度：{capital.get('label', '--')}；强板块{capital.get('strong_board_count', 0)}个；"
+        f"前三板块主力净流入合计{_number(capital.get('top_three_main_net_inflow'), 2)}亿。\n"
+        + ("\n".join(board_plain) if board_plain else "暂无有效板块资金数据")
+        + "\n\n"
         "双评分交集观察池\n"
         + ("\n".join(plain_rows) if plain_rows else empty_text)
         + "\n\n"
@@ -67,8 +132,50 @@ def build_email(payload: dict) -> EmailMessage:
         f"样本外年化：{_number(metrics.get('annual_return'), 2, '%')}；"
         f"最大回撤：{_number(metrics.get('max_drawdown'), 2, '%')}；"
         f"夏普：{_number(metrics.get('sharpe_ratio'), 2)}\n\n"
-        "本报告只展示基本面和技术面评分，不生成仓位、进场价、止盈止损或自动委托。\n"
+        "量化闭环\n"
+        f"次日验证：{validation.get('message', '尚无验证')}；命中率{_number(validation.get('hit_rate'), 2, '%')}；"
+        f"平均收益{_number(validation.get('average_return'), 3, '%')}；超额{_number(validation.get('excess_return'), 3, '%')}。\n"
+        + "\n".join(optimization.get("actions") or ["今日优化日志尚未生成"])
+        + "\n约束：单日验证只记录，不直接改写因子定义；参数仅在预设网格内按滚动样本外结果选择。\n\n"
+        "本报告给出条件价位，但不自动委托；排名不等于买点。\n"
         f"网站：{site_url}"
+    )
+    external_rows = "".join(
+        '<tr>'
+        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0">{html.escape(str(item.get("name") or "--"))}</td>'
+        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0;text-align:center">{_number(item.get("change_pct"), 2, "%")}</td>'
+        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0">{html.escape(str(item.get("as_of") or "--"))}</td>'
+        '</tr>'
+        for item in (external.get("markets") or [])
+    ) or '<tr><td colspan="3" style="padding:10px">外盘行情暂不可用。</td></tr>'
+    event_rows = "".join(
+        f'<div style="margin-top:8px"><strong>{html.escape(str(item.get("name") or item.get("event") or "事件"))}</strong>：'
+        f'{html.escape(str(item.get("impact_summary") or "等待A股资金确认"))}</div>'
+        for item in (external.get("events") or [])
+    )
+    board_rows = "".join(
+        '<tr>'
+        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0">{board.get("rank")}</td>'
+        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0"><strong>{html.escape(str(board.get("name") or "--"))}</strong><br><span style="font-size:11px;color:#64748b">{html.escape(str(board.get("type") or ""))}</span></td>'
+        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0;text-align:center">{_number(board.get("main_net_inflow"), 2)}亿<br>强度{_number(board.get("rotation_score"), 0)}</td>'
+        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0">{html.escape(str(board.get("effect") or "--"))}</td>'
+        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0">{html.escape("、".join(f"{leader.get("name")}({leader.get("leadership_role")})" for leader in (board.get("leaders") or [])) or "--")}</td>'
+        '</tr>'
+        for board in boards[:8]
+    ) or '<tr><td colspan="5" style="padding:10px">暂无有效板块资金数据。</td></tr>'
+    hot_core_html = "、".join(
+        f'{html.escape(str(item.get("name") or item.get("code")))}（{html.escape(str(item.get("board_name") or ""))}，{html.escape(str(item.get("state") or ""))}）'
+        for item in hot_core
+    ) or "本次未形成强势板块龙头观察名单。"
+    validation_html = (
+        f'{validation.get("signal_date")} → {validation.get("validation_date")}：'
+        f'命中率{_number(validation.get("hit_rate"), 2, "%")}，平均{_number(validation.get("average_return"), 3, "%")}，'
+        f'相对全市场等权超额{_number(validation.get("excess_return"), 3, "%")}'
+        if validation.get("status") == "validated" else html.escape(str(validation.get("message") or "尚无次日验证"))
+    )
+    optimization_html = "".join(
+        f'<li style="margin:5px 0">{html.escape(str(action))}</li>'
+        for action in (optimization.get("actions") or ["今日优化日志尚未生成"])
     )
     table_body = "".join(html_rows) if html_rows else f'<tr><td colspan="6">{empty_text}</td></tr>'
     body = f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"></head>
@@ -85,6 +192,20 @@ def build_email(payload: dict) -> EmailMessage:
               上涨 {breadth.get('up', '--')} · 下跌 {breadth.get('down', '--')} ·
               涨停 {breadth.get('limit_up', '--')} · 跌停 {breadth.get('limit_down', '--')}
             </div>
+            <h2 style="font-size:18px;margin-top:24px">外盘、美股与地缘事件影响</h2>
+            <p style="color:#5e6b7d">覆盖：{html.escape(str(external.get('coverage') or '暂不可用'))}。外部变化只作情景输入，必须等待A股资金确认。</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead><tr style="background:#edf2f8"><th style="padding:8px;text-align:left">市场</th><th style="padding:8px">涨跌</th><th style="padding:8px;text-align:left">时间</th></tr></thead>
+              <tbody>{external_rows}</tbody>
+            </table>
+            {event_rows}
+            <h2 style="font-size:18px;margin-top:24px">每日资金强度、板块效应与龙头</h2>
+            <p style="color:#5e6b7d">资金强度：<strong>{html.escape(str(capital.get('label') or '--'))}</strong> · 强板块 {capital.get('strong_board_count', 0)} 个 · 前三主力净流入合计 {_number(capital.get('top_three_main_net_inflow'), 2)} 亿</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px">
+              <thead><tr style="background:#edf2f8"><th width="6%" style="padding:8px">#</th><th width="18%" style="padding:8px;text-align:left">板块</th><th width="18%" style="padding:8px">资金/强度</th><th width="28%" style="padding:8px;text-align:left">板块效应</th><th width="30%" style="padding:8px;text-align:left">龙头/次龙头</th></tr></thead>
+              <tbody>{board_rows}</tbody>
+            </table>
+            <div style="margin-top:10px;padding:10px;background:#fff7ed;line-height:1.7"><strong>热门核心观察：</strong>{hot_core_html}</div>
             <h2 style="font-size:18px;margin-top:24px">双评分交集观察池</h2>
             <p style="color:#5e6b7d">基本面≥{rules.get('fundamental_min')}，技术面≥{rules.get('technical_min')}。没有交集时允许为空。</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px">
@@ -101,8 +222,11 @@ def build_email(payload: dict) -> EmailMessage:
             <h2 style="font-size:18px;margin-top:24px">量化样本外表现</h2>
             <p>信号日期 {metadata.get('signal_date', '--')} · 年化 {_number(metrics.get('annual_return'), 2, '%')} ·
             最大回撤 {_number(metrics.get('max_drawdown'), 2, '%')} · 夏普 {_number(metrics.get('sharpe_ratio'), 2)}</p>
+            <h2 style="font-size:18px;margin-top:24px">量化次日验证与每日优化日志</h2>
+            <p>{validation_html}</p><ul style="padding-left:20px">{optimization_html}</ul>
+            <p style="font-size:12px;color:#64748b">{html.escape(str(optimization.get('guardrail') or '单日验证只记录，不直接改写因子定义。'))}</p>
             <div style="margin-top:22px;padding:12px;background:#fff7ed;border-left:4px solid #f59e0b;color:#7c2d12">
-              评分仅用于研究观察，不生成交易计划、仓位、止盈止损或自动委托。回测表现不保证未来收益。
+              价位是条件计划，不自动委托；板块、基本面、量化因子和午后触发未同时通过时，不进入可执行观察。回测表现不保证未来收益。
             </div>
             <p style="margin-top:22px"><a href="{html.escape(site_url, quote=True)}">打开三核研究网站</a></p>
           </td></tr>

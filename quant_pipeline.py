@@ -16,6 +16,11 @@ import pandas as pd
 from email_digest import send_email
 from quant_backtest import BacktestCosts
 from quant_data import QuantDailyData, QuantDataConfig
+from quant_journal import (
+    append_optimization_log,
+    build_optimization_entry,
+    validate_previous_signals,
+)
 from quant_optimizer import OptimizationConfig, walk_forward_optimize
 
 
@@ -46,7 +51,7 @@ def _metrics_table(metrics: dict) -> str:
     return f"<table border='1' cellspacing='0' cellpadding='6'>{rows}</table>"
 
 
-def _build_html_report(result: dict, metadata: dict) -> str:
+def _build_html_report(result: dict, metadata: dict, optimization_entry: dict | None = None) -> str:
     signals = result["full_backtest"]["signals"].copy()
     if "factor_score" in signals:
         signals["factor_score"] = signals["factor_score"].round(4)
@@ -61,6 +66,19 @@ def _build_html_report(result: dict, metadata: dict) -> str:
         }
         for fold in result["folds"]
     ])
+    optimization_entry = optimization_entry or {}
+    validation = optimization_entry.get("validation") or {}
+    changes = optimization_entry.get("parameter_changes") or []
+    optimization_html = "".join(
+        f"<li>{item['part']}：{item.get('before')} → {item.get('after')}</li>"
+        for item in changes
+    ) or "<li>参数窗口保持不变，避免根据单日结果过度调参</li>"
+    validation_html = (
+        f"{validation.get('signal_date')} → {validation.get('validation_date')}："
+        f"命中率{validation.get('hit_rate')}%，平均收益{validation.get('average_return')}%，"
+        f"相对全市场等权超额{validation.get('excess_return')}%"
+        if validation.get("status") == "validated" else validation.get("message", "尚无次日验证")
+    )
     return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <title>A股量化因子滚动优化报告</title><style>
 body{{font-family:Arial,'Microsoft YaHei',sans-serif;max-width:1100px;margin:30px auto;color:#172033}}
@@ -71,14 +89,27 @@ th{{background:#eff6ff}}td:first-child,th:first-child{{text-align:left}}.risk{{b
 <div class="risk">该通道用于检验因子稳定性，不代表提高了交易结果的确定性。信号在收盘后生成，下一交易日执行；需警惕幸存者偏差、停牌/涨跌停不可成交、数据复权变化及参数过拟合。</div>
 <h2>最新最优参数</h2><pre>{json.dumps(result['best_params'], ensure_ascii=False, indent=2)}</pre>
 <h2>汇总样本外表现</h2>{_metrics_table(result['oos_metrics'])}
+<h2>今日验证与优化日志</h2><p>{validation_html}</p><ul>{optimization_html}</ul>
+<p>{optimization_entry.get('guardrail', '')}</p>
 <h2>滚动折次</h2>{folds.to_html(index=False, border=0) if not folds.empty else '<p>无有效折次</p>'}
 <h2>当日收盘信号（下一交易日观察）</h2>{signals.to_html(index=False, border=0) if not signals.empty else '<p>无有效信号</p>'}
 <h2>成本口径</h2><p>买卖佣金万三；卖出印花税千一；买卖双边滑点0.1%。前20只按目标权重等权，按日调仓。</p>
 </body></html>"""
 
 
-def _save_outputs(result: dict, metadata: dict, output_dir: Path) -> dict:
+def _save_outputs(
+    result: dict,
+    metadata: dict,
+    output_dir: Path,
+    previous_summary: dict | None = None,
+    validation: dict | None = None,
+) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
+    previous_summary = previous_summary or {}
+    validation = validation or {"status": "missing", "message": "没有上一期信号可验证"}
+    optimization_entry = build_optimization_entry(
+        metadata["generated_at"], previous_summary, result, validation
+    )
     files = {
         "report": output_dir / "quant_report.html",
         "summary": output_dir / "quant_summary.json",
@@ -86,14 +117,19 @@ def _save_outputs(result: dict, metadata: dict, output_dir: Path) -> dict:
         "equity": output_dir / "quant_oos_equity.csv",
         "folds": output_dir / "quant_folds.csv",
         "factors": output_dir / "quant_factors_latest.csv",
+        "optimization_log": output_dir / "quant_optimization_log.json",
     }
-    files["report"].write_text(_build_html_report(result, metadata), encoding="utf-8")
+    files["report"].write_text(
+        _build_html_report(result, metadata, optimization_entry), encoding="utf-8"
+    )
     summary = {
         "metadata": metadata,
         "best_params": result["best_params"],
         "oos_metrics": result["oos_metrics"],
         "folds": result["folds"],
         "costs": result["full_backtest"].get("costs", {}),
+        "latest_validation": validation,
+        "optimization_log_entry": optimization_entry,
     }
     files["summary"].write_text(
         json.dumps(summary, ensure_ascii=False, indent=2, default=_json_default),
@@ -105,6 +141,7 @@ def _save_outputs(result: dict, metadata: dict, output_dir: Path) -> dict:
     factors = result["factors"]
     latest_date = factors["date"].max()
     factors[factors["date"] == latest_date].to_csv(files["factors"], index=False, encoding="utf-8-sig")
+    append_optimization_log(files["optimization_log"], optimization_entry)
     return {name: str(path.resolve()) for name, path in files.items()}
 
 
@@ -150,6 +187,18 @@ def run_pipeline(send_mail: bool = False) -> dict:
     stock_count = int(prices["code"].nunique())
     trading_days = int(prices["date"].nunique())
     LOGGER.info("开始滚动优化：%s只股票，%s个交易日", stock_count, trading_days)
+    output_dir = Path(os.getenv("QUANT_OUTPUT_DIR", "output/quant"))
+    summary_path = output_dir / "quant_summary.json"
+    signals_path = output_dir / "quant_signals.csv"
+    try:
+        previous_summary = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        previous_summary = {}
+    try:
+        previous_signals = pd.read_csv(signals_path, dtype={"code": str}) if signals_path.exists() else pd.DataFrame()
+    except (OSError, pd.errors.ParserError, pd.errors.EmptyDataError):
+        previous_signals = pd.DataFrame()
+    validation = validate_previous_signals(previous_signals, prices)
     result = walk_forward_optimize(
         prices,
         OptimizationConfig(top_n=int(os.getenv("QUANT_TOP_N", "20"))),
@@ -170,7 +219,9 @@ def run_pipeline(send_mail: bool = False) -> dict:
     }
     files = _save_outputs(
         result, metadata,
-        Path(os.getenv("QUANT_OUTPUT_DIR", "output/quant")),
+        output_dir,
+        previous_summary=previous_summary,
+        validation=validation,
     )
     if send_mail and metadata["current_trading_day_confirmed"]:
         _send_report_email(result, metadata)

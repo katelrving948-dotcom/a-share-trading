@@ -11,6 +11,7 @@ import pandas as pd
 from quant_backtest import BacktestCosts, run_factor_backtest
 from quant_data import QuantDailyData, QuantDataConfig
 from quant_factors import FactorParams, calculate_factors
+from quant_journal import build_optimization_entry, validate_previous_signals
 from quant_optimizer import OptimizationConfig, walk_forward_optimize
 from quant_pipeline import _save_outputs
 
@@ -48,6 +49,33 @@ SMALL_PARAMS = FactorParams(
 
 
 class QuantResearchTest(unittest.TestCase):
+    def test_previous_close_signals_are_validated_on_next_session(self):
+        prices = synthetic_prices(stock_count=3, days=20)
+        dates = sorted(prices["date"].unique())
+        signal_date = pd.Timestamp(dates[-2])
+        signals = prices[prices["date"] == signal_date][
+            ["date", "code", "name", "close"]
+        ].copy()
+        signals["factor_score"] = [0.9, 0.8, 0.7]
+
+        validation = validate_previous_signals(signals, prices)
+
+        self.assertEqual(validation["status"], "validated")
+        self.assertEqual(validation["signal_date"], signal_date.strftime("%Y-%m-%d"))
+        self.assertEqual(validation["validated_count"], 3)
+        self.assertIn("excess_return", validation)
+
+    def test_optimization_log_states_changed_parameters_and_guardrail(self):
+        entry = build_optimization_entry(
+            "2026-08-16 16:30:00",
+            {"best_params": {"momentum_window": 20}, "oos_metrics": {"sharpe_ratio": 0.8}},
+            {"best_params": {"momentum_window": 60}, "oos_metrics": {"sharpe_ratio": 1.0}, "grid_size": 9},
+            {"status": "validated", "signal_date": "2026-08-14", "validation_date": "2026-08-15"},
+        )
+
+        self.assertEqual(entry["parameter_changes"][0]["part"], "momentum_window")
+        self.assertIn("预设参数网格", entry["guardrail"])
+
     def test_tencent_history_source_is_normalized_to_ohlcv(self):
         loader = QuantDailyData.__new__(QuantDailyData)
         loader.config = QuantDataConfig()
