@@ -31,6 +31,11 @@ class EmailDigestTest(unittest.TestCase):
         self.assertIn("基本面78", plain)
         self.assertIn("不生成仓位、进场价、止盈止损或自动委托", plain)
         self.assertIn("没有交集时允许为空", html)
+        self.assertIn("table-layout:fixed", html)
+        self.assertEqual(html.count('width="7%"'), 2)
+        self.assertEqual(html.count('width="22%"'), 2)
+        self.assertEqual(html.count('width="23%"'), 2)
+        self.assertEqual(html.count('width="16%"'), 6)
 
     def test_empty_intersection_is_explicit(self):
         message = build_email(payload())

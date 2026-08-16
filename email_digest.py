@@ -33,12 +33,12 @@ def build_email(payload: dict) -> EmailMessage:
         )
         html_rows.append(
             "<tr>"
-            f"<td>{item.get('rank', '-')}</td>"
-            f"<td><strong>{html.escape(str(item.get('code', '')))}</strong><br>{html.escape(str(item.get('name', '')))}</td>"
-            f"<td>{html.escape(str(item.get('industry', '') or '--'))}</td>"
-            f"<td>{_number(item.get('fundamental_score'), 0)}</td>"
-            f"<td>{_number(item.get('technical_score'), 1)}</td>"
-            f"<td><strong>{_number(item.get('combined_score'), 1)}</strong></td>"
+            f'<td width="7%" style="width:7%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle">{item.get("rank", "-")}</td>'
+            f'<td width="22%" style="width:22%;padding:10px 8px;border-bottom:1px solid #e4e9f0;text-align:left;vertical-align:middle;word-break:break-word"><strong>{html.escape(str(item.get("code", "")))}</strong><br>{html.escape(str(item.get("name", "")))}</td>'
+            f'<td width="23%" style="width:23%;padding:10px 8px;border-bottom:1px solid #e4e9f0;text-align:left;vertical-align:middle;word-break:break-word">{html.escape(str(item.get("industry", "") or "--"))}</td>'
+            f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("fundamental_score"), 0)}</td>'
+            f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("technical_score"), 1)}</td>'
+            f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap"><strong>{_number(item.get("combined_score"), 1)}</strong></td>'
             "</tr>"
         )
 
@@ -87,8 +87,15 @@ def build_email(payload: dict) -> EmailMessage:
             </div>
             <h2 style="font-size:18px;margin-top:24px">双评分交集观察池</h2>
             <p style="color:#5e6b7d">基本面≥{rules.get('fundamental_min')}，技术面≥{rules.get('technical_min')}。没有交集时允许为空。</p>
-            <table width="100%" style="border-collapse:collapse;font-size:13px">
-              <thead><tr style="background:#edf2f8"><th>序</th><th>股票</th><th>行业</th><th>基本面</th><th>技术面</th><th>综合</th></tr></thead>
+            <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px">
+              <thead><tr style="background:#edf2f8">
+                <th width="7%" style="width:7%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">序</th>
+                <th width="22%" style="width:22%;padding:10px 8px;border-bottom:1px solid #cfd8e5;text-align:left;vertical-align:middle;white-space:nowrap">股票</th>
+                <th width="23%" style="width:23%;padding:10px 8px;border-bottom:1px solid #cfd8e5;text-align:left;vertical-align:middle;white-space:nowrap">行业</th>
+                <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">基本面</th>
+                <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">技术面</th>
+                <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">综合</th>
+              </tr></thead>
               <tbody>{table_body}</tbody>
             </table>
             <h2 style="font-size:18px;margin-top:24px">量化样本外表现</h2>
