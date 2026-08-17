@@ -23,15 +23,16 @@ class FactorParams:
 
 
 REQUIRED_COLUMNS = {"date", "code", "open", "high", "low", "close", "volume"}
-SCORE_COLUMNS = {
-    "momentum": "score_momentum",
-    "trend": "score_trend",
-    "low_volatility": "score_low_volatility",
-    "volume_ratio": "score_volume_ratio",
-    "rsi": "score_rsi",
-    "bollinger": "score_bollinger",
-    "low_atr": "score_low_atr",
+FACTOR_REGISTRY = {
+    "momentum": {"raw_column": "momentum", "score_column": "score_momentum", "mapping_type": "high", "label": "动量", "formula": "close / close[N] - 1", "mapping": "横截面百分位，越高越好", "window_key": "momentum_window"},
+    "trend": {"raw_column": "trend", "score_column": "score_trend", "mapping_type": "high", "label": "趋势", "formula": "close / MA(N) - 1", "mapping": "横截面百分位，越高越好", "window_key": "trend_window"},
+    "low_volatility": {"raw_column": "volatility", "score_column": "score_low_volatility", "mapping_type": "low", "label": "低波动", "formula": "std(日收益,N) × √252", "mapping": "1 - 横截面百分位，越低波越好", "window_key": "volatility_window"},
+    "volume_ratio": {"raw_column": "volume_ratio", "score_column": "score_volume_ratio", "mapping_type": "high", "label": "量比", "formula": "volume / MA(volume,N)", "mapping": "横截面百分位，越高越好", "window_key": "volume_window"},
+    "rsi": {"raw_column": "rsi", "score_column": "score_rsi", "mapping_type": "target", "target": 55, "label": "RSI健康度", "formula": "RSI(N)", "mapping": "按 -|RSI-55| 排名，越接近55越好", "window_key": "rsi_window"},
+    "bollinger": {"raw_column": "bollinger_position", "score_column": "score_bollinger", "mapping_type": "high", "label": "布林位置", "formula": "(close-lower)/(upper-lower)", "mapping": "横截面百分位，越高越好", "window_key": "bollinger_window"},
+    "low_atr": {"raw_column": "atr_pct", "score_column": "score_low_atr", "mapping_type": "low", "label": "低ATR", "formula": "ATR(N) / close", "mapping": "1 - 横截面百分位，越低越好", "window_key": "atr_window"},
 }
+SCORE_COLUMNS = {name: spec["score_column"] for name, spec in FACTOR_REGISTRY.items()}
 DEFAULT_SCORE_WEIGHTS = {name: 1 / len(SCORE_COLUMNS) for name in SCORE_COLUMNS}
 
 
@@ -122,24 +123,22 @@ def add_cross_sectional_score(
 ) -> pd.DataFrame:
     """Build a transparent equal-weight score from the requested factor family."""
     frame = factors.copy()
-    required = [
-        "momentum", "trend", "volatility", "volume_ratio", "rsi",
-        "bollinger_position", "atr_pct",
-    ]
+    required = [spec["raw_column"] for spec in FACTOR_REGISTRY.values()]
     frame = frame.dropna(subset=required)
     if frame.empty:
         frame["factor_score"] = pd.Series(dtype=float)
         return frame
 
     grouped = frame.groupby("date")
-    frame["score_momentum"] = grouped["momentum"].rank(pct=True)
-    frame["score_trend"] = grouped["trend"].rank(pct=True)
-    frame["score_low_volatility"] = 1 - grouped["volatility"].rank(pct=True)
-    frame["score_volume_ratio"] = grouped["volume_ratio"].rank(pct=True)
-    frame["rsi_health"] = -(frame["rsi"] - 55).abs()
-    frame["score_rsi"] = frame.groupby("date")["rsi_health"].rank(pct=True)
-    frame["score_bollinger"] = grouped["bollinger_position"].rank(pct=True)
-    frame["score_low_atr"] = 1 - grouped["atr_pct"].rank(pct=True)
+    for spec in FACTOR_REGISTRY.values():
+        raw_column = spec["raw_column"]
+        if spec["mapping_type"] == "low":
+            frame[spec["score_column"]] = 1 - grouped[raw_column].rank(pct=True)
+        elif spec["mapping_type"] == "target":
+            target_distance = -(frame[raw_column] - float(spec["target"])).abs()
+            frame[spec["score_column"]] = target_distance.groupby(frame["date"]).rank(pct=True)
+        else:
+            frame[spec["score_column"]] = grouped[raw_column].rank(pct=True)
     raw_weights = weights or DEFAULT_SCORE_WEIGHTS
     selected_weights = {
         name: max(0.0, float(raw_weights.get(name, 0))) for name in SCORE_COLUMNS
@@ -151,4 +150,4 @@ def add_cross_sectional_score(
         frame[column] * (selected_weights[name] / total_weight)
         for name, column in SCORE_COLUMNS.items()
     )
-    return frame.drop(columns="rsi_health")
+    return frame

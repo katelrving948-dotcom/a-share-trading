@@ -10,7 +10,7 @@ from email.message import EmailMessage
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from research_core import build_push_payload
+from research_core import build_push_payload, save_selection_snapshot
 
 
 def _number(value, digits=1, suffix="") -> str:
@@ -18,6 +18,14 @@ def _number(value, digits=1, suffix="") -> str:
         return f"{float(value):.{digits}f}{suffix}"
     except (TypeError, ValueError):
         return "--"
+
+
+def _change_value(part: str, value) -> str:
+    if value is None:
+        return "首次启用"
+    if "weights." in part:
+        return _number(float(value) * 100, 0, "%")
+    return str(value)
 
 
 def _plan_text(item: dict) -> str:
@@ -89,6 +97,21 @@ def build_email(payload: dict) -> EmailMessage:
     validation = technical.get("latest_validation") or {}
     optimization = technical.get("optimization_log_entry") or {}
     model_gate = payload.get("quant_model_gate") or rules.get("quant_model_gate") or {}
+    selection_weights = rules.get("selection_weights") or {}
+    selection_weight_text = "、".join(
+        f"{label}{_number(float(selection_weights.get(key) or 0) * 100, 0, '%')}"
+        for key, label in (("fundamental", "基本面"), ("technical", "技术面"), ("board", "板块"), ("morning_fund", "上午资金"))
+    )
+    parameter_changes = optimization.get("parameter_changes") or []
+    metric_changes = optimization.get("metric_changes") or []
+    parameter_change_plain = [
+        f"{item.get('part')}：{_change_value(str(item.get('part')), item.get('before'))} → {_change_value(str(item.get('part')), item.get('after'))}"
+        for item in parameter_changes
+    ]
+    metric_change_plain = [
+        f"{item.get('metric')}：{item.get('before')} → {item.get('after')}（变化{float(item.get('delta') or 0):+.4f}）"
+        for item in metric_changes
+    ]
     external_plain = [
         f"{item.get('name')} {float(item.get('change_pct') or 0):+.2f}%（{item.get('as_of') or '时间未知'}）"
         for item in (external.get("markets") or [])
@@ -142,6 +165,7 @@ def build_email(payload: dict) -> EmailMessage:
         + ("\n".join(plain_rows) if plain_rows else empty_text)
         + "\n\n"
         f"规则：行业校准基本面≥{rules.get('fundamental_min')}，行业校准技术面≥{rules.get('technical_min')}；"
+        f"综合权重：{selection_weight_text}；"
         f"行业内相对分权重{_number(float(rules.get('industry_relative_weight') or 0) * 100, 0, '%')}，"
         f"单行业优先最多{rules.get('industry_limit', 4)}只。\n"
         f"量化信号日期：{metadata.get('signal_date', '--')}；"
@@ -152,6 +176,8 @@ def build_email(payload: dict) -> EmailMessage:
         f"次日验证：{validation.get('message', '尚无验证')}；命中率{_number(validation.get('hit_rate'), 2, '%')}；"
         f"平均收益{_number(validation.get('average_return'), 3, '%')}；超额{_number(validation.get('excess_return'), 3, '%')}。\n"
         + "\n".join(optimization.get("actions") or ["今日优化日志尚未生成"])
+        + "\n具体参数调整：\n" + ("\n".join(parameter_change_plain) if parameter_change_plain else "参数保持不变")
+        + "\n样本外指标变化：\n" + ("\n".join(metric_change_plain) if metric_change_plain else "暂无可比较指标")
         + "\n约束：单日验证只记录，不直接改写因子定义；参数仅在预设网格内按滚动样本外结果选择。\n\n"
         "本报告给出条件价位，但不自动委托；排名不等于买点。\n"
         f"网站：{site_url}"
@@ -200,6 +226,12 @@ def build_email(payload: dict) -> EmailMessage:
         f'<li style="margin:5px 0">{html.escape(str(action))}</li>'
         for action in (optimization.get("actions") or ["今日优化日志尚未生成"])
     )
+    parameter_change_html = "".join(
+        f'<li style="margin:5px 0">{html.escape(line)}</li>' for line in parameter_change_plain
+    ) or '<li style="margin:5px 0">参数保持不变</li>'
+    metric_change_html = "".join(
+        f'<li style="margin:5px 0">{html.escape(line)}</li>' for line in metric_change_plain
+    ) or '<li style="margin:5px 0">暂无可比较指标</li>'
     table_body = "".join(html_rows) if html_rows else f'<tr><td colspan="6">{empty_text}</td></tr>'
     body = f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"></head>
     <body style="margin:0;background:#f3f6fa;font-family:Arial,'Microsoft YaHei',sans-serif;color:#172033">
@@ -232,7 +264,7 @@ def build_email(payload: dict) -> EmailMessage:
             <p style="color:#5e6b7d">保留好板块与板块核心票；量化模型不合格时仍展示研究对象，但进场结论为不交易。</p>
             <div style="border:1px solid #f2dcc1;background:#fff7ed">{hot_core_html}</div>
             <h2 style="font-size:18px;margin-top:24px">行业校准后的基本面+量化观察池</h2>
-            <p style="color:#5e6b7d">原始分→行业校准分；行业内相对分占 {_number(float(rules.get('industry_relative_weight') or 0) * 100, 0, '%')}；单行业优先最多 {rules.get('industry_limit', 4)} 只。没有交集时允许为空。</p>
+            <p style="color:#5e6b7d">综合权重：{html.escape(selection_weight_text)}；原始分→行业校准分；行业内相对分占 {_number(float(rules.get('industry_relative_weight') or 0) * 100, 0, '%')}；单行业优先最多 {rules.get('industry_limit', 4)} 只。没有交集时允许为空。</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px">
               <thead><tr style="background:#edf2f8">
                 <th width="7%" style="width:7%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">序</th>
@@ -249,6 +281,8 @@ def build_email(payload: dict) -> EmailMessage:
             最大回撤 {_number(metrics.get('max_drawdown'), 2, '%')} · 夏普 {_number(metrics.get('sharpe_ratio'), 2)}</p>
             <h2 style="font-size:18px;margin-top:24px">量化次日验证与每日优化日志</h2>
             <p>{validation_html}</p><ul style="padding-left:20px">{optimization_html}</ul>
+            <h3 style="font-size:15px;margin-bottom:6px">具体参数调整</h3><ul style="padding-left:20px">{parameter_change_html}</ul>
+            <h3 style="font-size:15px;margin-bottom:6px">样本外指标变化</h3><ul style="padding-left:20px">{metric_change_html}</ul>
             <p style="font-size:12px;color:#64748b">{html.escape(str(optimization.get('guardrail') or '单日验证只记录，不直接改写因子定义。'))}</p>
             <div style="margin-top:22px;padding:12px;background:#fff7ed;border-left:4px solid #f59e0b;color:#7c2d12">
               价位是条件计划，不自动委托；板块、基本面、量化因子和午后触发未同时通过时，不进入可执行观察。回测表现不保证未来收益。
@@ -326,6 +360,7 @@ def main() -> None:
     factor_count = int(payload.get("technical_summary", {}).get("factor_count") or 0)
     if factor_count <= 0:
         raise RuntimeError("技术面快照缺失，停止发送，避免把数据缺失误报为无交集")
+    save_selection_snapshot(payload)
     send_email(build_email(payload))
     print(f"已发送双评分午间报告：{payload['observation_count']} 只交集观察标的。")
 

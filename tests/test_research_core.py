@@ -1,11 +1,30 @@
 import unittest
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 from fundamental import FundamentalScorer
-from research_core import build_morning_entry_plan, build_trade_decision, quant_model_gate, score_intersection
+from research_core import _morning_fund_score, build_morning_entry_plan, build_trade_decision, quant_model_gate, save_selection_snapshot, score_intersection
 
 
 class ResearchCoreTest(unittest.TestCase):
+    def test_selection_snapshot_keeps_point_in_time_components(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "selection.json"
+            snapshot = save_selection_snapshot({
+                "generated_at": "2026-08-17 12:00:00",
+                "rules": {"selection_weights": {"fundamental": 0.4, "technical": 0.4, "board": 0.1, "morning_fund": 0.1}},
+                "observations": [{"code": "000001", "rank": 1, "selection_score": 75, "selection_components": {"fundamental": 80, "technical": 70, "board": 75, "morning_fund": 65}}],
+            }, path)
+
+            self.assertEqual(snapshot["signal_date"], "2026-08-17")
+            self.assertEqual(snapshot["rows"][0]["components"]["morning_fund"], 65)
+            self.assertTrue(path.exists())
+
+    def test_morning_fund_score_uses_main_net_ratio_with_neutral_fallback(self):
+        self.assertEqual(_morning_fund_score({"available": True, "main_net_pct": 4}), 70)
+        self.assertEqual(_morning_fund_score({"available": False}), 50)
+
     def test_morning_plan_uses_quant_atr_for_conditional_levels(self):
         plan = build_morning_entry_plan({
             "close_price": 10.2,

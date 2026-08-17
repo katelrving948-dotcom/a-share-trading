@@ -10,10 +10,11 @@ import pandas as pd
 
 from quant_backtest import BacktestCosts, run_factor_backtest
 from quant_data import QuantDailyData, QuantDataConfig
-from quant_factors import FactorParams, add_cross_sectional_score, calculate_factors
-from quant_journal import build_optimization_entry, validate_previous_signals
+from quant_factors import FACTOR_REGISTRY, FactorParams, add_cross_sectional_score, calculate_factors
+from quant_journal import build_optimization_entry, update_selection_history, validate_previous_signals
 from quant_optimizer import OptimizationConfig, walk_forward_optimize
 from quant_pipeline import _save_outputs
+from selection_model import DEFAULT_SELECTION_WEIGHTS, optimize_selection_weights, score_selection_components
 
 
 def synthetic_prices(stock_count=8, days=180):
@@ -50,6 +51,41 @@ EQUAL_WEIGHT_SCHEME = ((1, 1, 1, 1, 1, 1, 1),)
 
 
 class QuantResearchTest(unittest.TestCase):
+    def test_selection_snapshot_is_validated_then_weights_wait_for_enough_days(self):
+        prices = synthetic_prices(stock_count=3, days=20)
+        dates = sorted(prices["date"].unique())
+        signal_date = pd.Timestamp(dates[-2]).strftime("%Y-%m-%d")
+        snapshot = {
+            "signal_date": signal_date,
+            "rows": [
+                {"code": f"{index:06d}", "components": {"fundamental": 60 + index, "technical": 70, "board": 65, "morning_fund": 55}}
+                for index in range(1, 4)
+            ],
+        }
+
+        history = update_selection_history({}, snapshot, prices)
+        optimized = optimize_selection_weights(history, min_days=2)
+
+        self.assertEqual(history["snapshots"][0]["status"], "validated")
+        self.assertEqual(optimized["status"], "accumulating")
+        self.assertEqual(optimized["weights"], DEFAULT_SELECTION_WEIGHTS)
+
+    def test_selection_weight_grid_optimizes_validated_point_in_time_rows(self):
+        rows = [
+            {"code": "000001", "components": {"fundamental": 95, "technical": 50, "board": 50, "morning_fund": 50}, "return_pct": 2},
+            {"code": "000002", "components": {"fundamental": 50, "technical": 95, "board": 50, "morning_fund": 50}, "return_pct": -1},
+        ]
+        history = {"snapshots": [
+            {"signal_date": "2026-08-14", "status": "validated", "rows": rows},
+            {"signal_date": "2026-08-15", "status": "validated", "rows": rows},
+        ]}
+
+        optimized = optimize_selection_weights(history, min_days=2, top_n=1)
+
+        self.assertEqual(optimized["status"], "optimized")
+        self.assertAlmostEqual(sum(optimized["weights"].values()), 1)
+        self.assertGreaterEqual(optimized["weights"]["fundamental"], optimized["weights"]["technical"])
+
     def test_previous_close_signals_are_validated_on_next_session(self):
         prices = synthetic_prices(stock_count=3, days=20)
         dates = sorted(prices["date"].unique())
@@ -69,12 +105,13 @@ class QuantResearchTest(unittest.TestCase):
     def test_optimization_log_states_changed_parameters_and_guardrail(self):
         entry = build_optimization_entry(
             "2026-08-16 16:30:00",
-            {"best_params": {"momentum_window": 20}, "oos_metrics": {"sharpe_ratio": 0.8}},
-            {"best_params": {"momentum_window": 60}, "oos_metrics": {"sharpe_ratio": 1.0}, "grid_size": 9},
+            {"best_params": {"momentum_window": 20, "selection_weights": {"fundamental": 0.4}}, "oos_metrics": {"sharpe_ratio": 0.8}},
+            {"best_params": {"momentum_window": 60, "selection_weights": {"fundamental": 0.45}}, "oos_metrics": {"sharpe_ratio": 1.0}, "grid_size": 9},
             {"status": "validated", "signal_date": "2026-08-14", "validation_date": "2026-08-15"},
         )
 
         self.assertEqual(entry["parameter_changes"][0]["part"], "momentum_window")
+        self.assertEqual(entry["parameter_changes"][1]["part"], "selection_weights.fundamental")
         self.assertIn("预设参数网格", entry["guardrail"])
 
     def test_tencent_history_source_is_normalized_to_ohlcv(self):
@@ -148,6 +185,7 @@ class QuantResearchTest(unittest.TestCase):
             "bollinger_position", "atr", "atr_pct",
         }
         self.assertTrue(columns.issubset(original.columns))
+        self.assertEqual(set(FACTOR_REGISTRY), {"momentum", "trend", "low_volatility", "volume_ratio", "rsi", "bollinger", "low_atr"})
         left = original[original["date"] <= cutoff].reset_index(drop=True)
         right = revised[revised["date"] <= cutoff].reset_index(drop=True)
         pd.testing.assert_series_equal(left["momentum"], right["momentum"])
@@ -158,6 +196,7 @@ class QuantResearchTest(unittest.TestCase):
         momentum_only = add_cross_sectional_score(factors, {"momentum": 1})
 
         self.assertFalse(equal["factor_score"].equals(momentum_only["factor_score"]))
+        self.assertEqual(score_selection_components({"fundamental": 100, "technical": 0, "board": 0, "morning_fund": 0}), 40)
 
     def test_vectorized_backtest_selects_top_stocks_and_charges_costs(self):
         factors = calculate_factors(synthetic_prices(), SMALL_PARAMS)

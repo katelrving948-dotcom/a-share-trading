@@ -20,12 +20,15 @@ import pandas as pd
 
 from data_feed import DataFeed
 from fundamental import FundamentalScorer
+from quant_factors import FACTOR_REGISTRY
+from selection_model import DEFAULT_SELECTION_WEIGHTS, normalize_selection_weights, score_selection_components
 
 
 SHANGHAI = ZoneInfo("Asia/Shanghai")
 RESEARCH_DIR = Path(os.getenv("RESEARCH_OUTPUT_DIR", "output/research"))
 QUANT_DIR = Path(os.getenv("QUANT_OUTPUT_DIR", "output/quant"))
 FUNDAMENTAL_FILE = RESEARCH_DIR / "fundamental_latest.json"
+SELECTION_SNAPSHOT_FILE = RESEARCH_DIR / "selection_snapshot.json"
 PUBLIC_SNAPSHOT_BASE = os.getenv(
     "SNAPSHOT_PUBLIC_BASE_URL",
     "https://raw.githubusercontent.com/katelrving948-dotcom/a-share-trading/main/output",
@@ -145,23 +148,19 @@ def load_technical() -> dict:
             summary = {"state": "error", "message": f"量化摘要读取失败：{exc}"}
     best_params = summary.get("best_params", {})
     factor_weights = best_params.get("factor_weights") or {}
-    factor_specs = [
-        ("momentum", "动量", "close / close[N] - 1", "横截面百分位，越高越好", "momentum_window", "score_momentum"),
-        ("trend", "趋势", "close / MA(N) - 1", "横截面百分位，越高越好", "trend_window", "score_trend"),
-        ("low_volatility", "低波动", "std(日收益,N) × √252", "1 - 横截面百分位，越低波越好", "volatility_window", "score_low_volatility"),
-        ("volume_ratio", "量比", "volume / MA(volume,N)", "横截面百分位，越高越好", "volume_window", "score_volume_ratio"),
-        ("rsi", "RSI健康度", "RSI(N)", "按 -|RSI-55| 排名，越接近55越好", "rsi_window", "score_rsi"),
-        ("bollinger", "布林位置", "(close-lower)/(upper-lower)", "横截面百分位，越高越好", "bollinger_window", "score_bollinger"),
-        ("low_atr", "低ATR", "ATR(N) / close", "1 - 横截面百分位，越低越好", "atr_window", "score_low_atr"),
-    ]
-    weight_total = sum(max(0.0, float(value)) for value in factor_weights.values()) or len(factor_specs)
+    selection_optimization = summary.get("selection_optimization") or {
+        "status": "accumulating",
+        "weights": normalize_selection_weights(best_params.get("selection_weights")),
+        "message": "等待逐日积累午间候选的次日验证样本",
+    }
+    weight_total = sum(max(0.0, float(value)) for value in factor_weights.values()) or len(FACTOR_REGISTRY)
     factor_model = []
-    for key, label, formula, mapping, window_key, score_column in factor_specs:
+    for key, spec in FACTOR_REGISTRY.items():
         weight = max(0.0, float(factor_weights.get(key, 0 if factor_weights else 1))) / weight_total
         factor_model.append({
-            "key": key, "label": label, "formula": formula, "mapping": mapping,
-            "window": best_params.get(window_key), "weight": round(weight, 6),
-            "score_column": score_column,
+            "key": key, "label": spec["label"], "formula": spec["formula"], "mapping": spec["mapping"],
+            "window": best_params.get(spec["window_key"]), "weight": round(weight, 6),
+            "score_column": spec["score_column"], "raw_column": spec["raw_column"],
         })
     rows = []
     if factors_path.exists():
@@ -171,9 +170,6 @@ def load_technical() -> dict:
             frame["technical_score"] = (frame["factor_score"] * 100).round(2)
             frame["technical_rank"] = range(1, len(frame) + 1)
         rows = _clean(frame.to_dict("records"))
-        raw_columns = {
-            "low_volatility": "volatility", "bollinger": "bollinger_position", "low_atr": "atr_pct",
-        }
         for row in rows:
             row["factor_breakdown"] = []
             for spec in factor_model:
@@ -181,7 +177,7 @@ def load_technical() -> dict:
                 mapped_score = float(mapped) * 100 if mapped is not None else None
                 row["factor_breakdown"].append({
                     **spec,
-                    "raw_value": row.get(raw_columns.get(spec["key"], spec["key"])),
+                    "raw_value": row.get(spec["raw_column"]),
                     "mapped_score": round(mapped_score, 2) if mapped_score is not None else None,
                     "contribution": round(mapped_score * spec["weight"], 2) if mapped_score is not None else None,
                 })
@@ -202,6 +198,7 @@ def load_technical() -> dict:
             "factor_count": len(rows),
             "latest_validation": summary.get("latest_validation", {}),
             "optimization_log_entry": summary.get("optimization_log_entry", {}),
+            "selection_optimization": selection_optimization,
         },
         "rows": rows,
         "signals": signals,
@@ -580,6 +577,26 @@ def _capital_strength(market: dict, boards: list[dict]) -> dict:
     }
 
 
+def _morning_fund_score(flow: dict) -> float:
+    """Map morning main-fund net ratio to 0-100; 0% is neutral."""
+    if not flow.get("available") or flow.get("main_net_pct") is None:
+        return 50.0
+    net_pct = max(-10.0, min(10.0, float(flow["main_net_pct"])))
+    return round(50.0 + net_pct * 5.0, 2)
+
+
+SELECTION_COMPONENT_GETTERS = {
+    "fundamental": lambda item: float(item.get("sector_adjusted_fundamental_score") or item.get("fundamental_score") or 0),
+    "technical": lambda item: float(item.get("sector_adjusted_technical_score") or item.get("technical_score") or 0),
+    "board": lambda item: float(item.get("board_strength_score") or 0),
+    "morning_fund": lambda item: _morning_fund_score(item.get("intraday_fund_flow") or {}),
+}
+
+
+def _selection_components(item: dict) -> dict[str, float]:
+    return {name: round(getter(item), 2) for name, getter in SELECTION_COMPONENT_GETTERS.items()}
+
+
 def build_market_research(
     observations: list[dict],
     fundamental: dict,
@@ -589,6 +606,9 @@ def build_market_research(
 ) -> dict:
     """Build the external-market → sector → stock → entry research chain."""
     feed = feed or DataFeed()
+    selection_weights = normalize_selection_weights(
+        ((technical.get("summary") or {}).get("best_params") or {}).get("selection_weights")
+    )
     try:
         news = feed.get_financial_news()
     except Exception:
@@ -665,13 +685,7 @@ def build_market_research(
         )
 
     for item in observations:
-        item["pre_entry_score"] = round(
-            float(item.get("sector_adjusted_fundamental_score") or item.get("fundamental_score") or 0) * 0.30
-            + float(item.get("sector_adjusted_technical_score") or item.get("technical_score") or 0) * 0.30
-            + float(item.get("board_strength_score") or 0) * 0.30
-            + 50 * 0.10,
-            2,
-        )
+        item["pre_entry_score"] = score_selection_components(_selection_components(item), selection_weights)
     observations.sort(key=lambda item: item["pre_entry_score"], reverse=True)
     industry_limit = max(1, int(os.getenv("PUSH_INDUSTRY_LIMIT", "4")))
     selected, overflow, industry_counts = [], [], {}
@@ -711,26 +725,9 @@ def build_market_research(
             item["code"], (build_morning_entry_plan({}), {"available": False})
         )
         item["trade_decision"] = build_trade_decision(item)
-        plan = item["morning_plan"]
-        entry_score = (
-            90 if (item["trade_decision"].get("entry_gate") or {}).get("passed")
-            else 60 if plan.get("levels_available") and plan.get("actionable")
-            else 20
-        )
-        board_score = float(item.get("board_strength_score") or 0)
-        item["selection_components"] = {
-            "fundamental": round(float(item.get("sector_adjusted_fundamental_score") or item.get("fundamental_score") or 0), 2),
-            "quant": round(float(item.get("sector_adjusted_technical_score") or item.get("technical_score") or 0), 2),
-            "board": round(board_score, 2),
-            "morning_structure": entry_score,
-        }
-        item["selection_score"] = round(
-            float(item.get("sector_adjusted_fundamental_score") or item.get("fundamental_score") or 0) * 0.30
-            + float(item.get("sector_adjusted_technical_score") or item.get("technical_score") or 0) * 0.30
-            + board_score * 0.30
-            + entry_score * 0.10,
-            2,
-        )
+        item["selection_components"] = _selection_components(item)
+        item["selection_score"] = score_selection_components(item["selection_components"], selection_weights)
+        item["selection_weights"] = selection_weights
     observations.sort(key=lambda item: item.get("selection_score", 0), reverse=True)
     for rank, item in enumerate(observations, start=1):
         item["rank"] = rank
@@ -819,6 +816,9 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
         observations, fundamental, technical, display_limit=display_limit
     )
     now = datetime.now(SHANGHAI)
+    selection_weights = normalize_selection_weights(
+        ((technical.get("summary") or {}).get("best_params") or {}).get("selection_weights")
+    )
     return {
         "subject": f"{now:%Y-%m-%d} A股分层观察日报（板块+个股+买点）",
         "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
@@ -838,6 +838,28 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
             "industry_limit": int(os.getenv("PUSH_INDUSTRY_LIMIT", "4")),
             "industry_relative_weight": float(os.getenv("PUSH_INDUSTRY_RELATIVE_WEIGHT", "0.30")),
             "quant_model_gate": model_gate,
+            "selection_weights": selection_weights,
+            "selection_weight_optimization": (technical.get("summary") or {}).get("selection_optimization", {}),
             "meaning": "外盘与事件只作情景输入；按板块资金→基本面→量化因子→上午盘触发顺序形成观察，不自动下单",
         },
     }
+
+
+def save_selection_snapshot(payload: dict, path: Path = SELECTION_SNAPSHOT_FILE) -> dict:
+    snapshot = {
+        "generated_at": payload.get("generated_at"),
+        "signal_date": str(payload.get("generated_at") or "")[:10],
+        "selection_weights": (payload.get("rules") or {}).get("selection_weights", DEFAULT_SELECTION_WEIGHTS),
+        "rows": [
+            {
+                "code": item.get("code"),
+                "rank": item.get("rank"),
+                "selection_score": item.get("selection_score"),
+                "components": item.get("selection_components") or {},
+            }
+            for item in payload.get("observations") or []
+            if item.get("code") and item.get("selection_components")
+        ],
+    }
+    save_json(path, snapshot)
+    return snapshot

@@ -19,9 +19,11 @@ from quant_data import QuantDailyData, QuantDataConfig
 from quant_journal import (
     append_optimization_log,
     build_optimization_entry,
+    update_selection_history,
     validate_previous_signals,
 )
 from quant_optimizer import OptimizationConfig, walk_forward_optimize
+from selection_model import optimize_selection_weights
 
 
 LOGGER = logging.getLogger("quant_pipeline")
@@ -103,6 +105,7 @@ def _save_outputs(
     output_dir: Path,
     previous_summary: dict | None = None,
     validation: dict | None = None,
+    selection_history: dict | None = None,
 ) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
     previous_summary = previous_summary or {}
@@ -118,6 +121,7 @@ def _save_outputs(
         "folds": output_dir / "quant_folds.csv",
         "factors": output_dir / "quant_factors_latest.csv",
         "optimization_log": output_dir / "quant_optimization_log.json",
+        "selection_history": output_dir / "selection_history.json",
     }
     files["report"].write_text(
         _build_html_report(result, metadata, optimization_entry), encoding="utf-8"
@@ -130,6 +134,7 @@ def _save_outputs(
         "costs": result["full_backtest"].get("costs", {}),
         "latest_validation": validation,
         "optimization_log_entry": optimization_entry,
+        "selection_optimization": result.get("selection_optimization", {}),
     }
     files["summary"].write_text(
         json.dumps(summary, ensure_ascii=False, indent=2, default=_json_default),
@@ -141,6 +146,10 @@ def _save_outputs(
     factors = result["factors"]
     latest_date = factors["date"].max()
     factors[factors["date"] == latest_date].to_csv(files["factors"], index=False, encoding="utf-8-sig")
+    files["selection_history"].write_text(
+        json.dumps(selection_history or {"snapshots": []}, ensure_ascii=False, indent=2, default=_json_default),
+        encoding="utf-8",
+    )
     append_optimization_log(files["optimization_log"], optimization_entry)
     return {name: str(path.resolve()) for name, path in files.items()}
 
@@ -190,6 +199,8 @@ def run_pipeline(send_mail: bool = False) -> dict:
     output_dir = Path(os.getenv("QUANT_OUTPUT_DIR", "output/quant"))
     summary_path = output_dir / "quant_summary.json"
     signals_path = output_dir / "quant_signals.csv"
+    selection_history_path = output_dir / "selection_history.json"
+    selection_snapshot_path = Path(os.getenv("SELECTION_SNAPSHOT_PATH", "output/research/selection_snapshot.json"))
     try:
         previous_summary = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.exists() else {}
     except (OSError, json.JSONDecodeError):
@@ -198,12 +209,28 @@ def run_pipeline(send_mail: bool = False) -> dict:
         previous_signals = pd.read_csv(signals_path, dtype={"code": str}) if signals_path.exists() else pd.DataFrame()
     except (OSError, pd.errors.ParserError, pd.errors.EmptyDataError):
         previous_signals = pd.DataFrame()
+    try:
+        previous_selection_history = json.loads(selection_history_path.read_text(encoding="utf-8")) if selection_history_path.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        previous_selection_history = {}
+    try:
+        selection_snapshot = json.loads(selection_snapshot_path.read_text(encoding="utf-8")) if selection_snapshot_path.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        selection_snapshot = {}
     validation = validate_previous_signals(previous_signals, prices)
+    selection_history = update_selection_history(previous_selection_history, selection_snapshot, prices)
     result = walk_forward_optimize(
         prices,
         OptimizationConfig(top_n=int(os.getenv("QUANT_TOP_N", "20"))),
         BacktestCosts(commission=0.0003, stamp_tax=0.001, slippage=0.001),
     )
+    selection_optimization = optimize_selection_weights(
+        selection_history,
+        min_days=max(2, int(os.getenv("SELECTION_WEIGHT_MIN_DAYS", "20"))),
+        top_n=max(1, int(os.getenv("SELECTION_WEIGHT_TOP_N", "5"))),
+    )
+    result["best_params"]["selection_weights"] = selection_optimization["weights"]
+    result["selection_optimization"] = selection_optimization
     signal_date = (
         result["full_backtest"]["signals"]["date"].max().strftime("%Y-%m-%d")
         if not result["full_backtest"]["signals"].empty else "无信号日期"
@@ -222,6 +249,7 @@ def run_pipeline(send_mail: bool = False) -> dict:
         output_dir,
         previous_summary=previous_summary,
         validation=validation,
+        selection_history=selection_history,
     )
     if send_mail and metadata["current_trading_day_confirmed"]:
         _send_report_email(result, metadata)

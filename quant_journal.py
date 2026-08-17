@@ -8,6 +8,53 @@ from pathlib import Path
 import pandas as pd
 
 
+def update_selection_history(history: dict, snapshot: dict, prices: pd.DataFrame, limit: int = 250) -> dict:
+    """Append a point-in-time noon snapshot and validate it on the next session."""
+    snapshots = list(history.get("snapshots") or [])
+    if snapshot.get("signal_date") and snapshot.get("rows"):
+        snapshots = [
+            item for item in snapshots
+            if item.get("signal_date") != snapshot.get("signal_date")
+        ]
+        snapshots.append(snapshot)
+
+    price_frame = prices[["date", "code", "close"]].copy()
+    price_frame["date"] = pd.to_datetime(price_frame["date"], errors="coerce").dt.normalize()
+    price_frame["code"] = price_frame["code"].astype(str).str.zfill(6)
+    price_frame["close"] = pd.to_numeric(price_frame["close"], errors="coerce")
+    price_frame = price_frame.dropna(subset=["date", "code", "close"])
+    dates = sorted(price_frame["date"].unique())
+    for item in snapshots:
+        if item.get("status") == "validated":
+            continue
+        signal_date = pd.to_datetime(item.get("signal_date"), errors="coerce")
+        if pd.isna(signal_date):
+            item["status"] = "invalid"
+            continue
+        signal_date = signal_date.normalize()
+        later_dates = [pd.Timestamp(value) for value in dates if pd.Timestamp(value) > signal_date]
+        if not later_dates:
+            item["status"] = "pending"
+            continue
+        validation_date = later_dates[0]
+        signal_close = price_frame[price_frame["date"] == signal_date].set_index("code")["close"]
+        validation_close = price_frame[price_frame["date"] == validation_date].set_index("code")["close"]
+        validated_rows = []
+        for row in item.get("rows") or []:
+            code = str(row.get("code", "")).zfill(6)
+            if code not in signal_close or code not in validation_close or signal_close[code] <= 0:
+                continue
+            validated_rows.append({
+                **row,
+                "return_pct": round((float(validation_close[code]) / float(signal_close[code]) - 1) * 100, 4),
+            })
+        item["rows"] = validated_rows
+        item["validation_date"] = validation_date.strftime("%Y-%m-%d")
+        item["status"] = "validated" if validated_rows else "missing"
+    snapshots.sort(key=lambda item: str(item.get("signal_date") or ""))
+    return {"updated_at": pd.Timestamp.now(tz="Asia/Shanghai").strftime("%Y-%m-%d %H:%M:%S"), "snapshots": snapshots[-limit:]}
+
+
 def validate_previous_signals(signals: pd.DataFrame, prices: pd.DataFrame) -> dict:
     """Validate the previous published close signal on its next available session."""
     if signals is None or signals.empty:
@@ -115,7 +162,12 @@ def build_optimization_entry(
     changes = []
     for key in sorted(set(previous_params) | set(current_params)):
         before, after = previous_params.get(key), current_params.get(key)
-        if before != after:
+        if isinstance(before, dict) or isinstance(after, dict):
+            before_map, after_map = before or {}, after or {}
+            for child in sorted(set(before_map) | set(after_map)):
+                if before_map.get(child) != after_map.get(child):
+                    changes.append({"part": f"{key}.{child}", "before": before_map.get(child), "after": after_map.get(child)})
+        elif before != after:
             changes.append({"part": key, "before": before, "after": after})
 
     previous_metrics = previous_summary.get("oos_metrics") or {}
@@ -140,15 +192,19 @@ def build_optimization_entry(
         ),
     ]
     actions.append(
-        f"调整{len(changes)}项参数窗口" if changes else "参数窗口保持不变，避免根据单日结果追涨杀跌式调参"
+        f"调整{len(changes)}项参数" if changes else "参数保持不变，避免根据单日结果追涨杀跌式调参"
     )
+    selection = result.get("selection_optimization") or {}
+    if selection:
+        actions.append(selection.get("message", "选股权重优化状态不可用"))
     return {
         "generated_at": generated_at,
         "validation": validation,
         "parameter_changes": changes,
         "metric_changes": metric_changes,
         "actions": actions,
-        "guardrail": "只在预设参数网格内按滚动样本外结果选择；单日验证只记录，不直接改写因子定义。",
+        "selection_optimization": selection,
+        "guardrail": "技术因子只在预设参数网格内按滚动样本外结果选择；选股权重仅使用逐日留存的时点快照，样本不足时保持默认值，单日验证不直接调参。",
     }
 
 

@@ -85,6 +85,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f output/research/fundamental_latest.json
+          test ! -f output/research/selection_snapshot.json || git add -f output/research/selection_snapshot.json
           git diff --cached --quiet && exit 0
           git commit -m "data: update fundamental snapshot"
           git pull --rebase origin main

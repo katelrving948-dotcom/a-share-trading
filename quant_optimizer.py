@@ -9,13 +9,10 @@ import numpy as np
 import pandas as pd
 
 from quant_backtest import BacktestCosts, run_factor_backtest
-from quant_factors import FactorParams, add_cross_sectional_score, calculate_factors
+from quant_factors import SCORE_COLUMNS, FactorParams, add_cross_sectional_score, calculate_factors
 
 
-WEIGHT_NAMES = (
-    "momentum", "trend", "low_volatility", "volume_ratio",
-    "rsi", "bollinger", "low_atr",
-)
+WEIGHT_NAMES = tuple(SCORE_COLUMNS)
 DEFAULT_WEIGHT_SCHEMES = (
     (1, 1, 1, 1, 1, 1, 1),
     (25, 25, 10, 15, 10, 10, 5),
