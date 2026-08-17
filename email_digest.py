@@ -51,8 +51,8 @@ def build_email(payload: dict) -> EmailMessage:
         selection_score = item.get("selection_score", item.get("combined_score"))
         plain_rows.append(
             f"{item.get('rank', '-')}. {item.get('code')} {item.get('name', '')} | "
-            f"基本面{_number(item.get('fundamental_score'), 0)} | "
-            f"技术面{_number(item.get('technical_score'), 1)} | "
+            f"基本面{_number(item.get('fundamental_score'), 0)}→行业校准{_number(item.get('sector_adjusted_fundamental_score'), 0)} | "
+            f"技术面{_number(item.get('technical_score'), 1)}→行业校准{_number(item.get('sector_adjusted_technical_score'), 1)} | "
             f"综合选股{_number(selection_score, 1)} | "
             f"板块{primary_board.get('name') or '未匹配'}({_number(item.get('board_strength_score'), 0)}) | "
             f"个股主力净占比{_number(stock_flow.get('main_net_pct'), 2, '%')} | "
@@ -62,9 +62,9 @@ def build_email(payload: dict) -> EmailMessage:
             "<tr>"
             f'<td width="7%" style="width:7%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle">{item.get("rank", "-")}</td>'
             f'<td width="22%" style="width:22%;padding:10px 8px;border-bottom:1px solid #e4e9f0;text-align:left;vertical-align:middle;word-break:break-word"><strong>{html.escape(str(item.get("code", "")))}</strong><br>{html.escape(str(item.get("name", "")))}</td>'
-            f'<td width="23%" style="width:23%;padding:10px 8px;border-bottom:1px solid #e4e9f0;text-align:left;vertical-align:middle;word-break:break-word">{html.escape(str(item.get("industry", "") or "--"))}</td>'
-            f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("fundamental_score"), 0)}</td>'
-            f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("technical_score"), 1)}</td>'
+            f'<td width="23%" style="width:23%;padding:10px 8px;border-bottom:1px solid #e4e9f0;text-align:left;vertical-align:middle;word-break:break-word">{html.escape(str(item.get("selection_industry") or item.get("industry") or "行业待刷新"))}</td>'
+            f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("fundamental_score"), 0)}→{_number(item.get("sector_adjusted_fundamental_score"), 0)}</td>'
+            f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("technical_score"), 1)}→{_number(item.get("sector_adjusted_technical_score"), 1)}</td>'
             f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap"><strong>{_number(selection_score, 1)}</strong></td>'
             "</tr>"
             '<tr><td colspan="6" style="padding:8px 10px 13px;border-bottom:2px solid #cfd8e5;background:#f8fafc;line-height:1.7">'
@@ -141,8 +141,9 @@ def build_email(payload: dict) -> EmailMessage:
         "中长期基本面+量化观察池\n"
         + ("\n".join(plain_rows) if plain_rows else empty_text)
         + "\n\n"
-        f"规则：基本面≥{rules.get('fundamental_min')}，技术面≥{rules.get('technical_min')}；"
-        "展示数量只是版面上限，不是固定选十只。\n"
+        f"规则：行业校准基本面≥{rules.get('fundamental_min')}，行业校准技术面≥{rules.get('technical_min')}；"
+        f"行业内相对分权重{_number(float(rules.get('industry_relative_weight') or 0) * 100, 0, '%')}，"
+        f"单行业优先最多{rules.get('industry_limit', 4)}只。\n"
         f"量化信号日期：{metadata.get('signal_date', '--')}；"
         f"样本外年化：{_number(metrics.get('annual_return'), 2, '%')}；"
         f"最大回撤：{_number(metrics.get('max_drawdown'), 2, '%')}；"
@@ -230,15 +231,15 @@ def build_email(payload: dict) -> EmailMessage:
             <h2 style="font-size:18px;margin-top:24px">热门核心观察池：强势板块龙头与次龙头</h2>
             <p style="color:#5e6b7d">保留好板块与板块核心票；量化模型不合格时仍展示研究对象，但进场结论为不交易。</p>
             <div style="border:1px solid #f2dcc1;background:#fff7ed">{hot_core_html}</div>
-            <h2 style="font-size:18px;margin-top:24px">中长期基本面+量化观察池</h2>
-            <p style="color:#5e6b7d">基本面≥{rules.get('fundamental_min')}，技术面≥{rules.get('technical_min')}。没有交集时允许为空。</p>
+            <h2 style="font-size:18px;margin-top:24px">行业校准后的基本面+量化观察池</h2>
+            <p style="color:#5e6b7d">原始分→行业校准分；行业内相对分占 {_number(float(rules.get('industry_relative_weight') or 0) * 100, 0, '%')}；单行业优先最多 {rules.get('industry_limit', 4)} 只。没有交集时允许为空。</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px">
               <thead><tr style="background:#edf2f8">
                 <th width="7%" style="width:7%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">序</th>
                 <th width="22%" style="width:22%;padding:10px 8px;border-bottom:1px solid #cfd8e5;text-align:left;vertical-align:middle;white-space:nowrap">股票</th>
                 <th width="23%" style="width:23%;padding:10px 8px;border-bottom:1px solid #cfd8e5;text-align:left;vertical-align:middle;white-space:nowrap">行业</th>
-                <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">基本面</th>
-                <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">技术面</th>
+                <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">基本面<br>原始→校准</th>
+                <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">技术面<br>原始→校准</th>
                 <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">综合选股</th>
               </tr></thead>
               <tbody>{table_body}</tbody>

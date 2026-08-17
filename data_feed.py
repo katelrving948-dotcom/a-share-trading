@@ -299,7 +299,7 @@ class DataFeed:
             "fs": ("m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23,"
                    "m:0+t:81+s:2048,m:0+t:83+s:2048"),
             "fields": ("f12,f14,f2,f3,f4,f5,f6,f7,f8,f9,f10,"
-                       "f15,f16,f20,f21,f23,f62,f184"),
+                       "f15,f16,f20,f21,f23,f62,f100,f184"),
         }
         resp, source = self._request_eastmoney(path, params)
         if resp is None:
@@ -399,7 +399,8 @@ class DataFeed:
             "pe": item.get("f9", 0) or 0, "pb": item.get("f23", 0) or 0,
             "volume_ratio": item.get("f10", 0) or 0,
             "main_net": _safe_float(item.get("f62")),
-            "main_net_pct": _safe_float(item.get("f184")), "industry": "",
+            "main_net_pct": _safe_float(item.get("f184")),
+            "industry": str(item.get("f100") or ""),
         } for item in rows if item.get("f12")]
         return self._normalize_stock_frame(pd.DataFrame(values))
 
@@ -963,6 +964,31 @@ class DataFeed:
             return {str(item.get("f12", "")).zfill(6) for item in items if item.get("f12")}
         except (ValueError, TypeError, json.JSONDecodeError, AttributeError):
             return set()
+
+    def get_stock_industries(self, codes: list) -> dict:
+        """Batch-resolve candidate industries even when the market snapshot falls back to Sina."""
+        normalized = [str(code).zfill(6) for code in dict.fromkeys(codes) if code]
+        result = {}
+        for offset in range(0, len(normalized), 100):
+            batch = normalized[offset:offset + 100]
+            secids = [f"{1 if code.startswith(('6', '9')) else 0}.{code}" for code in batch]
+            response, _ = self._request_eastmoney(
+                "/api/qt/ulist.np/get",
+                {"fltt": 2, "invt": 2, "fields": "f12,f14,f100", "secids": ",".join(secids)},
+                prefer_delay=True,
+            )
+            if response is None:
+                continue
+            try:
+                rows = (response.json().get("data") or {}).get("diff", [])
+            except (ValueError, TypeError, json.JSONDecodeError, AttributeError):
+                rows = []
+            for row in rows:
+                code = str(row.get("f12") or "").zfill(6)
+                industry = str(row.get("f100") or "").strip()
+                if code and industry:
+                    result[code] = industry
+        return result
 
     def _rank_board_leaders(self, member_codes: set, limit: int = 2) -> list:
         """按板块内市值、成交额、涨势和主力资金识别龙头与次龙头。"""
@@ -2031,6 +2057,7 @@ class DataFeed:
                     "change_pct": round(float(row.get("change_pct") or 0), 2),
                     "turnover_rate": round(float(row.get("turnover_rate") or 0), 2),
                     "board": str(row.get("board", "")),
+                    "industry": str(row.get("industry", "")),
                     "amount": round(float(row.get("amount") or 0), 2),
                     "main_net": round(float(row.get("main_net") or 0) / 1e8, 2),
                     "main_net_pct": round(float(row.get("main_net_pct") or 0), 2),

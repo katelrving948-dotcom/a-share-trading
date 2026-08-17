@@ -153,7 +153,8 @@ class FundamentalScorer:
 
         return {
             "code": str(financial["code"]).zfill(6), "name": financial.get("name", ""),
-            "industry": financial.get("industry") or financial.get("board", ""),
+            "industry": financial.get("industry", ""),
+            "listing_board": financial.get("board", ""),
             "report_date": financial.get("report_date", ""), "notice_date": financial.get("notice_date", ""),
             "price": financial.get("price", 0), "market_cap": financial.get("market_cap", 0),
             "fundamental_score": total, "quality_score": quality, "growth_score": growth,

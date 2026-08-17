@@ -105,6 +105,45 @@ class ResearchCoreTest(unittest.TestCase):
         })
         self.assertEqual(build_trade_decision(result[0])["status"], "不交易")
 
+    @patch.dict("os.environ", {
+        "PUSH_FUNDAMENTAL_MIN": "60", "PUSH_TECHNICAL_MIN": "60",
+        "PUSH_FUNDAMENTAL_HARD_FLOOR": "50", "PUSH_TECHNICAL_HARD_FLOOR": "50",
+        "PUSH_INDUSTRY_RELATIVE_WEIGHT": "0.30",
+    })
+    def test_industry_relative_score_admits_sector_leader_without_removing_hard_floor(self):
+        fundamental = {"rows": [
+            {"code": "000001", "industry": "科技", "fundamental_score": 55},
+            {"code": "000002", "industry": "科技", "fundamental_score": 40},
+        ]}
+        technical = {"summary": {"oos_metrics": {
+            "annual_return": 8, "max_drawdown": -12,
+            "sharpe_ratio": 0.8, "trading_days": 252,
+        }}, "rows": [
+            {"code": "000001", "technical_score": 80},
+            {"code": "000002", "technical_score": 70},
+        ]}
+
+        result = score_intersection(fundamental, technical)
+
+        self.assertEqual([row["code"] for row in result], ["000001"])
+        self.assertEqual(result[0]["sector_adjusted_fundamental_score"], 68.5)
+        self.assertEqual(result[0]["industry_fundamental_percentile"], 100.0)
+
+    def test_legacy_listing_board_is_not_treated_as_an_industry(self):
+        fundamental = {"rows": [
+            {"code": "000001", "industry": "上海主板", "fundamental_score": 70},
+        ]}
+        technical = {"summary": {"oos_metrics": {
+            "annual_return": 8, "max_drawdown": -12,
+            "sharpe_ratio": 0.8, "trading_days": 252,
+        }}, "rows": [{"code": "000001", "technical_score": 70}]}
+
+        result = score_intersection(fundamental, technical)
+
+        self.assertEqual(result[0]["industry"], "")
+        self.assertEqual(result[0]["listing_board"], "上海主板")
+        self.assertEqual(result[0]["sector_adjusted_fundamental_score"], 70)
+
 
 if __name__ == "__main__":
     unittest.main()
