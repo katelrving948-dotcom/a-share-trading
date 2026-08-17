@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-16 22:03:09",
+  "updated_at": "2026-08-17 17:18:58",
   "entries": [
     {
       "generated_at": "2026-08-16 21:39:49",
@@ -86,6 +86,123 @@
       "actions": [
         "重新运行45组参数的滚动训练与样本外回测",
         "尚无下一交易日收盘数据，等待次日验证",
+        "调整2项参数窗口"
+      ],
+      "guardrail": "只在预设参数网格内按滚动样本外结果选择；单日验证只记录，不直接改写因子定义。"
+    },
+    {
+      "generated_at": "2026-08-17 17:18:58",
+      "validation": {
+        "status": "validated",
+        "signal_date": "2026-08-14",
+        "validation_date": "2026-08-17",
+        "signal_count": 20,
+        "validated_count": 11,
+        "positive_count": 5,
+        "hit_rate": 45.45,
+        "average_return": 0.289,
+        "median_return": -0.354,
+        "benchmark_return": 3.36,
+        "excess_return": -3.072,
+        "details": [
+          {
+            "code": "603259",
+            "return_pct": 4.617
+          },
+          {
+            "code": "000831",
+            "return_pct": 3.009
+          },
+          {
+            "code": "300759",
+            "return_pct": 1.968
+          },
+          {
+            "code": "688469",
+            "return_pct": 1.844
+          },
+          {
+            "code": "600267",
+            "return_pct": 1.178
+          },
+          {
+            "code": "600129",
+            "return_pct": -0.354
+          },
+          {
+            "code": "601579",
+            "return_pct": -0.581
+          },
+          {
+            "code": "603236",
+            "return_pct": -0.619
+          },
+          {
+            "code": "603087",
+            "return_pct": -0.962
+          },
+          {
+            "code": "688180",
+            "return_pct": -1.604
+          },
+          {
+            "code": "600162",
+            "return_pct": -5.319
+          }
+        ],
+        "message": "已按T日收盘信号核验下一交易日收盘表现"
+      },
+      "parameter_changes": [
+        {
+          "part": "factor_weights",
+          "before": {
+            "momentum": 0.3,
+            "trend": 0.2,
+            "low_volatility": 0.15,
+            "volume_ratio": 0.1,
+            "rsi": 0.1,
+            "bollinger": 0.05,
+            "low_atr": 0.1
+          },
+          "after": {
+            "momentum": 0.15,
+            "trend": 0.25,
+            "low_volatility": 0.2,
+            "volume_ratio": 0.1,
+            "rsi": 0.1,
+            "bollinger": 0.05,
+            "low_atr": 0.15
+          }
+        },
+        {
+          "part": "momentum_window",
+          "before": 20,
+          "after": 60
+        }
+      ],
+      "metric_changes": [
+        {
+          "metric": "annual_return",
+          "before": 25.8646,
+          "after": 26.6126,
+          "delta": 0.748
+        },
+        {
+          "metric": "max_drawdown",
+          "before": -23.5348,
+          "after": -22.9474,
+          "delta": 0.5874
+        },
+        {
+          "metric": "sharpe_ratio",
+          "before": 0.8857,
+          "after": 1.0574,
+          "delta": 0.1717
+        }
+      ],
+      "actions": [
+        "重新运行45组参数的滚动训练与样本外回测",
+        "完成2026-08-14信号在2026-08-17的次日验证",
         "调整2项参数窗口"
       ],
       "guardrail": "只在预设参数网格内按滚动样本外结果选择；单日验证只记录，不直接改写因子定义。"
