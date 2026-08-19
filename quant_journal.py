@@ -8,6 +8,37 @@ from pathlib import Path
 import pandas as pd
 
 
+PARAMETER_INFO = {
+    "momentum_window": ("动量计算窗口", "用最近多少个交易日计算价格动量"),
+    "trend_window": ("趋势均线窗口", "用多少个交易日的均线判断价格趋势"),
+    "volatility_window": ("波动率窗口", "用多少个交易日估算年化波动率"),
+    "volume_window": ("成交量均值窗口", "量比所使用的平均成交量天数"),
+    "rsi_window": ("RSI窗口", "RSI强弱指标的计算天数"),
+    "bollinger_window": ("布林带窗口", "布林带中轨和标准差的计算天数"),
+    "atr_window": ("ATR窗口", "平均真实波幅的计算天数"),
+    "factor_weights.momentum": ("动量因子权重", "动量映射分在技术研究分中的占比"),
+    "factor_weights.trend": ("趋势因子权重", "趋势映射分在技术研究分中的占比"),
+    "factor_weights.low_volatility": ("低波动因子权重", "低波动映射分在技术研究分中的占比"),
+    "factor_weights.volume_ratio": ("量比因子权重", "量比映射分在技术研究分中的占比"),
+    "factor_weights.rsi": ("RSI健康度权重", "RSI健康度映射分在技术研究分中的占比"),
+    "factor_weights.bollinger": ("布林位置权重", "布林位置映射分在技术研究分中的占比"),
+    "factor_weights.low_atr": ("低ATR因子权重", "低ATR映射分在技术研究分中的占比"),
+    "selection_weights.fundamental": ("研究试验-基本面权重", "仅用于后台历史对照，不写入实际选股"),
+    "selection_weights.technical": ("研究试验-技术面权重", "仅用于后台历史对照，不写入实际选股"),
+    "selection_weights.board": ("研究试验-板块强度权重", "仅用于后台历史对照，不写入实际选股"),
+    "selection_weights.morning_fund": ("研究试验-上午资金权重", "仅用于后台历史对照，不写入实际选股"),
+}
+METRIC_INFO = {
+    "annual_return": ("样本外年化收益", "按样本外日收益折算的年化收益率"),
+    "max_drawdown": ("样本外最大回撤", "样本外净值从高点到低点的最大跌幅"),
+    "sharpe_ratio": ("样本外夏普比率", "样本外收益相对波动风险的比值"),
+}
+
+
+def _display_info(key: str, registry: dict) -> tuple[str, str]:
+    return registry.get(key, (key, "暂无中文释义"))
+
+
 def update_selection_history(history: dict, snapshot: dict, prices: pd.DataFrame, limit: int = 250) -> dict:
     """Append a point-in-time noon snapshot and validate it on the next session."""
     snapshots = list(history.get("snapshots") or [])
@@ -166,9 +197,12 @@ def build_optimization_entry(
             before_map, after_map = before or {}, after or {}
             for child in sorted(set(before_map) | set(after_map)):
                 if before_map.get(child) != after_map.get(child):
-                    changes.append({"part": f"{key}.{child}", "before": before_map.get(child), "after": after_map.get(child)})
+                    part = f"{key}.{child}"
+                    label, meaning = _display_info(part, PARAMETER_INFO)
+                    changes.append({"part": part, "label": label, "meaning": meaning, "before": before_map.get(child), "after": after_map.get(child)})
         elif before != after:
-            changes.append({"part": key, "before": before, "after": after})
+            label, meaning = _display_info(key, PARAMETER_INFO)
+            changes.append({"part": key, "label": label, "meaning": meaning, "before": before, "after": after})
 
     previous_metrics = previous_summary.get("oos_metrics") or {}
     current_metrics = result.get("oos_metrics") or {}
@@ -176,8 +210,9 @@ def build_optimization_entry(
     for key in ("annual_return", "max_drawdown", "sharpe_ratio"):
         before, after = previous_metrics.get(key), current_metrics.get(key)
         if before is not None and after is not None:
+            label, meaning = _display_info(key, METRIC_INFO)
             metric_changes.append({
-                "metric": key,
+                "metric": key, "label": label, "meaning": meaning,
                 "before": before,
                 "after": after,
                 "delta": round(float(after) - float(before), 4),
@@ -196,7 +231,7 @@ def build_optimization_entry(
     )
     selection = result.get("selection_optimization") or {}
     if selection:
-        actions.append(selection.get("message", "选股权重优化状态不可用"))
+        actions.append("后台研究试验：" + selection.get("message", "权重优化状态不可用") + "；结果不写入实际选股")
     return {
         "generated_at": generated_at,
         "validation": validation,
@@ -204,7 +239,7 @@ def build_optimization_entry(
         "metric_changes": metric_changes,
         "actions": actions,
         "selection_optimization": selection,
-        "guardrail": "技术因子只在预设参数网格内按滚动样本外结果选择；选股权重仅使用逐日留存的时点快照，样本不足时保持默认值，单日验证不直接调参。",
+        "guardrail": "技术因子只在预设参数网格内按滚动样本外结果选择；量化与后台权重试验均不写入实际选股；样本不足时保持研究默认值，单日验证不直接调参。",
     }
 
 

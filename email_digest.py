@@ -13,6 +13,26 @@ from urllib.request import Request, urlopen
 from research_core import build_push_payload, save_selection_snapshot
 
 
+PARAMETER_LABELS = {
+    "momentum_window": ("动量计算窗口", "最近多少个交易日用于计算价格动量"),
+    "trend_window": ("趋势均线窗口", "用于判断价格趋势的均线天数"),
+    "volatility_window": ("波动率窗口", "用于估算年化波动率的交易日数"),
+    "volume_window": ("成交量均值窗口", "量比所使用的平均成交量天数"),
+    "rsi_window": ("RSI窗口", "RSI强弱指标的计算天数"),
+    "bollinger_window": ("布林带窗口", "布林带中轨和标准差的计算天数"),
+    "atr_window": ("ATR窗口", "平均真实波幅的计算天数"),
+    "selection_weights.fundamental": ("研究试验-基本面权重", "仅用于后台历史对照，不写入实际选股"),
+    "selection_weights.technical": ("研究试验-技术面权重", "仅用于后台历史对照，不写入实际选股"),
+    "selection_weights.board": ("研究试验-板块强度权重", "仅用于后台历史对照，不写入实际选股"),
+    "selection_weights.morning_fund": ("研究试验-上午资金权重", "仅用于后台历史对照，不写入实际选股"),
+}
+METRIC_LABELS = {
+    "annual_return": ("样本外年化收益", "样本外日收益折算后的年化收益率"),
+    "max_drawdown": ("样本外最大回撤", "样本外净值从高点到低点的最大跌幅"),
+    "sharpe_ratio": ("样本外夏普比率", "收益相对波动风险的比值"),
+}
+
+
 def _number(value, digits=1, suffix="") -> str:
     try:
         return f"{float(value):.{digits}f}{suffix}"
@@ -60,7 +80,7 @@ def build_email(payload: dict) -> EmailMessage:
         plain_rows.append(
             f"{item.get('rank', '-')}. {item.get('code')} {item.get('name', '')} | "
             f"基本面{_number(item.get('fundamental_score'), 0)}→行业校准{_number(item.get('sector_adjusted_fundamental_score'), 0)} | "
-            f"技术面{_number(item.get('technical_score'), 1)}→行业校准{_number(item.get('sector_adjusted_technical_score'), 1)} | "
+            f"技术研究{_number(item.get('technical_score'), 1)}（不计入综合分） | "
             f"综合选股{_number(selection_score, 1)} | "
             f"板块{primary_board.get('name') or '未匹配'}({_number(item.get('board_strength_score'), 0)}) | "
             f"个股主力净占比{_number(stock_flow.get('main_net_pct'), 2, '%')} | "
@@ -72,7 +92,7 @@ def build_email(payload: dict) -> EmailMessage:
             f'<td width="22%" style="width:22%;padding:10px 8px;border-bottom:1px solid #e4e9f0;text-align:left;vertical-align:middle;word-break:break-word"><strong>{html.escape(str(item.get("code", "")))}</strong><br>{html.escape(str(item.get("name", "")))}</td>'
             f'<td width="23%" style="width:23%;padding:10px 8px;border-bottom:1px solid #e4e9f0;text-align:left;vertical-align:middle;word-break:break-word">{html.escape(str(item.get("selection_industry") or item.get("industry") or "行业待刷新"))}</td>'
             f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("fundamental_score"), 0)}→{_number(item.get("sector_adjusted_fundamental_score"), 0)}</td>'
-            f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("technical_score"), 1)}→{_number(item.get("sector_adjusted_technical_score"), 1)}</td>'
+            f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap">{_number(item.get("technical_score"), 1)}<br><small>仅研究</small></td>'
             f'<td width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #e4e9f0;text-align:center;vertical-align:middle;white-space:nowrap"><strong>{_number(selection_score, 1)}</strong></td>'
             "</tr>"
             '<tr><td colspan="6" style="padding:8px 10px 13px;border-bottom:2px solid #cfd8e5;background:#f8fafc;line-height:1.7">'
@@ -80,7 +100,7 @@ def build_email(payload: dict) -> EmailMessage:
             f'板块：{html.escape(str(primary_board.get("name") or "未匹配"))} / 强度{_number(item.get("board_strength_score"), 0)} · '
             f'个股主力净占比：{_number(stock_flow.get("main_net_pct"), 2, "%")}<br>'
             f'<span style="color:#475569">{html.escape(plan_text)}</span><br>'
-            f'<span style="font-size:11px;color:#64748b">量化因子用于筛选门槛，ATR {_number((item.get("atr_pct") or 0) * 100, 2, "%")}参与止损距离。</span>'
+            f'<span style="font-size:11px;color:#64748b">综合分：{html.escape(str(item.get("selection_score_explanation") or "按基本面、板块和上午资金计算"))}。量化因子不参与选股；ATR {_number((item.get("atr_pct") or 0) * 100, 2, "%")}仅辅助止损距离。</span>'
             '</td></tr>'
         )
 
@@ -105,11 +125,15 @@ def build_email(payload: dict) -> EmailMessage:
     parameter_changes = optimization.get("parameter_changes") or []
     metric_changes = optimization.get("metric_changes") or []
     parameter_change_plain = [
-        f"{item.get('part')}：{_change_value(str(item.get('part')), item.get('before'))} → {_change_value(str(item.get('part')), item.get('after'))}"
+        f"{item.get('label') or PARAMETER_LABELS.get(str(item.get('part')), (item.get('part'), ''))[0]}："
+        f"{_change_value(str(item.get('part')), item.get('before'))} → {_change_value(str(item.get('part')), item.get('after'))}；"
+        f"含义：{item.get('meaning') or PARAMETER_LABELS.get(str(item.get('part')), ('', '暂无释义'))[1]}"
         for item in parameter_changes
     ]
     metric_change_plain = [
-        f"{item.get('metric')}：{item.get('before')} → {item.get('after')}（变化{float(item.get('delta') or 0):+.4f}）"
+        f"{item.get('label') or METRIC_LABELS.get(str(item.get('metric')), (item.get('metric'), ''))[0]}："
+        f"{item.get('before')} → {item.get('after')}（变化{float(item.get('delta') or 0):+.4f}）；"
+        f"含义：{item.get('meaning') or METRIC_LABELS.get(str(item.get('metric')), ('', '暂无释义'))[1]}"
         for item in metric_changes
     ]
     external_plain = [
@@ -137,11 +161,7 @@ def build_email(payload: dict) -> EmailMessage:
         f"  {_plan_text(item)}"
         for index, item in enumerate(hot_core, start=1)
     ]
-    empty_text = (
-        f"量化模型未通过样本外总闸门，候选仍展示但不给予进场许可：{model_gate.get('reason')}"
-        if not model_gate.get("passed")
-        else "今日没有股票同时达到两类评分阈值，保留空观察池。"
-    )
+    empty_text = "今日没有股票达到基本面、板块和盘中条件，保留空观察池。"
     site_url = os.getenv("SITE_URL", "https://a-share-trading.onrender.com")
     plain = (
         f"{payload.get('subject')}\n"
@@ -161,10 +181,10 @@ def build_email(payload: dict) -> EmailMessage:
         + "\n\n热门核心观察池（强势板块龙头/次龙头）\n"
         + ("\n".join(hot_core_plain) if hot_core_plain else "本次未形成满足条件的板块龙头/次龙头")
         + "\n\n"
-        "中长期基本面+量化观察池\n"
+        "中长期实际选股观察池（量化仅研究）\n"
         + ("\n".join(plain_rows) if plain_rows else empty_text)
         + "\n\n"
-        f"规则：行业校准基本面≥{rules.get('fundamental_min')}，行业校准技术面≥{rules.get('technical_min')}；"
+        f"规则：行业校准基本面≥{rules.get('fundamental_min')}；量化因子不参与实际选股、综合排名或进场许可；"
         f"综合权重：{selection_weight_text}；"
         f"行业内相对分权重{_number(float(rules.get('industry_relative_weight') or 0) * 100, 0, '%')}，"
         f"单行业优先最多{rules.get('industry_limit', 4)}只。\n"
@@ -261,17 +281,17 @@ def build_email(payload: dict) -> EmailMessage:
               <tbody>{board_rows}</tbody>
             </table>
             <h2 style="font-size:18px;margin-top:24px">热门核心观察池：强势板块龙头与次龙头</h2>
-            <p style="color:#5e6b7d">保留好板块与板块核心票；量化模型不合格时仍展示研究对象，但进场结论为不交易。</p>
+            <p style="color:#5e6b7d">保留好板块与板块核心票；量化结果仅作独立研究，不影响候选或进场结论。</p>
             <div style="border:1px solid #f2dcc1;background:#fff7ed">{hot_core_html}</div>
-            <h2 style="font-size:18px;margin-top:24px">行业校准后的基本面+量化观察池</h2>
-            <p style="color:#5e6b7d">综合权重：{html.escape(selection_weight_text)}；原始分→行业校准分；行业内相对分占 {_number(float(rules.get('industry_relative_weight') or 0) * 100, 0, '%')}；单行业优先最多 {rules.get('industry_limit', 4)} 只。没有交集时允许为空。</p>
+            <h2 style="font-size:18px;margin-top:24px">行业校准后的实际选股观察池</h2>
+            <p style="color:#5e6b7d">{html.escape(str(rules.get('selection_formula') or ('综合权重：' + selection_weight_text)))}；原始基本面→行业校准分；单行业优先最多 {rules.get('industry_limit', 4)} 只。量化因子仅独立研究，不参与选股。</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px">
               <thead><tr style="background:#edf2f8">
                 <th width="7%" style="width:7%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">序</th>
                 <th width="22%" style="width:22%;padding:10px 8px;border-bottom:1px solid #cfd8e5;text-align:left;vertical-align:middle;white-space:nowrap">股票</th>
                 <th width="23%" style="width:23%;padding:10px 8px;border-bottom:1px solid #cfd8e5;text-align:left;vertical-align:middle;white-space:nowrap">行业</th>
                 <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">基本面<br>原始→校准</th>
-                <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">技术面<br>原始→校准</th>
+                <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">技术量化<br>仅研究</th>
                 <th width="16%" style="width:16%;padding:10px 6px;border-bottom:1px solid #cfd8e5;text-align:center;vertical-align:middle;white-space:nowrap">综合选股</th>
               </tr></thead>
               <tbody>{table_body}</tbody>
@@ -285,7 +305,7 @@ def build_email(payload: dict) -> EmailMessage:
             <h3 style="font-size:15px;margin-bottom:6px">样本外指标变化</h3><ul style="padding-left:20px">{metric_change_html}</ul>
             <p style="font-size:12px;color:#64748b">{html.escape(str(optimization.get('guardrail') or '单日验证只记录，不直接改写因子定义。'))}</p>
             <div style="margin-top:22px;padding:12px;background:#fff7ed;border-left:4px solid #f59e0b;color:#7c2d12">
-              价位是条件计划，不自动委托；板块、基本面、量化因子和午后触发未同时通过时，不进入可执行观察。回测表现不保证未来收益。
+              价位是条件计划，不自动委托；板块、基本面和午后触发未同时通过时，不进入可执行观察。量化仅独立优化，回测表现不保证未来收益。
             </div>
             <p style="margin-top:22px"><a href="{html.escape(site_url, quote=True)}">打开三核研究网站</a></p>
           </td></tr>

@@ -58,13 +58,14 @@ class EmailDigestTest(unittest.TestCase):
         self.assertIn("000001 平安银行", plain)
         self.assertIn("基本面78", plain)
         self.assertIn("不自动委托；排名不等于买点", plain)
-        self.assertIn("没有交集时允许为空", html)
+        self.assertIn("量化因子仅独立研究，不参与选股", html)
         self.assertIn("外盘、美股与地缘事件影响", html)
         self.assertIn("每日资金强度、板块效应与龙头", html)
         self.assertIn("量化次日验证与每日优化日志", html)
-        self.assertIn("momentum_window：20 → 60", plain)
-        self.assertIn("selection_weights.fundamental：40% → 45%", plain)
-        self.assertIn("sharpe_ratio：0.8 → 1.1", html)
+        self.assertIn("动量计算窗口：20 → 60", plain)
+        self.assertIn("研究试验-基本面权重：40% → 45%", plain)
+        self.assertIn("样本外夏普比率：0.8 → 1.1", html)
+        self.assertIn("量化因子不参与实际选股", plain)
         self.assertIn("000002 板块核心", plain)
         self.assertIn("进场10.10-10.30", plain)
         self.assertIn("止损9.80-9.90", html)
@@ -77,7 +78,7 @@ class EmailDigestTest(unittest.TestCase):
 
     def test_empty_intersection_is_explicit(self):
         message = build_email(payload())
-        self.assertIn("今日没有股票同时达到两类评分阈值", message.get_body(preferencelist=("plain",)).get_content())
+        self.assertIn("今日没有股票达到基本面、板块和盘中条件", message.get_body(preferencelist=("plain",)).get_content())
 
     @patch("email_digest.smtplib.SMTP_SSL")
     @patch.dict("os.environ", {"MAIL_USERNAME": "sender@qq.com", "MAIL_PASSWORD": "secret", "MAIL_TO": "a@test.com;b@test.com"}, clear=True)

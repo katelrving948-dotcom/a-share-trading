@@ -13,6 +13,12 @@ DEFAULT_SELECTION_WEIGHTS = {
     "board": 0.10,
     "morning_fund": 0.10,
 }
+ACTIVE_SELECTION_WEIGHTS = {
+    "fundamental": 2 / 3,
+    "technical": 0.0,
+    "board": 1 / 6,
+    "morning_fund": 1 / 6,
+}
 SELECTION_WEIGHT_OPTIONS = {
     "fundamental": (0.30, 0.35, 0.40, 0.45, 0.50),
     "technical": (0.30, 0.35, 0.40, 0.45, 0.50),

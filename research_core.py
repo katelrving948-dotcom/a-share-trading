@@ -21,7 +21,7 @@ import pandas as pd
 from data_feed import DataFeed
 from fundamental import FundamentalScorer
 from quant_factors import FACTOR_REGISTRY
-from selection_model import DEFAULT_SELECTION_WEIGHTS, normalize_selection_weights, score_selection_components
+from selection_model import ACTIVE_SELECTION_WEIGHTS, DEFAULT_SELECTION_WEIGHTS, normalize_selection_weights, score_selection_components
 
 
 SHANGHAI = ZoneInfo("Asia/Shanghai")
@@ -292,15 +292,16 @@ def quant_model_gate(technical: dict) -> dict:
     }
 
 
-def _industry_percentiles(rows: list[dict], score_key: str) -> dict[int, float]:
+def _industry_percentiles(rows: list[dict], score_key: str) -> dict[int, float | None]:
     groups = {}
     for index, row in enumerate(rows):
         industry = str(row.get("industry") or "")
-        if industry:
-            groups.setdefault(industry, []).append((index, float(row.get(score_key) or 0)))
+        score = row.get(score_key)
+        if industry and score is not None:
+            groups.setdefault(industry, []).append((index, float(score)))
     result = {
-        index: float(row.get(score_key) or 0)
-        for index, row in enumerate(rows) if not row.get("industry")
+        index: (float(row[score_key]) if row.get(score_key) is not None else None)
+        for index, row in enumerate(rows) if not row.get("industry") or row.get(score_key) is None
     }
     for members in groups.values():
         ordered = sorted(members, key=lambda item: item[1])
@@ -317,15 +318,18 @@ def _apply_industry_adjustment(rows: list[dict], relative_weight: float) -> None
     technical_relative = _industry_percentiles(rows, "technical_score")
     for index, row in enumerate(rows):
         row["industry_fundamental_percentile"] = round(fundamental_relative[index], 2)
-        row["industry_technical_percentile"] = round(technical_relative[index], 2)
+        technical_percentile = technical_relative[index]
+        row["industry_technical_percentile"] = round(technical_percentile, 2) if technical_percentile is not None else None
         row["sector_adjusted_fundamental_score"] = round(
             row["fundamental_score"] * (1 - relative_weight) + fundamental_relative[index] * relative_weight, 2
         )
-        row["sector_adjusted_technical_score"] = round(
-            row["technical_score"] * (1 - relative_weight) + technical_relative[index] * relative_weight, 2
+        row["sector_adjusted_technical_score"] = (
+            round(row["technical_score"] * (1 - relative_weight) + technical_percentile * relative_weight, 2)
+            if row.get("technical_score") is not None and technical_percentile is not None else None
         )
-        row["sector_adjusted_combined_score"] = round(
-            (row["sector_adjusted_fundamental_score"] + row["sector_adjusted_technical_score"]) / 2, 2
+        row["sector_adjusted_combined_score"] = (
+            round((row["sector_adjusted_fundamental_score"] + row["sector_adjusted_technical_score"]) / 2, 2)
+            if row["sector_adjusted_technical_score"] is not None else row["sector_adjusted_fundamental_score"]
         )
 
 
@@ -334,21 +338,18 @@ def score_intersection(
     allow_pending_industry: bool = False,
 ) -> list[dict]:
     fundamental_min = float(os.getenv("PUSH_FUNDAMENTAL_MIN", "60"))
-    technical_min = float(os.getenv("PUSH_TECHNICAL_MIN", "60"))
     display_limit = max(1, int(limit or os.getenv("PUSH_DISPLAY_LIMIT", "20")))
     relative_weight = min(1.0, max(0.0, float(os.getenv("PUSH_INDUSTRY_RELATIVE_WEIGHT", "0.30"))))
     fundamental_floor = float(os.getenv("PUSH_FUNDAMENTAL_HARD_FLOOR", "50"))
-    technical_floor = float(os.getenv("PUSH_TECHNICAL_HARD_FLOOR", "50"))
     model_gate = quant_model_gate(technical)
     technical_by_code = {str(row.get("code", "")).zfill(6): row for row in technical.get("rows", [])}
     joined = []
     for item in fundamental.get("rows", []):
         code = str(item.get("code", "")).zfill(6)
         factor = technical_by_code.get(code)
-        if not factor:
-            continue
         fundamental_score = float(item.get("fundamental_score") or 0)
-        technical_score = float(factor.get("technical_score") or 0)
+        factor = factor or {}
+        technical_score = float(factor["technical_score"]) if factor.get("technical_score") is not None else None
         raw_industry = str(item.get("industry") or "")
         listing_boards = {"上海主板", "深圳主板", "创业板", "科创板", "北交所"}
         industry = "" if raw_industry in listing_boards else raw_industry
@@ -359,7 +360,7 @@ def score_intersection(
             "listing_board": item.get("listing_board") or (raw_industry if raw_industry in listing_boards else ""),
             "fundamental_score": fundamental_score,
             "technical_score": technical_score,
-            "combined_score": round((fundamental_score + technical_score) / 2, 2),
+            "combined_score": round((fundamental_score + technical_score) / 2, 2) if technical_score is not None else fundamental_score,
             "quality_score": item.get("quality_score"),
             "growth_score": item.get("growth_score"),
             "valuation_score": item.get("valuation_score"),
@@ -379,13 +380,11 @@ def score_intersection(
         pending_industry = allow_pending_industry and not row.get("industry")
         if (
             row["fundamental_score"] < fundamental_floor
-            or row["technical_score"] < technical_floor
             or (not pending_industry and row["sector_adjusted_fundamental_score"] < fundamental_min)
-            or (not pending_industry and row["sector_adjusted_technical_score"] < technical_min)
         ):
             continue
         merged.append(row)
-    merged.sort(key=lambda row: row["sector_adjusted_combined_score"], reverse=True)
+    merged.sort(key=lambda row: row["sector_adjusted_fundamental_score"], reverse=True)
     for rank, row in enumerate(merged[:display_limit], start=1):
         row["rank"] = rank
     return merged[:display_limit]
@@ -515,21 +514,18 @@ def build_morning_entry_plan(intraday: dict, atr_pct: float | None = None) -> di
 
 
 def build_trade_decision(item: dict) -> dict:
-    """Apply sector, fundamental, quant and live-entry gates in order."""
+    """Apply sector, fundamental and live-entry gates; quant stays research-only."""
     board_score = item.get("board_strength_score")
     fundamental_score = float(item.get("sector_adjusted_fundamental_score") or item.get("fundamental_score") or 0)
-    technical_score = float(item.get("sector_adjusted_technical_score") or item.get("technical_score") or 0)
     plan = item.get("morning_plan") or {}
     state = str(plan.get("execution_state") or "")
     board_pass = board_score is not None and float(board_score) >= 60
     fundamental_pass = fundamental_score >= 60
-    model_pass = item.get("quant_model_passed", True) is True
-    quant_pass = technical_score >= 60 and model_pass
     entry_pass = bool(plan.get("actionable")) and (
         "进入回踩进场区" in state or "已触发突破确认" in state
     )
     blocked = any(word in f"{plan.get('status', '')}{state}" for word in ("暂不", "失效", "异常"))
-    if blocked or not (board_pass and fundamental_pass and quant_pass):
+    if blocked or not (board_pass and fundamental_pass):
         status = "不交易"
     elif entry_pass:
         status = "可执行观察"
@@ -540,18 +536,16 @@ def build_trade_decision(item: dict) -> dict:
         reasons.append("板块资金/效应未达到60分")
     if not fundamental_pass:
         reasons.append("行业校准基本面未达到60分")
-    if not quant_pass:
-        reasons.append("行业校准量化因子未达到60分或样本外总闸门未通过")
-    if board_pass and fundamental_pass and quant_pass and not entry_pass:
+    if board_pass and fundamental_pass and not entry_pass:
         reasons.append(plan.get("status") or "午后进场条件尚未触发")
     return {
         "status": status,
         "board_gate": {"score": board_score, "passed": board_pass},
         "fundamental_gate": {"score": fundamental_score, "raw_score": item.get("fundamental_score"), "passed": fundamental_pass},
-        "quant_gate": {"score": technical_score, "raw_score": item.get("technical_score"), "model_passed": model_pass, "passed": quant_pass},
+        "quant_gate": {"participates": False, "passed": True, "note": "量化因子仅独立优化和展示，不参与选股、排名或进场许可"},
         "entry_gate": {"passed": entry_pass, "state": state},
         "reasons": reasons,
-        "note": "量化因子参与选股与进场门槛，价位仍须由上午盘结构触发；排名不是买入指令。",
+        "note": "量化因子仅独立优化和展示；实际选股按板块、基本面、上午资金与盘中触发判断，排名不是买入指令。",
     }
 
 
@@ -591,10 +585,31 @@ SELECTION_COMPONENT_GETTERS = {
     "board": lambda item: float(item.get("board_strength_score") or 0),
     "morning_fund": lambda item: _morning_fund_score(item.get("intraday_fund_flow") or {}),
 }
+SELECTION_COMPONENT_LABELS = {
+    "fundamental": "行业校准基本面",
+    "technical": "技术量化（仅研究，不计分）",
+    "board": "板块强度",
+    "morning_fund": "上午个股资金",
+}
 
 
 def _selection_components(item: dict) -> dict[str, float]:
     return {name: round(getter(item), 2) for name, getter in SELECTION_COMPONENT_GETTERS.items()}
+
+
+def _selection_breakdown(components: dict, weights: dict) -> list[dict]:
+    normalized = normalize_selection_weights(weights)
+    return [
+        {
+            "key": key,
+            "label": SELECTION_COMPONENT_LABELS[key],
+            "score": components[key],
+            "weight": normalized[key],
+            "contribution": round(components[key] * normalized[key], 2),
+            "participates": normalized[key] > 0,
+        }
+        for key in SELECTION_COMPONENT_LABELS
+    ]
 
 
 def build_market_research(
@@ -606,9 +621,7 @@ def build_market_research(
 ) -> dict:
     """Build the external-market → sector → stock → entry research chain."""
     feed = feed or DataFeed()
-    selection_weights = normalize_selection_weights(
-        ((technical.get("summary") or {}).get("best_params") or {}).get("selection_weights")
-    )
+    selection_weights = normalize_selection_weights(ACTIVE_SELECTION_WEIGHTS)
     try:
         news = feed.get_financial_news()
     except Exception:
@@ -635,11 +648,9 @@ def build_market_research(
         relative_weight = min(1.0, max(0.0, float(os.getenv("PUSH_INDUSTRY_RELATIVE_WEIGHT", "0.30"))))
         _apply_industry_adjustment(observations, relative_weight)
         fundamental_min = float(os.getenv("PUSH_FUNDAMENTAL_MIN", "60"))
-        technical_min = float(os.getenv("PUSH_TECHNICAL_MIN", "60"))
         observations[:] = [
             item for item in observations
             if item["sector_adjusted_fundamental_score"] >= fundamental_min
-            and item["sector_adjusted_technical_score"] >= technical_min
         ]
     codes = [item["code"] for item in observations]
     try:
@@ -728,6 +739,11 @@ def build_market_research(
         item["selection_components"] = _selection_components(item)
         item["selection_score"] = score_selection_components(item["selection_components"], selection_weights)
         item["selection_weights"] = selection_weights
+        item["selection_breakdown"] = _selection_breakdown(item["selection_components"], selection_weights)
+        item["selection_score_explanation"] = " + ".join(
+            f"{part['label']}{part['score']:.1f}×{part['weight']:.1%}={part['contribution']:.1f}"
+            for part in item["selection_breakdown"] if part["participates"]
+        ) + f" = {item['selection_score']:.1f}"
     observations.sort(key=lambda item: item.get("selection_score", 0), reverse=True)
     for rank, item in enumerate(observations, start=1):
         item["rank"] = rank
@@ -751,7 +767,7 @@ def build_market_research(
             seen.add(code)
             fundamental_row = fundamental_by_code.get(code, {})
             technical_row = technical_by_code.get(code, {})
-            technical_score = float(technical_row.get("technical_score") or 0)
+            technical_score = float(technical_row["technical_score"]) if technical_row.get("technical_score") is not None else None
             fundamental_score = fundamental_row.get("fundamental_score")
             hot_core.append({
                 **leader,
@@ -765,16 +781,12 @@ def build_market_research(
                 "matched_boards": [board],
                 "fundamental_score": fundamental_score,
                 "technical_score": technical_score,
-                "combined_score": round((float(fundamental_score or 0) + technical_score) / 2, 2),
+                "combined_score": round((float(fundamental_score or 0) + technical_score) / 2, 2) if technical_score is not None else fundamental_score,
                 "atr_pct": technical_row.get("atr_pct"),
                 "quant_model_passed": model_gate["passed"],
-                "quant_passed": technical_score >= 60 and model_gate["passed"],
+                "quant_passed": None,
                 "candidate_channel": "hot_core",
-                "state": (
-                    "进入双评分复核" if technical_score >= 60 and model_gate["passed"]
-                    else "量化模型总闸门关闭，保留板块龙头观察"
-                    if technical_score >= 60 else "仅作板块龙头观察"
-                ),
+                "state": "进入板块、基本面与盘中条件复核",
             })
             if len(hot_core) >= 10:
                 break
@@ -816,9 +828,7 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
         observations, fundamental, technical, display_limit=display_limit
     )
     now = datetime.now(SHANGHAI)
-    selection_weights = normalize_selection_weights(
-        ((technical.get("summary") or {}).get("best_params") or {}).get("selection_weights")
-    )
+    selection_weights = normalize_selection_weights(ACTIVE_SELECTION_WEIGHTS)
     return {
         "subject": f"{now:%Y-%m-%d} A股分层观察日报（板块+个股+买点）",
         "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
@@ -833,14 +843,14 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
         "observation_count": len(observations),
         "rules": {
             "fundamental_min": float(os.getenv("PUSH_FUNDAMENTAL_MIN", "60")),
-            "technical_min": float(os.getenv("PUSH_TECHNICAL_MIN", "60")),
             "display_limit": display_limit,
             "industry_limit": int(os.getenv("PUSH_INDUSTRY_LIMIT", "4")),
             "industry_relative_weight": float(os.getenv("PUSH_INDUSTRY_RELATIVE_WEIGHT", "0.30")),
             "quant_model_gate": model_gate,
             "selection_weights": selection_weights,
             "selection_weight_optimization": (technical.get("summary") or {}).get("selection_optimization", {}),
-            "meaning": "外盘与事件只作情景输入；按板块资金→基本面→量化因子→上午盘触发顺序形成观察，不自动下单",
+            "selection_formula": "综合分 = 行业校准基本面×66.67% + 板块强度×16.67% + 上午个股资金×16.67%；技术量化权重为0，仅独立研究",
+            "meaning": "外盘与事件只作情景输入；实际选股按板块资金→基本面→上午资金与盘中触发形成观察，不自动下单；量化因子仅独立优化展示",
         },
     }
 

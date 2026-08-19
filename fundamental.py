@@ -83,6 +83,14 @@ class FundamentalScorer:
             "weights": dict(LONG_TERM["weights"]),
             "scan_scope": "全部初筛股票" if limit <= 0 else f"流动性前 {limit} 只",
             "data_source": "东方财富已披露财务指标与行情估值快照",
+            "news_policy": "新闻不参与基本面评分；新闻仅用于外盘与事件情景分析",
+            "scoring_rules": {
+                "total": "基本面总分 = 质量×35% + 成长×30% + 估值×20% + 现金流×15%",
+                "quality": "质量 = min(max(年化ROE×5,0),100)×70% + min(max(毛利率×2,0),100)×30%；毛利率缺失时用ROE分替代",
+                "growth": "成长 = 营收同比映射分×40% + 净利同比映射分×60%；同比≤-30为0分，-30至0为0-30分，0至20为50-90分，20至50为90-100分，≥50为100分",
+                "valuation": "估值 = PE分档分×65% + PB分档分×35%；PE档为≤12/25/40/70/更高，PB档为≤2/5/10/更高，非正值单独低分处理",
+                "cashflow": "现金流 = min(max(经营现金流每股/每股收益×70,0),100)；EPS非正且现金流非负为10分，否则为0分",
+            },
             "purpose": "基本面评分可视化；不生成买卖、仓位或止盈止损计划",
         }
         self._set_progress("done", len(codes), len(codes), "基本面评分完成", progress_callback)
@@ -163,6 +171,15 @@ class FundamentalScorer:
             "revenue_growth": revenue_growth, "profit_growth": profit_growth,
             "gross_margin": gross_margin, "eps": eps, "operating_cf_per_share": cash_per_share,
             "pe": pe, "pb": pb,
+            "score_explanation": (
+                f"质量{quality}×35% + 成长{growth}×30% + "
+                f"估值{valuation}×20% + 现金流{cashflow}×15% = {total}"
+            ),
+            "evidence": (
+                f"{financial.get('report_date') or '报告期未知'}财务指标，"
+                f"公告/更新日{financial.get('notice_date') or '未知'}；"
+                f"来源：{financial.get('data_source') or '未标明'}；新闻未计分"
+            ),
             "risk": "；".join(risks) if risks else "未触发财务量化警示，仍需核验公告",
             "data_source": financial.get("data_source", ""),
         }

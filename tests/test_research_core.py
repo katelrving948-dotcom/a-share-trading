@@ -5,9 +5,16 @@ from unittest.mock import patch
 
 from fundamental import FundamentalScorer
 from research_core import _morning_fund_score, build_morning_entry_plan, build_trade_decision, quant_model_gate, save_selection_snapshot, score_intersection
+from selection_model import ACTIVE_SELECTION_WEIGHTS, score_selection_components
 
 
 class ResearchCoreTest(unittest.TestCase):
+    def test_active_selection_score_excludes_technical_factor(self):
+        components = {"fundamental": 80, "technical": 0, "board": 70, "morning_fund": 60}
+        without_technical = score_selection_components(components, ACTIVE_SELECTION_WEIGHTS)
+        components["technical"] = 100
+        self.assertEqual(score_selection_components(components, ACTIVE_SELECTION_WEIGHTS), without_technical)
+
     def test_selection_snapshot_keeps_point_in_time_components(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "selection.json"
@@ -41,7 +48,7 @@ class ResearchCoreTest(unittest.TestCase):
         self.assertGreater(plan["entry_zone"]["low"], plan["stop_zone"]["high"])
         self.assertEqual(plan["quant_atr_pct"], 2.0)
 
-    def test_trade_decision_requires_sector_quant_and_live_entry(self):
+    def test_trade_decision_keeps_quant_research_only(self):
         decision = build_trade_decision({
             "board_strength_score": 70,
             "fundamental_score": 75,
@@ -55,6 +62,7 @@ class ResearchCoreTest(unittest.TestCase):
 
         self.assertEqual(decision["status"], "可执行观察")
         self.assertTrue(decision["quant_gate"]["passed"])
+        self.assertFalse(decision["quant_gate"]["participates"])
 
     def test_stale_intraday_data_does_not_generate_today_levels(self):
         plan = build_morning_entry_plan({
@@ -80,9 +88,11 @@ class ResearchCoreTest(unittest.TestCase):
         )
         self.assertGreaterEqual(row["fundamental_score"], 0)
         self.assertLessEqual(row["fundamental_score"], 100)
+        self.assertIn("新闻未计分", row["evidence"])
+        self.assertIn("质量", row["score_explanation"])
 
     @patch.dict("os.environ", {"PUSH_FUNDAMENTAL_MIN": "60", "PUSH_TECHNICAL_MIN": "60", "PUSH_DISPLAY_LIMIT": "20"})
-    def test_intersection_is_not_fixed_to_ten_and_requires_both_scores(self):
+    def test_candidates_require_fundamentals_but_not_technical_score(self):
         fundamental = {"rows": [
             {"code": "000001", "name": "双达标", "fundamental_score": 75},
             {"code": "000002", "name": "技术不达标", "fundamental_score": 80},
@@ -97,10 +107,10 @@ class ResearchCoreTest(unittest.TestCase):
             {"code": "000003", "technical_score": 90},
         ]}
         result = score_intersection(fundamental, technical)
-        self.assertEqual([row["code"] for row in result], ["000001"])
-        self.assertEqual(result[0]["combined_score"], 72.5)
+        self.assertEqual([row["code"] for row in result], ["000002", "000001"])
+        self.assertEqual(result[1]["combined_score"], 72.5)
 
-    def test_negative_oos_performance_keeps_candidate_visible_but_closes_entry_gate(self):
+    def test_negative_oos_performance_does_not_close_actual_entry_gate(self):
         technical = {"summary": {"oos_metrics": {
             "annual_return": -5.2, "max_drawdown": -35.1,
             "sharpe_ratio": -0.12, "trading_days": 378,
@@ -122,7 +132,7 @@ class ResearchCoreTest(unittest.TestCase):
                 "execution_state": "当前价进入回踩进场区",
             },
         })
-        self.assertEqual(build_trade_decision(result[0])["status"], "不交易")
+        self.assertEqual(build_trade_decision(result[0])["status"], "可执行观察")
 
     @patch.dict("os.environ", {
         "PUSH_FUNDAMENTAL_MIN": "60", "PUSH_TECHNICAL_MIN": "60",

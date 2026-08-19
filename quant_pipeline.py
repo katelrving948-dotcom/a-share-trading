@@ -72,7 +72,8 @@ def _build_html_report(result: dict, metadata: dict, optimization_entry: dict | 
     validation = optimization_entry.get("validation") or {}
     changes = optimization_entry.get("parameter_changes") or []
     optimization_html = "".join(
-        f"<li>{item['part']}：{item.get('before')} → {item.get('after')}</li>"
+        f"<li>{item.get('label') or item['part']}：{item.get('before')} → {item.get('after')}；"
+        f"含义：{item.get('meaning') or '暂无释义'}</li>"
         for item in changes
     ) or "<li>参数窗口保持不变，避免根据单日结果过度调参</li>"
     validation_html = (
