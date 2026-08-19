@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-18 17:11:30",
+  "updated_at": "2026-08-19 17:13:53",
   "entries": [
     {
       "generated_at": "2026-08-16 21:39:49",
@@ -362,6 +362,147 @@
         "minimum_days": 20,
         "grid_size": 0,
         "message": "已积累0个验证日，满20日后启用选股权重优化"
+      },
+      "guardrail": "技术因子只在预设参数网格内按滚动样本外结果选择；选股权重仅使用逐日留存的时点快照，样本不足时保持默认值，单日验证不直接调参。"
+    },
+    {
+      "generated_at": "2026-08-19 17:13:53",
+      "validation": {
+        "status": "validated",
+        "signal_date": "2026-08-18",
+        "validation_date": "2026-08-19",
+        "signal_count": 20,
+        "validated_count": 10,
+        "positive_count": 3,
+        "hit_rate": 30.0,
+        "average_return": -3.22,
+        "median_return": -2.321,
+        "benchmark_return": -6.632,
+        "excess_return": 3.411,
+        "details": [
+          {
+            "code": "000620",
+            "return_pct": 3.371
+          },
+          {
+            "code": "603156",
+            "return_pct": 1.287
+          },
+          {
+            "code": "300821",
+            "return_pct": 0.629
+          },
+          {
+            "code": "002648",
+            "return_pct": -0.034
+          },
+          {
+            "code": "000998",
+            "return_pct": -1.149
+          },
+          {
+            "code": "603650",
+            "return_pct": -3.493
+          },
+          {
+            "code": "000831",
+            "return_pct": -4.706
+          },
+          {
+            "code": "603236",
+            "return_pct": -4.952
+          },
+          {
+            "code": "002747",
+            "return_pct": -9.877
+          },
+          {
+            "code": "300607",
+            "return_pct": -13.28
+          }
+        ],
+        "message": "已按T日收盘信号核验下一交易日收盘表现"
+      },
+      "parameter_changes": [
+        {
+          "part": "factor_weights.bollinger",
+          "before": 0.05,
+          "after": 0.1
+        },
+        {
+          "part": "factor_weights.low_atr",
+          "before": 0.1,
+          "after": 0.05
+        },
+        {
+          "part": "factor_weights.low_volatility",
+          "before": 0.15,
+          "after": 0.1
+        },
+        {
+          "part": "factor_weights.momentum",
+          "before": 0.3,
+          "after": 0.25
+        },
+        {
+          "part": "factor_weights.trend",
+          "before": 0.2,
+          "after": 0.25
+        },
+        {
+          "part": "factor_weights.volume_ratio",
+          "before": 0.1,
+          "after": 0.15
+        },
+        {
+          "part": "momentum_window",
+          "before": 60,
+          "after": 20
+        },
+        {
+          "part": "trend_window",
+          "before": 20,
+          "after": 120
+        }
+      ],
+      "metric_changes": [
+        {
+          "metric": "annual_return",
+          "before": 15.7909,
+          "after": 30.359,
+          "delta": 14.5681
+        },
+        {
+          "metric": "max_drawdown",
+          "before": -22.3713,
+          "after": -30.0087,
+          "delta": -7.6374
+        },
+        {
+          "metric": "sharpe_ratio",
+          "before": 0.6798,
+          "after": 1.0166,
+          "delta": 0.3368
+        }
+      ],
+      "actions": [
+        "重新运行45组参数的滚动训练与样本外回测",
+        "完成2026-08-18信号在2026-08-19的次日验证",
+        "调整8项参数",
+        "已积累1个验证日，满20日后启用选股权重优化"
+      ],
+      "selection_optimization": {
+        "status": "accumulating",
+        "weights": {
+          "fundamental": 0.4,
+          "technical": 0.4,
+          "board": 0.1,
+          "morning_fund": 0.1
+        },
+        "validated_days": 1,
+        "minimum_days": 20,
+        "grid_size": 0,
+        "message": "已积累1个验证日，满20日后启用选股权重优化"
       },
       "guardrail": "技术因子只在预设参数网格内按滚动样本外结果选择；选股权重仅使用逐日留存的时点快照，样本不足时保持默认值，单日验证不直接调参。"
     }
