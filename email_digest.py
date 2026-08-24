@@ -10,7 +10,7 @@ from email.message import EmailMessage
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from research_core import build_push_payload, save_selection_snapshot
+from research_core import build_push_payload, freeze_weekly_plan, save_selection_snapshot
 
 
 PARAMETER_LABELS = {
@@ -114,6 +114,8 @@ def build_email(payload: dict) -> EmailMessage:
     capital = payload.get("capital_strength") or {}
     boards = payload.get("rotation_boards") or []
     hot_core = payload.get("hot_core_candidates") or []
+    weekly = payload.get("weekly_plan") or {}
+    account = payload.get("account") or weekly.get("account") or {}
     validation = technical.get("latest_validation") or {}
     optimization = technical.get("optimization_log_entry") or {}
     model_gate = payload.get("quant_model_gate") or rules.get("quant_model_gate") or {}
@@ -161,6 +163,25 @@ def build_email(payload: dict) -> EmailMessage:
         f"  {_plan_text(item)}"
         for index, item in enumerate(hot_core, start=1)
     ]
+    weekly_plain = []
+    for item in weekly.get("selections") or []:
+        trend = item.get("weekly_trend") or {}
+        entry = trend.get("entry_zone") or {}
+        targets = trend.get("take_profit") or []
+        position = item.get("position_plan") or {}
+        weekly_plain.append(
+            f"{item.get('role')} {item.get('code')} {item.get('name')} | {item.get('status')} | "
+            f"周度分{_number(item.get('weekly_score'), 1)} | "
+            f"买入{_number(entry.get('low'), 2)}-{_number(entry.get('high'), 2)} | "
+            f"禁追>{_number(trend.get('max_chase_price'), 2)} | 止损{_number(trend.get('stop_price'), 2)} | "
+            f"止盈{_number((targets[0] if targets else {}).get('price'), 2)}/{_number((targets[1] if len(targets) > 1 else {}).get('price'), 2)} | "
+            f"{position.get('quantity', 0)}股/约{_number(position.get('estimated_value'), 0)}元/计划亏损{_number(position.get('planned_loss'), 0)}元"
+            + (f"\n  阻断：{'；'.join(position.get('reasons') or [])}" if position.get("reasons") else "")
+        )
+    scenarios_plain = [
+        f"{row.get('name')}：{row.get('summary')}；触发：{'、'.join(row.get('triggers') or [])}"
+        for row in weekly.get("event_scenarios") or []
+    ]
     empty_text = "今日没有股票达到基本面、板块和盘中条件，保留空观察池。"
     site_url = os.getenv("SITE_URL", "https://a-share-trading.onrender.com")
     plain = (
@@ -168,6 +189,17 @@ def build_email(payload: dict) -> EmailMessage:
         f"生成时间：{payload.get('generated_at')}\n"
         f"分析窗口：{payload.get('analysis_window')}\n"
         f"使用时段：{payload.get('execution_window')}\n\n"
+        "账户风险闸门\n"
+        f"净值{_number(account.get('equity'), 0)}元；上周盈亏{_number(account.get('last_week_pnl'), 0)}元/"
+        f"{_number(account.get('last_week_return_pct'), 2, '%')}；风险档位{(account.get('risk_profile') or {}).get('name', '--')}；"
+        f"总仓上限{_number((account.get('risk_profile') or {}).get('max_total_pct', 0) * 100, 0, '%')}；"
+        f"是否允许开仓：{'是' if account.get('can_open_new') else '否'}。\n"
+        + ("阻断原因：" + "；".join(account.get("block_reasons") or []) + "\n" if account.get("block_reasons") else "")
+        + "\n本周固定名单\n"
+        + ("\n".join(weekly_plain) if weekly_plain else "本周没有股票同时通过基本面、周趋势、板块、事件和风险预算，保持空仓。")
+        + "\n\n国际事件三情景\n"
+        + ("\n".join(scenarios_plain) if scenarios_plain else "事件数据不足，按不确定情景控制仓位。")
+        + "\n\n仓位边界：计划股数是单股目标上限，不代表忽略现有仓位后的追加买入量；执行前自行核对实际总仓位。\n\n"
         "市场概况\n"
         f"上涨：{breadth.get('up', '--')}；下跌：{breadth.get('down', '--')}；"
         f"涨停：{breadth.get('limit_up', '--')}；跌停：{breadth.get('limit_down', '--')}\n\n"
@@ -236,6 +268,19 @@ def build_email(payload: dict) -> EmailMessage:
         '</div>'
         for index, item in enumerate(hot_core, start=1)
     ) or '<div style="padding:11px 12px">本次未形成强势板块龙头观察名单。</div>'
+    weekly_rows = "".join(
+        '<tr>'
+        f'<td style="padding:8px;border-bottom:1px solid #dbe5ef"><strong>{html.escape(str(item.get("role") or ""))}</strong><br>{html.escape(str(item.get("code") or ""))} {html.escape(str(item.get("name") or ""))}</td>'
+        f'<td style="padding:8px;border-bottom:1px solid #dbe5ef">{html.escape(str(item.get("status") or ""))}<br>周度分 {_number(item.get("weekly_score"), 1)}</td>'
+        f'<td style="padding:8px;border-bottom:1px solid #dbe5ef">买入 {_number((item.get("weekly_trend") or {}).get("entry_zone", {}).get("low"), 2)}-{_number((item.get("weekly_trend") or {}).get("entry_zone", {}).get("high"), 2)}<br>禁追 {_number((item.get("weekly_trend") or {}).get("max_chase_price"), 2)} · 止损 {_number((item.get("weekly_trend") or {}).get("stop_price"), 2)}</td>'
+        f'<td style="padding:8px;border-bottom:1px solid #dbe5ef">{(item.get("position_plan") or {}).get("quantity", 0)}股<br>约{_number((item.get("position_plan") or {}).get("estimated_value"), 0)}元 · 风险{_number((item.get("position_plan") or {}).get("planned_loss"), 0)}元</td>'
+        '</tr>'
+        for item in weekly.get("selections") or []
+    ) or '<tr><td colspan="4" style="padding:10px">本周没有通过全部闸门的股票，保持空仓。</td></tr>'
+    scenarios_html = "".join(
+        f'<div style="margin:7px 0"><strong>{html.escape(str(row.get("name") or ""))}</strong>：{html.escape(str(row.get("summary") or ""))}</div>'
+        for row in weekly.get("event_scenarios") or []
+    )
     validation_html = (
         f'{validation.get("signal_date")} → {validation.get("validation_date")}：'
         f'命中率{_number(validation.get("hit_rate"), 2, "%")}，平均{_number(validation.get("average_return"), 3, "%")}，'
@@ -258,11 +303,26 @@ def build_email(payload: dict) -> EmailMessage:
       <table role="presentation" width="100%"><tr><td align="center" style="padding:24px">
         <table role="presentation" width="760" style="max-width:100%;background:#fff;border-collapse:collapse;border:1px solid #dce3ec">
           <tr><td style="padding:24px;background:#10223f;color:white">
-            <div style="font-size:12px;color:#9fc2ff">FUNDAMENTAL × TECHNICAL</div>
+            <div style="font-size:12px;color:#9fc2ff">WEEKLY TREND × POSITION × RISK</div>
             <h1 style="margin:6px 0 8px;font-size:24px">{html.escape(str(payload.get('subject')))}</h1>
             <div style="color:#c8d7ea">{html.escape(str(payload.get('analysis_window')))} · {html.escape(str(payload.get('execution_window')))}</div>
           </td></tr>
           <tr><td style="padding:22px">
+            <div style="padding:14px;background:#edf8f5;border-left:4px solid #16805d;line-height:1.8">
+              <strong>账户风险档位：{html.escape(str((account.get('risk_profile') or {}).get('name') or '--'))}</strong> ·
+              净值 {_number(account.get('equity'), 0)} 元 · 上周 {_number(account.get('last_week_return_pct'), 2, '%')} ·
+              总仓上限 {_number((account.get('risk_profile') or {}).get('max_total_pct', 0) * 100, 0, '%')} ·
+              新开仓：{'允许' if account.get('can_open_new') else '禁止'}<br>
+              {html.escape('；'.join(account.get('block_reasons') or []) or '账户风险闸门通过')}
+            </div>
+            <h2 style="font-size:18px;margin-top:24px">本周固定名单（周内只撤销，不换排行）</h2>
+            <p style="color:#5e6b7d">{html.escape(str(weekly.get('selection_policy') or ''))}</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead><tr style="background:#edf2f8"><th style="padding:8px;text-align:left">身份/股票</th><th style="padding:8px;text-align:left">状态</th><th style="padding:8px;text-align:left">价格计划</th><th style="padding:8px;text-align:left">仓位</th></tr></thead>
+              <tbody>{weekly_rows}</tbody>
+            </table>
+            <h3 style="font-size:15px;margin:18px 0 6px">国际事件三情景</h3>{scenarios_html}
+            <p style="padding:10px;background:#fff8e8;color:#725219">计划股数是单股目标仓位上限，不代表追加买入量；执行前请自行核对账户实际总仓位。</p>
             <div style="padding:12px;background:#eef5ff;border-left:4px solid #286fe8;line-height:1.7">
               上涨 {breadth.get('up', '--')} · 下跌 {breadth.get('down', '--')} ·
               涨停 {breadth.get('limit_up', '--')} · 跌停 {breadth.get('limit_down', '--')}
@@ -381,8 +441,9 @@ def main() -> None:
     if factor_count <= 0:
         raise RuntimeError("技术面快照缺失，停止发送，避免把数据缺失误报为无交集")
     save_selection_snapshot(payload)
+    freeze_weekly_plan(payload)
     send_email(build_email(payload))
-    print(f"已发送双评分午间报告：{payload['observation_count']} 只交集观察标的。")
+    print(f"已发送周度趋势计划：{(payload.get('weekly_plan') or {}).get('active_count', 0)} 只固定候选。")
 
 
 if __name__ == "__main__":

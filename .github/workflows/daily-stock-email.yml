@@ -1,4 +1,4 @@
-name: Daily dual-score research email
+name: Weekly trend and risk plan email
 
 on:
   workflow_dispatch:
@@ -9,11 +9,11 @@ on:
         type: boolean
         default: false
   schedule:
-    # GitHub Actions uses UTC: 04:00 UTC = 12:00 Asia/Shanghai.
-    - cron: "0 4 * * 1-5"
+    # GitHub Actions uses UTC: 00:00 UTC = 08:00 Asia/Shanghai on Monday.
+    - cron: "0 0 * * 1"
 
 concurrency:
-  group: daily-stock-email
+  group: weekly-stock-email
   cancel-in-progress: false
 
 jobs:
@@ -34,6 +34,7 @@ jobs:
       PUSH_FUNDAMENTAL_MIN: ${{ vars.PUSH_FUNDAMENTAL_MIN || '60' }}
       PUSH_TECHNICAL_MIN: ${{ vars.PUSH_TECHNICAL_MIN || '60' }}
       PUSH_DISPLAY_LIMIT: ${{ vars.PUSH_DISPLAY_LIMIT || '20' }}
+      ACCOUNT_STATE_JSON: ${{ secrets.ACCOUNT_STATE_JSON }}
       SITE_URL: https://a-share-trading.onrender.com
       PYTHONUNBUFFERED: "1"
 
@@ -50,7 +51,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .email-sent-marker
-          key: daily-stock-email-${{ steps.beijing_date.outputs.date }}
+          key: weekly-stock-email-${{ steps.beijing_date.outputs.date }}
 
       - uses: actions/setup-python@v5
         if: inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true'
@@ -86,6 +87,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f output/research/fundamental_latest.json
           test ! -f output/research/selection_snapshot.json || git add -f output/research/selection_snapshot.json
+          test ! -f output/research/weekly_plan.json || git add -f output/research/weekly_plan.json
           git diff --cached --quiet && exit 0
           git commit -m "data: update fundamental snapshot"
           git pull --rebase origin main
@@ -101,4 +103,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .email-sent-marker
-          key: daily-stock-email-${{ steps.beijing_date.outputs.date }}
+          key: weekly-stock-email-${{ steps.beijing_date.outputs.date }}

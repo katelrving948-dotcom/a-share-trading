@@ -19,6 +19,7 @@ from research_core import (
     build_push_payload, load_fundamental, load_technical,
     refresh_fundamental, sync_latest_quant_artifact,
 )
+from weekly_strategy import ACCOUNT_STATE_FILE, load_account_state, save_account_update
 
 
 ROOT = Path(__file__).resolve().parent
@@ -39,7 +40,7 @@ def _scheduled_push_allowed(now: datetime | None = None) -> bool:
     if os.getenv("CRON_WINDOW_BYPASS", "0") == "1":
         return True
     current = now or datetime.now(SHANGHAI)
-    return current.weekday() < 5 and 1150 <= current.hour * 100 + current.minute <= 1230
+    return current.weekday() == 0 and 730 <= current.hour * 100 + current.minute <= 830
 
 
 def _snapshot(target: dict) -> dict:
@@ -140,7 +141,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             if path.startswith("/static/"):
                 return self._send_static(path)
             if path == "/api/status":
-                return self._json({"status": "ok", "system": "three-core-research", "time": _now()})
+                return self._json({"status": "ok", "system": "weekly-trend-risk", "time": _now()})
             if path in ("/api/push/status", "/api/cron/daily-email/status"):
                 return self._json(self._push_status())
             if path == "/api/push/preview":
@@ -153,6 +154,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self._json(_snapshot(_fundamental_state))
             if path == "/api/technical":
                 return self._json(load_technical())
+            if path == "/api/account":
+                return self._json(load_account_state())
             if path == "/api/cron/wake":
                 self.send_response(204)
                 self.end_headers()
@@ -174,7 +177,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                         state="skipped",
                         completed_at=_now(),
                         error=None,
-                        reason="非工作日12:00推送窗口，未提前生成或发送",
+                        reason="非周一07:30-08:30推送窗口，未提前生成或发送",
                     )
                     self.send_response(204)
                     self.end_headers()
@@ -195,6 +198,10 @@ class ApiHandler(BaseHTTPRequestHandler):
                 if not self._authorized():
                     return self._json({"error": "未授权"}, 401)
                 return self._json({"synced": sync_latest_quant_artifact(), "technical": load_technical()})
+            if path == "/api/account":
+                if not self._authorized():
+                    return self._json({"error": "未授权"}, 401)
+                return self._json(save_account_update(body, ACCOUNT_STATE_FILE))
             return self._json({"error": "接口不存在"}, 404)
         except (TypeError, ValueError, json.JSONDecodeError) as exc:
             return self._json({"error": str(exc)}, 400)
@@ -204,9 +211,9 @@ class ApiHandler(BaseHTTPRequestHandler):
     def _push_status(self) -> dict:
         state = _snapshot(_push_state)
         state.update({
-            "schedule": "工作日12:00 Asia/Shanghai",
-            "analysis_window": "前一交易日完整盘面 + 当日09:30-11:30上午盘",
-            "chain": ["cron-job.org", "Render受保护接口", "GitHub Actions", "评分报告生成", "邮件服务"],
+            "schedule": "每周一08:00 Asia/Shanghai",
+            "analysis_window": "上周完整行情 + 最新财报/资产负债表 + 周末外盘与事件",
+            "chain": ["周一触发", "Render受保护接口", "GitHub Actions", "周度固定计划", "邮件服务"],
             "workflow_configured": bool(os.getenv("GITHUB_ACTIONS_TOKEN", "").strip()),
             "delivery_boundary": "dispatched只表示工作流已触发；收件箱是最终送达凭证",
         })
@@ -257,8 +264,8 @@ class ApiHandler(BaseHTTPRequestHandler):
 def main() -> None:
     port = int(os.getenv("PORT", "5000"))
     server = ThreadingHTTPServer(("0.0.0.0", port), ApiHandler)
-    print(f"A股三核研究系统：http://localhost:{port}")
-    print("模块：推送中心 / 基本面评分 / 技术面量化")
+    print(f"A股周度趋势与风险系统：http://localhost:{port}")
+    print("模块：周度计划 / 基本面评分 / 技术面量化")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

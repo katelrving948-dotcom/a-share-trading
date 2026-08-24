@@ -2123,6 +2123,48 @@ class DataFeed:
                                detail=f"最近取得 {code} {report_date} 报告")
         return dict(result)
 
+    def get_balance_sheet_data(self, code: str) -> dict:
+        """Fetch the latest disclosed balance-sheet risk fields for final weekly candidates."""
+        code = str(code).zfill(6)
+        params = {
+            "reportName": "RPT_DMSK_FN_BALANCE",
+            "columns": "ALL",
+            "filter": f'(SECUCODE="{self._eastmoney_security_code(code)}")',
+            "pageNumber": 1,
+            "pageSize": 1,
+            "sortColumns": "REPORT_DATE",
+            "sortTypes": "-1",
+            "source": "WEB",
+            "client": "WEB",
+        }
+        resp = self._request(
+            EASTMONEY_FINANCIAL, params, timeout=(3, REQUEST_TIMEOUT), retries=2,
+            headers={"Referer": "https://data.eastmoney.com/"},
+        )
+        if resp is None:
+            return {"code": code, "available": False, "error": "资产负债表接口请求失败"}
+        try:
+            rows = ((resp.json().get("result") or {}).get("data") or [])
+        except (ValueError, TypeError, json.JSONDecodeError, AttributeError):
+            rows = []
+        if not rows:
+            return {"code": code, "available": False, "error": "无资产负债表数据"}
+        latest = rows[0]
+        return {
+            "code": code,
+            "available": True,
+            "data_source": "东方财富资产负债表 API",
+            "report_date": str(latest.get("REPORT_DATE") or "")[:10],
+            "notice_date": str(latest.get("NOTICE_DATE") or "")[:10],
+            "debt_asset_ratio": round(_safe_float(latest.get("DEBT_ASSET_RATIO")), 2),
+            "current_ratio": round(_safe_float(latest.get("CURRENT_RATIO")), 2),
+            "total_assets": round(_safe_float(latest.get("TOTAL_ASSETS")) / 1e8, 2),
+            "total_liabilities": round(_safe_float(latest.get("TOTAL_LIABILITIES")) / 1e8, 2),
+            "monetary_funds": round(_safe_float(latest.get("MONETARYFUNDS")) / 1e8, 2),
+            "accounts_receivable": round(_safe_float(latest.get("ACCOUNTS_RECE")) / 1e8, 2),
+            "inventory": round(_safe_float(latest.get("INVENTORY")) / 1e8, 2),
+        }
+
     def get_financials_batch(self, codes: list, progress_callback=None) -> dict:
         """以有限并发为候选池逐股取得财务指标，并持续回报完成进度。"""
         results = {}

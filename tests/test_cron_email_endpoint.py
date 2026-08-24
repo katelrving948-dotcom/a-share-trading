@@ -61,10 +61,10 @@ class CronEmailEndpointTest(unittest.TestCase):
             time.sleep(0.05)
         dispatch_workflow.assert_called_once_with()
 
-    def test_scheduled_push_only_accepts_weekday_noon_window(self):
-        self.assertTrue(server._scheduled_push_allowed(datetime(2026, 8, 17, 12, 0)))
+    def test_scheduled_push_only_accepts_monday_morning_window(self):
+        self.assertTrue(server._scheduled_push_allowed(datetime(2026, 8, 17, 8, 0)))
         self.assertFalse(server._scheduled_push_allowed(datetime(2026, 8, 17, 10, 0)))
-        self.assertFalse(server._scheduled_push_allowed(datetime(2026, 8, 16, 12, 0)))
+        self.assertFalse(server._scheduled_push_allowed(datetime(2026, 8, 18, 8, 0)))
 
 
 if __name__ == "__main__":

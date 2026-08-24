@@ -60,7 +60,7 @@ class ResearchCoreTest(unittest.TestCase):
             },
         })
 
-        self.assertEqual(decision["status"], "可执行观察")
+        self.assertEqual(decision["status"], "日度条件满足（非交易许可）")
         self.assertTrue(decision["quant_gate"]["passed"])
         self.assertFalse(decision["quant_gate"]["participates"])
 
@@ -132,7 +132,7 @@ class ResearchCoreTest(unittest.TestCase):
                 "execution_state": "当前价进入回踩进场区",
             },
         })
-        self.assertEqual(build_trade_decision(result[0])["status"], "可执行观察")
+        self.assertEqual(build_trade_decision(result[0])["status"], "日度条件满足（非交易许可）")
 
     @patch.dict("os.environ", {
         "PUSH_FUNDAMENTAL_MIN": "60", "PUSH_TECHNICAL_MIN": "60",

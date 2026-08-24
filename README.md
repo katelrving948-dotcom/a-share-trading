@@ -1,6 +1,6 @@
-# A股三核研究系统
+# A股周度趋势与风险系统
 
-系统保留三个产品入口，但午间推送按完整研究链运行：外盘与事件情景 → A股每日资金强度与板块效应 → 板块龙头 → 基本面 → 上午资金与盘中进场/止损/止盈条件。量化因子继续独立回测、次日验证和优化，但暂不参与候选过滤、综合排名或进场许可。系统不自动下单，价位计划也不等于交易指令。
+系统面向盯盘时间有限、账户约5万元、偏周度趋势持仓的使用方式。实际执行链为：上周完整行情与最新披露 → 基本面/资产负债风险 → 周趋势与相对强度 → 板块和国际事件三情景 → 账户风险预算 → 每周固定名单。量化因子保留独立回测和优化，但研究排行不再等于交易许可。
 
 ## 启动网站
 
@@ -9,51 +9,66 @@ pip install -r requirements-quant.txt
 python server.py
 ```
 
-访问 `http://localhost:5000`。Render 使用 `render.yaml` 启动同一个 `server.py`。
+访问 `http://localhost:5000`。网站包含：
 
-网站只有三个页面：
+1. **周度计划**：账户风险档位、2只主选/1只备选、目标股数上限、禁追、止损、止盈和国际事件三情景。
+2. **基本面评分**：质量35%、成长30%、估值20%、现金流15%的透明评分和财报证据。
+3. **技术面量化**：七项价量因子、滚动样本外回测和次日验证；仅作为独立研究通道。
 
-1. **推送中心**：展示工作日12:00链路、外盘事件、资金强度、板块效应、龙头、双评分交集和上午盘条件价位。
-2. **基本面评分**：展示质量35%、成长30%、估值20%、现金流15%的透明评分及扣分原因。
-3. **技术面量化**：展示动量、趋势、波动率、量比、RSI、布林带位置、ATR、滚动样本外回测、次日验证和每日优化日志。
+## 周度规则
 
-## 12:00 推送链路
+- 每周一08:00生成计划，周内使用同一 `plan_id`；名单只允许撤销，不因日度排行变化新增股票。
+- 每周最多2只主选、1只备选；不满足条件时允许少于3只或空仓。
+- 周度分为基本面40%、中期趋势30%、板块15%、国际事件敏感度10%、估值/拥挤度5%。中期趋势直接使用日K/周结构和沪深300相对强度，不读取量化优化分数。
+- 价格明显偏离20日均线、20日涨幅过大、结构止损距离不在4%-7%、板块不足55分或财务硬风险时，不进入固定名单。
+- 每只股票给出买入区、禁追价、结构止损、1.5R/2.5R止盈、5日时间止损和100股整数倍仓位。
 
-`cron-job.org → Render /api/cron/daily-email → GitHub Actions → email_digest.py → 邮件服务`
+## 账户风险
 
-推送分析窗口为前一交易日完整盘面和当天09:30–11:30上午盘，供13:00–14:00复核。外盘、美股、商品和地缘事件只形成情景输入，必须由A股板块资金、上涨扩散度和龙头表现确认。实际综合分为行业校准基本面66.67%、板块强度16.67%、上午个股资金强度16.67%，其中上午资金强度由主力净流入占比换算。技术量化权重为0，仅在独立研究通道继续回测、次日验证和优化；后台选股权重试验结果不自动写入实际选股。板块、基本面和上午盘触发继续作为交易许可条件；量化ATR只辅助止损距离，午后进场还必须由上午盘回踩区或突破条件触发。
+账户状态保存在已忽略的本地文件 `output/research/account_state.json`；字段模板见 `docs/account_state.example.json`。生产环境优先读取私密环境变量 `ACCOUNT_STATE_JSON`。当前阶段只保存净值和周盈亏，不要求逐股持仓。核心字段：
 
-Render 环境变量：`CRON_SECRET`、`GITHUB_ACTIONS_TOKEN`。GitHub Actions 使用邮件 Secrets `MAIL_USERNAME`、`MAIL_PASSWORD`、`MAIL_TO`，并可配置 `EMAIL_UNIVERSE_LIMIT`、`PUSH_FUNDAMENTAL_MIN`、`PUSH_TECHNICAL_MIN`、`PUSH_DISPLAY_LIMIT`。
-
-`dispatched` 只说明GitHub工作流已触发；收件箱仍是最终送达凭证。
-
-## 基本面评分
-
-基本面总分按质量35%、成长30%、估值20%、现金流15%计算。财务数据来自东方财富已披露财务指标，页面逐股展示报告期、公告/更新日、数据源和算式。新闻不参与基本面评分，只用于外盘与事件情景分析。
-
-运行入口位于 `fundamental.py`，统一快照由 `research_core.py` 写入 `output/research/fundamental_latest.json`。评分数据来自已披露财务指标，不使用AI补齐缺失值，也不混入短期技术信号和板块热点。
-
-## 技术面量化
-
-```bash
-python quant_pipeline.py
+```json
+{
+  "equity": 50000,
+  "available_cash": 50000,
+  "last_week_pnl": -3500,
+  "last_week_end": "2026-08-21",
+  "current_week_pnl": 0,
+  "market_state": "普通"
+}
 ```
 
-默认工作日16:30由 `.github/workflows/quant-factor-research.yml` 运行。数据源为AkShare，配置 `TUSHARE_TOKEN` 后可优先使用Tushare。输出位于 `output/quant/`，包含HTML报告、摘要、信号、样本外净值、滚动折次、最新因子、选股验证历史和 `quant_optimization_log.json` 每日优化日志。
+- 上周亏损达到2%后，下一周进入恢复期：总仓30%、单股15%、单笔风险200元。
+- 普通期总仓最高60%、单股20%、单笔风险300元；强势期最高70%。
+- 本周亏损达到2%立即停止新增风险。
+- 股数按 `floor[单笔风险预算 ÷ (买入中值 - 止损价) ÷ 100] × 100` 计算，并受单股、总仓和现金上限约束。
+- 计划股数是该股票的目标持仓上限，不是忽略现有仓位后的追加买入量；执行前需要自行确认账户总仓位不超过当前档位上限。
 
-回测按T日收盘评分、T+1收益验证，考虑佣金万三、印花税千一和双边0.1%滑点。每天先核验上一期信号的下一交易日收益、命中率及相对全市场等权超额，再重新运行过去504个交易日训练/未来126个交易日验证的滚动优化。默认同时比较9组因子窗口与5套因子权重，共45个受约束技术方案；外层选股权重只使用逐日留存的真实午间快照及其次日收益优化。日志记录窗口、技术因子权重、选股权重、样本外指标及每次变更。单日结果只进入日志，不直接无限制改写因子定义，避免过拟合。
+账户接口：`GET /api/account`；使用 `Authorization: Bearer <CRON_SECRET>` 调用 `POST /api/account` 可更新净值和周盈亏。GitHub Actions/Render部署建议把账户级参数配置在私密 `ACCOUNT_STATE_JSON` 中。
 
-技术因子的原始列、横截面映射、窗口和展示说明统一登记在 `quant_factors.py` 的 `FACTOR_REGISTRY`。新增因子时先补原始因子计算，再登记映射；优化器会自动把注册项纳入权重读取和展示，权重候选方案仍需明确加入受约束网格。
+## 周一推送链路
 
-量化因子用于候选排序和进场复核，并设有样本外总闸门：默认要求样本外年化与夏普均为正、最大回撤不低于-30%、样本外不少于126个交易日。任何一项不满足时，仍展示好板块、龙头和排序后的研究候选，同时保留回测与优化日志；但明确关闭实际进场许可，结论显示“不交易”，直到模型重新通过闸门。
+`.github/workflows/daily-stock-email.yml` 保留旧文件名以兼容现有调用，但计划改为每周一00:00 UTC（北京时间08:00）运行：
 
-网站可通过受保护的 `/api/technical/sync` 从最新GitHub Actions Artifact同步量化快照。12点邮件工作流通过Actions缓存读取前一日量化结果。
+`GitHub Actions → email_digest.py → 冻结weekly_plan.json → 邮件服务`
+
+邮件和网站都消费 `research_core.build_push_payload()` 的同一份 `weekly_plan`，不各自计算仓位或交易许可。`dispatched` 只说明工作流已触发，不等于收件箱已收到。
+
+需要的 Secrets：`MAIL_USERNAME`、`MAIL_PASSWORD`、`MAIL_TO`，以及推荐的 `ACCOUNT_STATE_JSON`。Render任务触发仍使用 `CRON_SECRET`、`GITHUB_ACTIONS_TOKEN`。
+
+## 数据与证据边界
+
+- 基本面四维评分来自东方财富已披露财务指标；最终周度候选额外读取资产负债率、货币资金、应收和存货。
+- 综合快讯用于风险词匹配，但未匹配不代表交易所公告已完整核验；页面保留该边界。
+- 外盘、商品和地缘事件只形成基准/利好/利空情景，必须由A股板块趋势和个股相对强度确认。
+- 止损价不是保证成交价；跳空、跌停、停牌和流动性不足可能扩大实际亏损。
+- 做T规则暂不自动计算；待后续启用持仓模块后再加入逐股资格判断。
 
 ## 验证
 
 ```bash
 python -m unittest discover -s tests -v
-python -m py_compile server.py research_core.py fundamental.py email_digest.py quant_data.py quant_factors.py quant_backtest.py quant_optimizer.py quant_pipeline.py quant_journal.py selection_model.py
+python -m py_compile server.py research_core.py weekly_strategy.py fundamental.py email_digest.py data_feed.py selection_model.py
 ```
 
-评分和回测仅用于研究，不构成投资建议，也不能提高未来收益的确定性。
+研究结果不构成收益承诺或个股买卖指令。

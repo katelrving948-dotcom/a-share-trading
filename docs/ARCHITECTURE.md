@@ -1,14 +1,33 @@
-# 三核系统架构
+# 周度趋势系统架构
 
-生产入口是 `python server.py`，网页为 `templates/index.html`。系统只包含推送中心、基本面评分和技术面量化三个产品模块。
+生产入口为 `python server.py`，网页为 `templates/index.html`。`research_core.py` 负责统一编排，`weekly_strategy.py` 是唯一的周度名单、账户仓位和持仓动作规则源；邮件与网页不得重复推导交易许可。
 
 | 模块 | 输入 | 输出 |
 | --- | --- | --- |
-| `fundamental.py` | 行情初筛池、已披露财务指标 | 基本面四维评分与风险说明 |
-| `quant_*.py` / `selection_model.py` | AkShare/Tushare日线OHLCV、上一期信号、午间候选快照 | 因子、滚动优化、样本外回测、次日验证、选股权重、每日优化日志、收盘信号 |
-| `research_core.py` | 外盘/事件、板块资金与成分、基本面快照、量化产物、上午分时 | 统一网页/邮件全链路结果与条件价位 |
-| `email_digest.py` | 统一推送载荷 | 纯文本/HTML午间邮件 |
-| `server.py` | 浏览器请求、受保护任务请求 | 三页网站及最小API |
+| `fundamental.py` | 行情初筛、已披露财务指标 | 四维基本面评分与证据日期 |
+| `data_feed.py` | 行情、K线、板块、外盘、新闻、财务与资产负债表API | 原始事实数据及来源状态 |
+| `weekly_strategy.py` | 账户级净值/周盈亏、日K、沪深300、板块、事件、基本面风险 | 风险档位、周趋势、目标仓位上限、固定名单 |
+| `research_core.py` | 基本面快照、市场研究、技术研究、周度模块 | 网站/邮件统一载荷 |
+| `email_digest.py` | 统一载荷 | 周度纯文本/HTML邮件并冻结计划 |
+| `quant_*.py` | OHLCV、历史研究快照 | 独立量化回测、次日验证和优化日志 |
+| `server.py` | 浏览器与受保护任务请求 | 网站、账户接口和任务调度 |
+
+## 状态文件
+
+- `output/research/account_state.json`：本地账户级状态；当前只使用净值和周盈亏，生产优先使用私密 `ACCOUNT_STATE_JSON`。
+- `output/research/weekly_plan.json`：当前周冻结名单。公开同步版本会移除逐笔持仓，只保留风险摘要。
+- `output/research/fundamental_latest.json`：基本面快照。
+- `output/research/selection_snapshot.json`：日度研究快照，仅供量化历史对照。
+
+## 关键不变量
+
+1. 同一ISO周内 `plan_id` 不变；新排行不能替换已冻结代码。
+2. 周内只允许撤销，只有预先列出的备选股可在主选撤销后启用。
+3. 本周回撤达到2%，或100股最小单位超过单股仓位/风险预算时，不允许新增风险。
+4. 日度研究状态最多显示“日度条件满足（非交易许可）”；只有周度名单可以显示“可执行”。
+5. 精确股数由单笔风险预算反推，邮件和网页只展示后端结果。
+6. 量化优化不自动改写实际周度权重或交易许可。
+7. 外部事件必须保留来源/时间/情景边界，不能直接断言A股方向。
 
 ## API
 
@@ -16,24 +35,18 @@
 - `GET /api/push/status`
 - `GET /api/push/preview`
 - `POST /api/push/run`
-- `POST /api/cron/daily-email`
+- `POST /api/cron/daily-email`（旧路径兼容，实际为周一计划）
 - `GET /api/cron/daily-email/status`
-- `GET /api/cron/wake`
+- `GET /api/account`
+- `POST /api/account`（需要CRON_SECRET）
 - `GET /api/fundamental`
-- `GET /api/fundamental/status`
 - `POST /api/fundamental/run`
 - `GET /api/technical`
-- `POST /api/technical/sync`
+- `POST /api/technical/sync`（需要CRON_SECRET）
 
-推送和量化Artifact同步接口需要 `Authorization: Bearer <CRON_SECRET>`。系统不存在券商、账户、持仓或订单接口；上午盘价位只是条件研究计划，不触发委托。
+## 失败关闭
 
-## 数据边界
-
-- 基本面评分只使用已披露财务指标，不使用技术面或AI补数。
-- 技术评分只使用OHLCV派生因子，T日排名从T+1收益开始验证；每日记录实绩后重新运行受约束滚动优化。
-- 滚动优化同时比较受约束的因子窗口与技术因子权重；每日先做上一期信号的次日验证，再记录本次最优参数、指标和变更。
-- 午间推送把基本面、技术面、板块强度和上午个股资金强度保存为时点快照；收盘任务用下一交易日收益验证，累计满20个验证日后才在受约束网格内优化四项权重。
-- 样本外年化、夏普、最大回撤或样本天数未过总闸门时，技术评分仍参与研究候选排序，但关闭进场许可，不清空好板块、龙头和候选内容。
-- 推送初始按基本面40%、量化40%、板块强度10%、上午个股资金强度10%排序，样本充足后读取最新优化权重；之后仍依次检查板块资金/效应、模型闸门和上午盘触发，不把排名直接解释为买点。
-- 外盘和地缘事件是情景输入，不直接替代A股资金确认。
-- `dispatched` 表示GitHub工作流已触发，不等于收件箱已收到。
+- K线不足、财务数据冲突或价格无效时，不生成可执行计划。
+- 资产负债表缺失时明确标注未核验，不伪造债务指标。
+- 当前不采集逐股持仓，输出股数仅表示目标仓位上限；执行前由用户自行核对实际总仓位。
+- 跳空和跌停风险只做压力说明，止损价不表述为最大可能损失。

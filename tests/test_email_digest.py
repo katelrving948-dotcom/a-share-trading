@@ -47,6 +47,33 @@ def payload(observations=None):
 
 
 class EmailDigestTest(unittest.TestCase):
+    def test_weekly_plan_and_account_gate_are_prominent(self):
+        data = payload()
+        data["account"] = {
+            "equity": 50000, "last_week_pnl": -3500, "last_week_return_pct": -7,
+            "can_open_new": True, "block_reasons": [],
+            "risk_profile": {"name": "恢复期", "max_total_pct": 0.3},
+        }
+        data["weekly_plan"] = {
+            "plan_id": "2026-W35", "selection_policy": "周内只撤销，不换排行",
+            "event_scenarios": [{"name": "基准情景", "summary": "等待A股确认", "triggers": ["板块趋势保持"]}],
+            "selections": [{
+                "role": "主选", "code": "000001", "name": "周度样本", "status": "可执行", "weekly_score": 82,
+                "weekly_trend": {"entry_zone": {"low": 10, "high": 10.2}, "max_chase_price": 10.5, "stop_price": 9.6, "take_profit": [{"price": 11}, {"price": 12}]},
+                "position_plan": {"quantity": 300, "estimated_value": 3030, "planned_loss": 180, "reasons": []},
+            }],
+            "holding_actions": [],
+        }
+        message = build_email(data)
+        plain = message.get_body(preferencelist=("plain",)).get_content()
+        html = message.get_body(preferencelist=("html",)).get_content()
+        self.assertIn("账户风险闸门", plain)
+        self.assertIn("本周固定名单", plain)
+        self.assertIn("000001 周度样本", plain)
+        self.assertIn("恢复期", html)
+        self.assertIn("国际事件三情景", html)
+        self.assertIn("目标上限", plain)
+
     def test_build_email_contains_only_score_observation(self):
         message = build_email(payload([{
             "rank": 1, "code": "000001", "name": "平安银行", "industry": "银行",

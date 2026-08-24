@@ -22,6 +22,15 @@ from data_feed import DataFeed
 from fundamental import FundamentalScorer
 from quant_factors import FACTOR_REGISTRY
 from selection_model import ACTIVE_SELECTION_WEIGHTS, DEFAULT_SELECTION_WEIGHTS, normalize_selection_weights, score_selection_components
+from weekly_strategy import (
+    WEEKLY_PLAN_FILE,
+    analyze_weekly_trend,
+    build_weekly_plan,
+    load_account_state,
+    load_weekly_plan,
+    save_weekly_plan,
+    score_weekly_candidate,
+)
 
 
 SHANGHAI = ZoneInfo("Asia/Shanghai")
@@ -100,6 +109,14 @@ def sync_public_snapshots(force: bool = False) -> None:
             remote_fundamental = json.loads(remote_fundamental_bytes.decode("utf-8"))
             if _generated_at(remote_fundamental) > _generated_at(_read_json(FUNDAMENTAL_FILE)):
                 _replace_bytes(FUNDAMENTAL_FILE, remote_fundamental_bytes)
+        except (OSError, ValueError, json.JSONDecodeError):
+            pass
+
+        try:
+            remote_weekly_bytes = _download_public("research/weekly_plan.json")
+            remote_weekly = json.loads(remote_weekly_bytes.decode("utf-8"))
+            if str(remote_weekly.get("plan_id") or "") > str(_read_json(WEEKLY_PLAN_FILE).get("plan_id") or ""):
+                _replace_bytes(WEEKLY_PLAN_FILE, remote_weekly_bytes)
         except (OSError, ValueError, json.JSONDecodeError):
             pass
 
@@ -365,6 +382,19 @@ def score_intersection(
             "growth_score": item.get("growth_score"),
             "valuation_score": item.get("valuation_score"),
             "cashflow_score": item.get("cashflow_score"),
+            "report_date": item.get("report_date"),
+            "notice_date": item.get("notice_date"),
+            "evidence": item.get("evidence"),
+            "fundamental_risk_note": item.get("risk"),
+            "data_source": item.get("data_source"),
+            "annualized_roe": item.get("annualized_roe"),
+            "revenue_growth": item.get("revenue_growth"),
+            "profit_growth": item.get("profit_growth"),
+            "gross_margin": item.get("gross_margin"),
+            "eps": item.get("eps"),
+            "operating_cf_per_share": item.get("operating_cf_per_share"),
+            "pe": item.get("pe"),
+            "pb": item.get("pb"),
             "momentum": factor.get("momentum"),
             "trend": factor.get("trend"),
             "volatility": factor.get("volatility"),
@@ -528,7 +558,7 @@ def build_trade_decision(item: dict) -> dict:
     if blocked or not (board_pass and fundamental_pass):
         status = "不交易"
     elif entry_pass:
-        status = "可执行观察"
+        status = "日度条件满足（非交易许可）"
     else:
         status = "等待确认"
     reasons = []
@@ -545,7 +575,7 @@ def build_trade_decision(item: dict) -> dict:
         "quant_gate": {"participates": False, "passed": True, "note": "量化因子仅独立优化和展示，不参与选股、排名或进场许可"},
         "entry_gate": {"passed": entry_pass, "state": state},
         "reasons": reasons,
-        "note": "量化因子仅独立优化和展示；实际选股按板块、基本面、上午资金与盘中触发判断，排名不是买入指令。",
+        "note": "该结论只描述旧日度研究条件，不构成交易许可；实际执行只看周度固定名单与账户风险闸门。",
     }
 
 
@@ -577,6 +607,59 @@ def _morning_fund_score(flow: dict) -> float:
         return 50.0
     net_pct = max(-10.0, min(10.0, float(flow["main_net_pct"])))
     return round(50.0 + net_pct * 5.0, 2)
+
+
+def _financial_risk_review(item: dict, balance: dict, news: list[dict]) -> dict:
+    """Review disclosed balance-sheet fields and explicitly retain evidence gaps."""
+    risks = []
+    warnings = []
+    hard_block = False
+    if balance.get("available"):
+        debt_ratio = float(balance.get("debt_asset_ratio") or 0)
+        liabilities = float(balance.get("total_liabilities") or 0)
+        cash = float(balance.get("monetary_funds") or 0)
+        assets = float(balance.get("total_assets") or 0)
+        receivable = float(balance.get("accounts_receivable") or 0)
+        inventory = float(balance.get("inventory") or 0)
+        if debt_ratio >= 80:
+            risks.append(f"资产负债率{debt_ratio:.1f}%达到硬风险线")
+            hard_block = True
+        elif debt_ratio >= 70:
+            warnings.append(f"资产负债率{debt_ratio:.1f}%偏高")
+        if liabilities > 0 and cash / liabilities < 0.10:
+            warnings.append("货币资金不足总负债10%")
+        if assets > 0 and (receivable + inventory) / assets > 0.50:
+            warnings.append("应收账款与存货合计超过总资产50%")
+    else:
+        warnings.append("资产负债表数据不可用，债务与营运资金风险未完成核验")
+
+    matched_news = []
+    name = str(item.get("name") or "")
+    code = str(item.get("code") or "")
+    risk_words = ("减持", "解禁", "立案", "处罚", "诉讼", "亏损", "下修", "退市", "质押")
+    hard_words = ("立案", "退市", "重大违法")
+    for row in news:
+        text = f"{row.get('title', '')}{row.get('summary', '')}"
+        if (name and name in text or code and code in text) and any(word in text for word in risk_words):
+            matched_news.append({
+                "title": row.get("title"),
+                "time": row.get("time"),
+                "source": row.get("source"),
+                "url": row.get("url"),
+            })
+            if any(word in text for word in hard_words):
+                hard_block = True
+                risks.append("直接相关新闻触发立案/退市类硬风险词")
+    if not matched_news:
+        warnings.append("综合快讯未匹配到直接风险，不等于交易所公告已完整核验")
+    return {
+        "hard_block": hard_block,
+        "risks": risks,
+        "warnings": warnings,
+        "balance_sheet": balance,
+        "matched_news": matched_news[:3],
+        "evidence_boundary": "财务指标和资产负债表来自东方财富已披露数据；减持、质押、解禁和监管事项仍需以交易所/公司公告复核。",
+    }
 
 
 SELECTION_COMPONENT_GETTERS = {
@@ -699,6 +782,7 @@ def build_market_research(
         item["pre_entry_score"] = score_selection_components(_selection_components(item), selection_weights)
     observations.sort(key=lambda item: item["pre_entry_score"], reverse=True)
     industry_limit = max(1, int(os.getenv("PUSH_INDUSTRY_LIMIT", "4")))
+    weekly_scan_limit = max(display_limit, int(os.getenv("WEEKLY_SCAN_LIMIT", "30")))
     selected, overflow, industry_counts = [], [], {}
     for item in observations:
         industry = str(item.get("selection_industry") or item.get("code"))
@@ -707,11 +791,55 @@ def build_market_research(
             continue
         selected.append(item)
         industry_counts[industry] = industry_counts.get(industry, 0) + 1
-        if len(selected) >= display_limit:
+        if len(selected) >= weekly_scan_limit:
             break
-    if len(selected) < display_limit:
-        selected.extend(overflow[:display_limit - len(selected)])
+    if len(selected) < weekly_scan_limit:
+        selected.extend(overflow[:weekly_scan_limit - len(selected)])
     observations[:] = selected
+
+    try:
+        benchmark = feed.get_kline("000300", count=120)
+    except Exception:
+        benchmark = pd.DataFrame()
+
+    def weekly_enrichment(item: dict) -> tuple[str, pd.DataFrame, dict]:
+        try:
+            kline = feed.get_kline(item["code"], count=120)
+        except Exception:
+            kline = pd.DataFrame()
+        try:
+            balance = feed.get_balance_sheet_data(item["code"])
+        except Exception as exc:
+            balance = {"available": False, "error": str(exc)}
+        return item["code"], kline, balance
+
+    weekly_enriched = {}
+    if observations:
+        with ThreadPoolExecutor(max_workers=min(6, len(observations))) as executor:
+            futures = [executor.submit(weekly_enrichment, item) for item in observations]
+            for future in as_completed(futures):
+                code, kline, balance = future.result()
+                weekly_enriched[code] = (kline, balance)
+    for item in observations:
+        kline, balance = weekly_enriched.get(item["code"], (pd.DataFrame(), {"available": False}))
+        item["weekly_trend"] = analyze_weekly_trend(kline, benchmark)
+        item["financial_risk"] = _financial_risk_review(item, balance, news)
+        item["fundamental_evidence"] = {
+            "report_date": item.get("report_date"),
+            "notice_date": item.get("notice_date"),
+            "source": item.get("data_source"),
+            "summary": item.get("evidence"),
+            "risk_note": item.get("fundamental_risk_note"),
+        }
+        item["weekly_evaluation"] = score_weekly_candidate(item)
+    observations.sort(
+        key=lambda item: (
+            bool((item.get("weekly_evaluation") or {}).get("eligible")),
+            float((item.get("weekly_evaluation") or {}).get("score") or 0),
+        ),
+        reverse=True,
+    )
+    observations[:] = observations[:display_limit]
 
     def intraday_enrichment(item: dict) -> tuple[str, dict, dict]:
         try:
@@ -829,13 +957,23 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
     )
     now = datetime.now(SHANGHAI)
     selection_weights = normalize_selection_weights(ACTIVE_SELECTION_WEIGHTS)
+    account = load_account_state(now=now)
+    weekly_plan = build_weekly_plan(
+        observations,
+        account,
+        market_research.get("external_market") or {},
+        now,
+        existing=load_weekly_plan(),
+    )
     return {
-        "subject": f"{now:%Y-%m-%d} A股分层观察日报（板块+个股+买点）",
+        "subject": f"{weekly_plan['plan_id']} A股周度趋势计划（固定名单+仓位+风控）",
         "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
-        "schedule": "工作日12:00",
-        "analysis_window": "前一交易日完整盘面 + 当日09:30-11:30上午盘",
-        "execution_window": "13:00-14:00复核使用",
+        "schedule": "每周一08:00",
+        "analysis_window": "上周完整行情 + 最新财报/资产负债表 + 周末外盘与事件",
+        "execution_window": "周一至周五固定名单；周中只允许撤销或降低风险",
         **market_research,
+        "account": account,
+        "weekly_plan": weekly_plan,
         "fundamental_summary": fundamental.get("summary", {}),
         "technical_summary": technical.get("summary", {}),
         "quant_model_gate": model_gate,
@@ -850,7 +988,8 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
             "selection_weights": selection_weights,
             "selection_weight_optimization": (technical.get("summary") or {}).get("selection_optimization", {}),
             "selection_formula": "综合分 = 行业校准基本面×66.67% + 板块强度×16.67% + 上午个股资金×16.67%；技术量化权重为0，仅独立研究",
-            "meaning": "外盘与事件只作情景输入；实际选股按板块资金→基本面→上午资金与盘中触发形成观察，不自动下单；量化因子仅独立优化展示",
+            "meaning": "每日综合分保留为研究池；实际执行改用周度固定名单、周线趋势、账户仓位和事件风险闸门；量化优化仍不自动参与交易许可",
+            "weekly_formula": "周度分 = 基本面40% + 中期趋势30% + 板块15% + 国际事件敏感度10% + 估值/拥挤度5%",
         },
     }
 
@@ -873,3 +1012,10 @@ def save_selection_snapshot(payload: dict, path: Path = SELECTION_SNAPSHOT_FILE)
     }
     save_json(path, snapshot)
     return snapshot
+
+
+def freeze_weekly_plan(payload: dict, path: Path = WEEKLY_PLAN_FILE) -> dict:
+    plan = payload.get("weekly_plan") or {}
+    if not plan.get("plan_id"):
+        raise ValueError("周度计划缺少plan_id，不能冻结")
+    return save_weekly_plan(plan, path)
