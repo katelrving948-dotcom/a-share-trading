@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import base64
 import hmac
 import json
 import mimetypes
@@ -16,9 +17,10 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from research_core import (
-    build_push_payload, load_fundamental, load_technical,
+    build_account_holding_actions, build_push_payload, load_fundamental, load_technical,
     refresh_fundamental, sync_latest_quant_artifact,
 )
+from account_vision import extract_account_screenshot
 from weekly_strategy import ACCOUNT_STATE_FILE, load_account_state, save_account_update
 
 
@@ -40,7 +42,7 @@ def _scheduled_push_allowed(now: datetime | None = None) -> bool:
     if os.getenv("CRON_WINDOW_BYPASS", "0") == "1":
         return True
     current = now or datetime.now(SHANGHAI)
-    return current.weekday() == 0 and 730 <= current.hour * 100 + current.minute <= 830
+    return current.weekday() < 5 and 730 <= current.hour * 100 + current.minute <= 830
 
 
 def _snapshot(target: dict) -> dict:
@@ -74,6 +76,67 @@ def _dispatch_daily_email_workflow(force: bool = False) -> None:
     with urlopen(request, timeout=30) as response:
         if response.status != 204:
             raise RuntimeError(f"GitHub Actions 返回 HTTP {response.status}")
+
+
+def _sync_account_state_secret() -> dict:
+    """Persist the private state for the next GitHub Actions email run."""
+    token = os.getenv("GITHUB_ACTIONS_TOKEN", "").strip()
+    if not token or os.getenv("ACCOUNT_SECRET_SYNC", "1") != "1":
+        return {"state": "local_only", "message": "未配置GitHub私密持久化；Render重启后需重新录入"}
+    repository = os.getenv("GITHUB_ACTIONS_REPOSITORY", "katelrving948-dotcom/a-share-trading").strip()
+    secret_name = os.getenv("ACCOUNT_STATE_SECRET_NAME", "ACCOUNT_STATE_JSON").strip()
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {token}",
+        "User-Agent": "a-share-research-hub",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    key_request = Request(
+        f"https://api.github.com/repos/{repository}/actions/secrets/public-key",
+        headers=headers,
+    )
+    with urlopen(key_request, timeout=30) as response:
+        key_data = json.loads(response.read().decode("utf-8"))
+    from nacl import encoding, public
+    public_key = public.PublicKey(key_data["key"].encode("utf-8"), encoding.Base64Encoder())
+    encrypted = public.SealedBox(public_key).encrypt(ACCOUNT_STATE_FILE.read_bytes())
+    update_request = Request(
+        f"https://api.github.com/repos/{repository}/actions/secrets/{secret_name}",
+        data=json.dumps({
+            "encrypted_value": base64.b64encode(encrypted).decode("ascii"),
+            "key_id": key_data["key_id"],
+        }).encode("utf-8"),
+        headers={**headers, "Content-Type": "application/json"},
+        method="PUT",
+    )
+    with urlopen(update_request, timeout=30) as response:
+        if response.status not in (201, 204):
+            raise RuntimeError(f"GitHub私密持久化返回 HTTP {response.status}")
+    return {"state": "synced", "message": "已写入GitHub加密Secret，将用于下一次邮件推送"}
+
+
+def _public_push_payload(payload: dict) -> dict:
+    public = json.loads(json.dumps(payload, ensure_ascii=False))
+    account = public.get("account") or {}
+    holdings = account.pop("holdings", [])
+    account["holdings_count"] = len(holdings)
+    for key in (
+        "equity", "available_cash", "last_week_pnl", "last_week_return_pct",
+        "current_week_pnl", "current_week_return_pct", "holdings_value",
+        "holdings_pct", "holdings_planned_risk", "updated_at", "source_as_of",
+    ):
+        account.pop(key, None)
+    weekly = public.get("weekly_plan") or {}
+    weekly["holding_actions"] = []
+    weekly_account = weekly.get("account") or {}
+    weekly_account.pop("holdings", None)
+    for key in (
+        "equity", "available_cash", "last_week_pnl", "last_week_return_pct",
+        "current_week_pnl", "current_week_return_pct", "holdings_value",
+        "holdings_pct", "holdings_planned_risk", "updated_at", "source_as_of",
+    ):
+        weekly_account.pop(key, None)
+    return public
 
 
 def _run_push_dispatch(force: bool = False) -> None:
@@ -145,7 +208,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             if path in ("/api/push/status", "/api/cron/daily-email/status"):
                 return self._json(self._push_status())
             if path == "/api/push/preview":
-                return self._json(build_push_payload(refresh=False))
+                return self._json(_public_push_payload(build_push_payload(refresh=False)))
             if path == "/api/fundamental":
                 payload = load_fundamental()
                 payload["task"] = _snapshot(_fundamental_state)
@@ -155,7 +218,17 @@ class ApiHandler(BaseHTTPRequestHandler):
             if path == "/api/technical":
                 return self._json(load_technical())
             if path == "/api/account":
+                if not self._authorized():
+                    return self._json({"error": "未授权"}, 401)
                 return self._json(load_account_state())
+            if path == "/api/account/analysis":
+                if not self._authorized():
+                    return self._json({"error": "未授权"}, 401)
+                account = load_account_state()
+                return self._json({
+                    "account": account,
+                    "holding_actions": build_account_holding_actions(account),
+                })
             if path == "/api/cron/wake":
                 self.send_response(204)
                 self.end_headers()
@@ -177,7 +250,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                         state="skipped",
                         completed_at=_now(),
                         error=None,
-                        reason="非周一07:30-08:30推送窗口，未提前生成或发送",
+                        reason="非工作日07:30-08:30推送窗口，未提前生成或发送",
                     )
                     self.send_response(204)
                     self.end_headers()
@@ -201,7 +274,17 @@ class ApiHandler(BaseHTTPRequestHandler):
             if path == "/api/account":
                 if not self._authorized():
                     return self._json({"error": "未授权"}, 401)
-                return self._json(save_account_update(body, ACCOUNT_STATE_FILE))
+                account = save_account_update(body, ACCOUNT_STATE_FILE)
+                try:
+                    persistence = _sync_account_state_secret()
+                except Exception as exc:
+                    persistence = {"state": "local_only", "message": f"本次已保存，但私密持久化失败：{exc}"}
+                account["persistence"] = persistence
+                return self._json(account)
+            if path == "/api/account/extract":
+                if not self._authorized():
+                    return self._json({"error": "未授权"}, 401)
+                return self._json(extract_account_screenshot(body.get("image_data_url") or ""))
             return self._json({"error": "接口不存在"}, 404)
         except (TypeError, ValueError, json.JSONDecodeError) as exc:
             return self._json({"error": str(exc)}, 400)
@@ -211,9 +294,9 @@ class ApiHandler(BaseHTTPRequestHandler):
     def _push_status(self) -> dict:
         state = _snapshot(_push_state)
         state.update({
-            "schedule": "每周一08:00 Asia/Shanghai",
-            "analysis_window": "上周完整行情 + 最新财报/资产负债表 + 周末外盘与事件",
-            "chain": ["周一触发", "Render受保护接口", "GitHub Actions", "周度固定计划", "邮件服务"],
+            "schedule": "工作日08:00 Asia/Shanghai（周计划周一生成，持仓建议每日刷新）",
+            "analysis_window": "最新可得收盘行情 + 已确认持仓 + 周度固定计划与事件风险",
+            "chain": ["工作日触发", "私密持仓", "最新收盘分析", "周度固定计划", "邮件服务"],
             "workflow_configured": bool(os.getenv("GITHUB_ACTIONS_TOKEN", "").strip()),
             "delivery_boundary": "dispatched只表示工作流已触发；收件箱是最终送达凭证",
         })
@@ -231,6 +314,8 @@ class ApiHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0") or 0)
         if not length:
             return {}
+        if length > 10_500_000:
+            raise ValueError("请求过大")
         return json.loads(self.rfile.read(length).decode("utf-8"))
 
     def _json(self, payload: dict, status: int = 200):

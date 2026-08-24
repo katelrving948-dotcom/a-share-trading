@@ -1,4 +1,4 @@
-name: Weekly trend and risk plan email
+name: Daily holding advice and weekly trend plan email
 
 on:
   workflow_dispatch:
@@ -9,11 +9,11 @@ on:
         type: boolean
         default: false
   schedule:
-    # GitHub Actions uses UTC: 00:00 UTC = 08:00 Asia/Shanghai on Monday.
-    - cron: "0 0 * * 1"
+    # GitHub Actions uses UTC: 00:00 UTC = 08:00 Asia/Shanghai on weekdays.
+    - cron: "0 0 * * 1-5"
 
 concurrency:
-  group: weekly-stock-email
+  group: daily-stock-email
   cancel-in-progress: false
 
 jobs:
@@ -51,7 +51,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .email-sent-marker
-          key: weekly-stock-email-${{ steps.beijing_date.outputs.date }}
+          key: daily-stock-email-${{ steps.beijing_date.outputs.date }}
 
       - uses: actions/setup-python@v5
         if: inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true'
@@ -103,4 +103,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .email-sent-marker
-          key: weekly-stock-email-${{ steps.beijing_date.outputs.date }}
+          key: daily-stock-email-${{ steps.beijing_date.outputs.date }}

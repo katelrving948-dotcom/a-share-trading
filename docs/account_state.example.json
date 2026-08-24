@@ -4,5 +4,18 @@
   "last_week_pnl": 0,
   "last_week_end": "YYYY-MM-DD",
   "current_week_pnl": 0,
-  "market_state": "普通"
+  "market_state": "普通",
+  "holdings_status": "已确认",
+  "source_as_of": "YYYY-MM-DD HH:MM",
+  "holdings": [
+    {
+      "code": "000001",
+      "name": "示例股票",
+      "quantity": 100,
+      "available_quantity": 100,
+      "cost_price": 10.0,
+      "current_price": 10.2,
+      "stop_price": null
+    }
+  ]
 }

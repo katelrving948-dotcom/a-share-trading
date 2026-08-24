@@ -103,6 +103,31 @@ class EmailDigestTest(unittest.TestCase):
         self.assertEqual(html.count('width="23%"'), 2)
         self.assertEqual(html.count('width="16%"'), 6)
 
+    def test_email_includes_confirmed_holding_action(self):
+        data = payload()
+        data["account"] = {
+            "equity": 50000, "can_open_new": True, "block_reasons": [],
+            "risk_profile": {"name": "普通", "max_total_pct": 0.6},
+        }
+        data["weekly_plan"] = {
+            "selection_policy": "周内只撤销",
+            "selections": [],
+            "event_scenarios": [],
+            "holding_actions": [{
+                "code": "000933", "name": "样本", "quantity": 400,
+                "available_quantity": 400, "cost_price": 25.9803,
+                "reference_price": 26.08, "pnl_pct": 0.38,
+                "action": "持有", "sell_quantity": 0,
+                "reason": "周度趋势保持", "stop_price": 24.8,
+            }],
+        }
+        message = build_email(data)
+        plain = message.get_body(preferencelist=("plain",)).get_content()
+        html = message.get_body(preferencelist=("html",)).get_content()
+        self.assertIn("次日持仓建议", plain)
+        self.assertIn("000933 样本", plain)
+        self.assertIn("周度趋势保持", html)
+
     def test_empty_intersection_is_explicit(self):
         message = build_email(payload())
         self.assertIn("今日没有股票达到基本面、板块和盘中条件", message.get_body(preferencelist=("plain",)).get_content())

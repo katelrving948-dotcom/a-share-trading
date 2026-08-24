@@ -25,7 +25,7 @@ python server.py
 
 ## 账户风险
 
-账户状态保存在已忽略的本地文件 `output/research/account_state.json`；字段模板见 `docs/account_state.example.json`。生产环境优先读取私密环境变量 `ACCOUNT_STATE_JSON`。当前阶段只保存净值和周盈亏，不要求逐股持仓。核心字段：
+账户状态保存在已忽略的本地文件 `output/research/account_state.json`；字段模板见 `docs/account_state.example.json`。网站支持手动填写持仓，或把券商截图发送至 OpenAI 图片识别接口（`store=false`）生成待确认草稿；网站不保存原图，识别结果必须人工确认后才能保存。生产邮件从私密 `ACCOUNT_STATE_JSON` 读取确认后的账户和逐股持仓。核心字段：
 
 ```json
 {
@@ -44,13 +44,13 @@ python server.py
 - 股数按 `floor[单笔风险预算 ÷ (买入中值 - 止损价) ÷ 100] × 100` 计算，并受单股、总仓和现金上限约束。
 - 计划股数是该股票的目标持仓上限，不是忽略现有仓位后的追加买入量；执行前需要自行确认账户总仓位不超过当前档位上限。
 
-账户接口：`GET /api/account`；使用 `Authorization: Bearer <CRON_SECRET>` 调用 `POST /api/account` 可更新净值和周盈亏。GitHub Actions/Render部署建议把账户级参数配置在私密 `ACCOUNT_STATE_JSON` 中。
+账户接口均需 `Authorization: Bearer <CRON_SECRET>`：`GET/POST /api/account` 读取或更新账户，`POST /api/account/extract` 识别截图草稿，`GET /api/account/analysis` 返回私密持仓和次日建议。公开 `/api/push/preview` 不返回资金、盈亏、成本、数量或持仓动作。截图识别需要 Render 私密环境变量 `OPENAI_API_KEY`；`OPENAI_VISION_MODEL` 默认 `gpt-4o-mini`。保存时会尝试用 `GITHUB_ACTIONS_TOKEN` 更新仓库加密 Secret `ACCOUNT_STATE_JSON`，供下一次邮件任务读取；令牌权限不足时页面会明确显示仅保存到当前 Render 实例。
 
-## 周一推送链路
+## 每日推送链路
 
-`.github/workflows/daily-stock-email.yml` 保留旧文件名以兼容现有调用，但计划改为每周一00:00 UTC（北京时间08:00）运行：
+`.github/workflows/daily-stock-email.yml` 在工作日00:00 UTC（北京时间08:00）运行。周度名单仍只在周一生成并于周内冻结；逐股持仓建议每天使用最新可得收盘数据刷新：
 
-`GitHub Actions → email_digest.py → 冻结weekly_plan.json → 邮件服务`
+`GitHub Actions → 私密持仓 → 最新收盘分析 → 冻结weekly_plan.json → 邮件服务`
 
 邮件和网站都消费 `research_core.build_push_payload()` 的同一份 `weekly_plan`，不各自计算仓位或交易许可。`dispatched` 只说明工作流已触发，不等于收件箱已收到。
 
@@ -62,7 +62,7 @@ python server.py
 - 综合快讯用于风险词匹配，但未匹配不代表交易所公告已完整核验；页面保留该边界。
 - 外盘、商品和地缘事件只形成基准/利好/利空情景，必须由A股板块趋势和个股相对强度确认。
 - 止损价不是保证成交价；跳空、跌停、停牌和流动性不足可能扩大实际亏损。
-- 做T规则暂不自动计算；待后续启用持仓模块后再加入逐股资格判断。
+- 做T默认关闭；只有已确认底仓、周趋势有效、未触发周熔断且已确认券商条件单时，才显示资格提示，系统仍不自动下单。
 
 ## 验证
 

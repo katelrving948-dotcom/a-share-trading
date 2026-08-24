@@ -55,6 +55,22 @@ class WeeklyStrategyTest(unittest.TestCase):
         self.assertEqual(account["block_reasons"], [])
         self.assertFalse(account["holdings_tracking_enabled"])
 
+    def test_confirmed_holding_keeps_private_position_fields(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "account.json"
+            path.write_text(
+                '{"equity":45682.77,"available_cash":35250.77,"holdings_status":"已确认",'
+                '"holdings":[{"code":"000933","name":"样本","quantity":400,'
+                '"available_quantity":300,"cost_price":25.9803,"current_price":26.08}]}',
+                encoding="utf-8",
+            )
+            with patch.dict("os.environ", {"ACCOUNT_STATE_JSON": ""}):
+                account = load_account_state(path, datetime(2026, 8, 24, 8, 0))
+        self.assertTrue(account["holdings_tracking_enabled"])
+        self.assertEqual(account["holdings"][0]["available_quantity"], 300)
+        self.assertEqual(account["holdings"][0]["cost_price"], 25.9803)
+        self.assertEqual(account["holdings_pct"], 22.84)
+
     def test_current_week_two_percent_loss_freezes_opening(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "account.json"
@@ -110,6 +126,13 @@ class WeeklyStrategyTest(unittest.TestCase):
         self.assertEqual(action["action"], "至少减仓50%")
         self.assertEqual(action["sell_quantity"], 300)
         self.assertFalse(action["t_eligible"])
+
+    def test_missing_market_data_never_creates_sell_instruction(self):
+        account = {"current_week_frozen": False, "broker_conditional_orders": "待确认"}
+        holding = {"code": "000933", "name": "样本", "quantity": 400, "available_quantity": 400, "cost_price": 25}
+        action = build_holding_action(holding, {"available": False, "qualified": False}, account)
+        self.assertEqual(action["action"], "等待行情复核")
+        self.assertEqual(action["sell_quantity"], 0)
 
     def test_saved_weekly_plan_does_not_publish_private_holdings(self):
         with tempfile.TemporaryDirectory() as directory:

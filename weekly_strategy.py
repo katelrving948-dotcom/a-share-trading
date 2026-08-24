@@ -39,6 +39,18 @@ def _read_json(path: Path) -> dict:
         return {}
 
 
+def _read_account_raw(path: Path) -> dict:
+    local = _read_json(path)
+    private_state = os.getenv("ACCOUNT_STATE_JSON", "").strip()
+    if not private_state:
+        return local
+    try:
+        baseline = json.loads(private_state)
+    except json.JSONDecodeError:
+        return {**local, "account_state_error": "ACCOUNT_STATE_JSON 格式无效"}
+    return {**(baseline if isinstance(baseline, dict) else {}), **local}
+
+
 def write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
@@ -60,19 +72,11 @@ def week_identity(now: datetime | date) -> dict:
 
 def load_account_state(path: Path = ACCOUNT_STATE_FILE, now: datetime | None = None) -> dict:
     current = now or datetime.now()
-    raw = _read_json(path)
-    private_state = os.getenv("ACCOUNT_STATE_JSON", "").strip()
-    if private_state:
-        try:
-            decoded = json.loads(private_state)
-            if isinstance(decoded, dict):
-                raw = decoded
-        except json.JSONDecodeError:
-            raw = {**raw, "account_state_error": "ACCOUNT_STATE_JSON 格式无效"}
+    # The environment is the durable baseline used by GitHub Actions. A newer
+    # website update in the local file wins until the web process restarts.
+    raw = _read_account_raw(path)
     equity = max(1.0, _number(raw.get("equity"), 50000.0))
-    # Per-stock holdings are intentionally outside the current stage. Ignore
-    # legacy/private holdings fields until that module is explicitly enabled.
-    holdings = []
+    holdings = raw.get("holdings") if isinstance(raw.get("holdings"), list) else []
     last_week_pnl = _number(raw.get("last_week_pnl"), 0.0)
     current_week_pnl = _number(raw.get("current_week_pnl"), 0.0)
     last_week_end = str(raw.get("last_week_end") or "")
@@ -106,6 +110,7 @@ def load_account_state(path: Path = ACCOUNT_STATE_FILE, now: datetime | None = N
         if not isinstance(holding, dict):
             continue
         quantity = max(0, int(_number(holding.get("quantity"))))
+        available_quantity = min(quantity, max(0, int(_number(holding.get("available_quantity"), quantity))))
         cost = max(0.0, _number(holding.get("cost_price")))
         current_price = max(0.0, _number(holding.get("current_price"), cost))
         stop_price = max(0.0, _number(holding.get("stop_price")))
@@ -117,8 +122,9 @@ def load_account_state(path: Path = ACCOUNT_STATE_FILE, now: datetime | None = N
             "code": str(holding.get("code") or "").zfill(6),
             "name": str(holding.get("name") or ""),
             "quantity": quantity,
-            "cost_price": round(cost, 2),
-            "current_price": round(current_price, 2),
+            "available_quantity": available_quantity,
+            "cost_price": round(cost, 4),
+            "current_price": round(current_price, 4),
             "stop_price": round(stop_price, 2) if stop_price else None,
             "market_value": market_value,
             "planned_risk": planned_risk,
@@ -138,11 +144,13 @@ def load_account_state(path: Path = ACCOUNT_STATE_FILE, now: datetime | None = N
         "last_week_end": last_week_end or None,
         "current_week_pnl": round(current_week_pnl, 2),
         "current_week_return_pct": round(current_week_pnl / equity * 100, 2),
-        "holdings_tracking_enabled": False,
+        "holdings_tracking_enabled": str(raw.get("holdings_status") or "") == "已确认",
+        "holdings_status": str(raw.get("holdings_status") or "待录入"),
         "holdings": normalized_holdings,
         "holdings_value": round(holdings_value, 2),
         "holdings_pct": round(holdings_value / equity * 100, 2),
         "holdings_planned_risk": round(holdings_risk, 2),
+        "source_as_of": raw.get("source_as_of"),
         "broker_conditional_orders": str(raw.get("broker_conditional_orders") or "待确认"),
         "risk_profile": profile,
         "recovery_week": recovery_week,
@@ -157,7 +165,7 @@ def validate_account_update(payload: dict, existing: dict | None = None) -> dict
     base = dict(existing or {})
     allowed = {
         "equity", "available_cash", "last_week_pnl", "last_week_end",
-        "current_week_pnl",
+        "current_week_pnl", "holdings_status", "holdings", "source_as_of",
         "broker_conditional_orders", "market_state",
     }
     for key in allowed:
@@ -166,13 +174,40 @@ def validate_account_update(payload: dict, existing: dict | None = None) -> dict
     equity = _number(base.get("equity"), 50000)
     if equity <= 0:
         raise ValueError("账户净值必须大于0")
+    holdings = base.get("holdings") or []
+    if not isinstance(holdings, list) or len(holdings) > 50:
+        raise ValueError("持仓必须是最多50项的列表")
+    normalized = []
+    for item in holdings:
+        if not isinstance(item, dict):
+            raise ValueError("持仓项目格式无效")
+        code = str(item.get("code") or "").strip()
+        if len(code) != 6 or not code.isdigit():
+            raise ValueError("股票代码必须是6位数字")
+        quantity = int(_number(item.get("quantity"), -1))
+        available = int(_number(item.get("available_quantity"), quantity))
+        cost = _number(item.get("cost_price"), -1)
+        if quantity < 0 or available < 0 or available > quantity or cost < 0:
+            raise ValueError(f"{code} 的股数、可卖数或成本价无效")
+        normalized.append({
+            "code": code,
+            "name": str(item.get("name") or "").strip(),
+            "quantity": quantity,
+            "available_quantity": available,
+            "cost_price": round(cost, 4),
+            "current_price": round(max(0.0, _number(item.get("current_price"), cost)), 4),
+            "stop_price": round(max(0.0, _number(item.get("stop_price"))), 4) or None,
+        })
+    base["holdings"] = normalized
+    if "holdings" in payload:
+        base["holdings_status"] = "已确认"
     base["equity"] = round(equity, 2)
     base["updated_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
     return base
 
 
 def save_account_update(payload: dict, path: Path = ACCOUNT_STATE_FILE) -> dict:
-    updated = validate_account_update(payload, _read_json(path))
+    updated = validate_account_update(payload, _read_account_raw(path))
     write_json(path, updated)
     return load_account_state(path)
 
@@ -324,11 +359,15 @@ def build_holding_action(holding: dict, trend: dict, account: dict) -> dict:
     cost = _number(holding.get("cost_price"))
     stop = _number(holding.get("stop_price"), _number(trend.get("stop_price")))
     quantity = max(0, int(_number(holding.get("quantity"))))
+    available_quantity = min(quantity, max(0, int(_number(holding.get("available_quantity"), quantity))))
     pnl_pct = (current / cost - 1) * 100 if cost > 0 else None
     action = "持有"
     reason = "周度趋势保持，按结构止损和分批止盈管理"
     sell_quantity = 0
-    if stop > 0 and current <= stop:
+    if trend.get("available") is False:
+        action = "等待行情复核"
+        reason = "最新日K不足或行情源暂不可用，本次不生成买卖数量"
+    elif stop > 0 and current <= stop:
         action = "清仓"
         reason = "最新价格已触及或跌破结构止损"
         sell_quantity = quantity
@@ -348,7 +387,7 @@ def build_holding_action(holding: dict, trend: dict, account: dict) -> dict:
         action = "止盈1/3"
         reason = "达到约1.5R，先锁定部分收益并评估抬高止损"
         sell_quantity = math.floor(quantity / 3 / 100) * 100
-    sell_quantity = min(quantity, max(0, sell_quantity))
+    sell_quantity = min(available_quantity, max(0, sell_quantity))
     t_eligible = bool(
         quantity >= 400
         and trend.get("qualified")
@@ -359,7 +398,8 @@ def build_holding_action(holding: dict, trend: dict, account: dict) -> dict:
         "code": holding.get("code"),
         "name": holding.get("name"),
         "quantity": quantity,
-        "cost_price": round(cost, 2),
+        "available_quantity": available_quantity,
+        "cost_price": round(cost, 4),
         "reference_price": round(current, 2),
         "pnl_pct": round(pnl_pct, 2) if pnl_pct is not None else None,
         "stop_price": round(stop, 2) if stop else None,

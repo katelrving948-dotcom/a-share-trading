@@ -25,6 +25,7 @@ from selection_model import ACTIVE_SELECTION_WEIGHTS, DEFAULT_SELECTION_WEIGHTS,
 from weekly_strategy import (
     WEEKLY_PLAN_FILE,
     analyze_weekly_trend,
+    build_holding_action,
     build_weekly_plan,
     load_account_state,
     load_weekly_plan,
@@ -942,6 +943,27 @@ def build_market_research(
     }
 
 
+def build_account_holding_actions(account: dict) -> list[dict]:
+    if not account.get("holdings_tracking_enabled") or not account.get("holdings"):
+        return []
+    holding_feed = DataFeed()
+    try:
+        benchmark = holding_feed.get_kline("000300", count=120)
+    except Exception:
+        benchmark = pd.DataFrame()
+
+    def analyze_holding(holding: dict) -> dict:
+        try:
+            kline = holding_feed.get_kline(str(holding.get("code") or ""), count=120)
+        except Exception:
+            kline = pd.DataFrame()
+        trend = analyze_weekly_trend(kline, benchmark)
+        return build_holding_action(holding, trend, account)
+
+    with ThreadPoolExecutor(max_workers=min(4, len(account["holdings"]))) as executor:
+        return list(executor.map(analyze_holding, account["holdings"]))
+
+
 def build_push_payload(refresh: bool = False, universe_limit: int | None = None) -> dict:
     fundamental = refresh_fundamental(universe_limit) if refresh else load_fundamental()
     technical = load_technical()
@@ -958,17 +980,19 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
     now = datetime.now(SHANGHAI)
     selection_weights = normalize_selection_weights(ACTIVE_SELECTION_WEIGHTS)
     account = load_account_state(now=now)
+    holding_actions = build_account_holding_actions(account)
     weekly_plan = build_weekly_plan(
         observations,
         account,
         market_research.get("external_market") or {},
         now,
         existing=load_weekly_plan(),
+        holding_actions=holding_actions,
     )
     return {
-        "subject": f"{weekly_plan['plan_id']} A股周度趋势计划（固定名单+仓位+风控）",
+        "subject": f"{weekly_plan['plan_id']} A股次日持仓建议与周度固定计划",
         "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
-        "schedule": "每周一08:00",
+        "schedule": "工作日08:00（周计划周一生成，持仓建议每日刷新）",
         "analysis_window": "上周完整行情 + 最新财报/资产负债表 + 周末外盘与事件",
         "execution_window": "周一至周五固定名单；周中只允许撤销或降低风险",
         **market_research,
