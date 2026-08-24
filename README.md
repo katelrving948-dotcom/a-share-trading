@@ -25,7 +25,7 @@ python server.py
 
 ## 账户风险
 
-账户状态保存在已忽略的本地文件 `output/research/account_state.json`；字段模板见 `docs/account_state.example.json`。网站支持手动填写持仓，或把券商截图发送至 OpenAI 图片识别接口（`store=false`）生成待确认草稿；网站不保存原图，识别结果必须人工确认后才能保存。生产邮件从私密 `ACCOUNT_STATE_JSON` 读取确认后的账户和逐股持仓。核心字段：
+账户状态保存在已忽略的本地文件 `output/research/account_state.json`；字段模板见 `docs/account_state.example.json`。网站支持手动填写持仓，或把券商截图发送至阿里云百炼通义千问视觉模型生成待确认草稿；网站不保存原图，识别结果必须人工确认后才能保存。生产邮件从私密 `ACCOUNT_STATE_JSON` 读取确认后的账户和逐股持仓。核心字段：
 
 ```json
 {
@@ -44,7 +44,7 @@ python server.py
 - 股数按 `floor[单笔风险预算 ÷ (买入中值 - 止损价) ÷ 100] × 100` 计算，并受单股、总仓和现金上限约束。
 - 计划股数是该股票的目标持仓上限，不是忽略现有仓位后的追加买入量；执行前需要自行确认账户总仓位不超过当前档位上限。
 
-账户接口均需 `Authorization: Bearer <CRON_SECRET>`：`GET/POST /api/account` 读取或更新账户，`POST /api/account/extract` 识别截图草稿，`GET /api/account/analysis` 返回私密持仓和次日建议。公开 `/api/push/preview` 不返回资金、盈亏、成本、数量或持仓动作。截图识别需要 Render 私密环境变量 `OPENAI_API_KEY`；`OPENAI_VISION_MODEL` 默认 `gpt-4o-mini`。保存时会尝试用 `GITHUB_ACTIONS_TOKEN` 更新仓库加密 Secret `ACCOUNT_STATE_JSON`，供下一次邮件任务读取；令牌权限不足时页面会明确显示仅保存到当前 Render 实例。
+账户接口均需 `Authorization: Bearer <CRON_SECRET>`：`GET/POST /api/account` 读取或更新账户，`POST /api/account/extract` 识别截图草稿，`GET /api/account/analysis` 返回私密持仓和次日建议。公开 `/api/push/preview` 不返回资金、盈亏、成本、数量或持仓动作。截图识别需要 Render 私密环境变量 `DASHSCOPE_API_KEY`；`DASHSCOPE_VISION_MODEL` 默认 `qwen3-vl-plus`，中国大陆默认接口为 `https://dashscope.aliyuncs.com/compatible-mode/v1`，使用业务空间专属地址时可通过 `DASHSCOPE_BASE_URL` 覆盖。保存时会尝试用 `GITHUB_ACTIONS_TOKEN` 更新仓库加密 Secret `ACCOUNT_STATE_JSON`，供下一次邮件任务读取；令牌权限不足时页面会明确显示仅保存到当前 Render 实例。
 
 ## 每日推送链路
 

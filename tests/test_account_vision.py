@@ -7,7 +7,10 @@ from account_vision import extract_account_screenshot
 
 class AccountVisionTest(unittest.TestCase):
     @patch("account_vision.urlopen")
-    @patch.dict("account_vision.os.environ", {"OPENAI_API_KEY": "test-key", "OPENAI_VISION_MODEL": "gpt-4o-mini"}, clear=True)
+    @patch.dict("account_vision.os.environ", {
+        "DASHSCOPE_API_KEY": "test-key",
+        "DASHSCOPE_VISION_MODEL": "qwen3-vl-plus",
+    }, clear=True)
     def test_screenshot_returns_unconfirmed_structured_draft(self, urlopen):
         model_output = {
             "equity": 45682.77,
@@ -23,7 +26,7 @@ class AccountVisionTest(unittest.TestCase):
         }
         response = MagicMock()
         response.read.return_value = json.dumps({
-            "output": [{"type": "message", "content": [{"type": "output_text", "text": json.dumps(model_output)}]}]
+            "choices": [{"message": {"content": json.dumps(model_output)}}]
         }).encode("utf-8")
         urlopen.return_value.__enter__.return_value = response
 
@@ -31,8 +34,20 @@ class AccountVisionTest(unittest.TestCase):
         request_payload = json.loads(urlopen.call_args.args[0].data.decode("utf-8"))
         self.assertFalse(draft["confirmed"])
         self.assertEqual(draft["holdings"][0]["code"], "000933")
-        self.assertFalse(request_payload["store"])
-        self.assertEqual(request_payload["text"]["format"]["type"], "json_schema")
+        self.assertEqual(draft["source"], "screenshot_bailian_draft")
+        self.assertEqual(request_payload["model"], "qwen3-vl-plus")
+        self.assertFalse(request_payload["enable_thinking"])
+        self.assertEqual(request_payload["response_format"]["type"], "json_schema")
+        request = urlopen.call_args.args[0]
+        self.assertEqual(
+            request.full_url,
+            "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+        )
+
+    @patch.dict("account_vision.os.environ", {}, clear=True)
+    def test_missing_dashscope_key_keeps_manual_entry_available(self):
+        with self.assertRaisesRegex(RuntimeError, "DASHSCOPE_API_KEY"):
+            extract_account_screenshot("data:image/jpeg;base64,YWJj")
 
 
 if __name__ == "__main__":

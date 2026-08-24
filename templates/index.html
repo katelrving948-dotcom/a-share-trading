@@ -53,7 +53,7 @@ main{padding:28px;max-width:1500px;width:100%;min-width:0;margin:auto}.page{disp
         <button class="secondary" id="holdingAdd">添加一只持仓</button>
         <button id="accountSave">确认并保存持仓</button>
       </div>
-      <p class="muted">点击识别后，截图会发送到 OpenAI 图片识别接口并以 store=false 处理，本网站不保存原图；结果只是草稿，必须核对代码、股数、可卖数和成本后再保存。姓名、账号和验证码请先遮挡。</p>
+      <p class="muted">点击识别后，截图会发送到阿里云百炼通义千问视觉模型，本网站不保存原图；结果只是草稿，必须核对代码、股数、可卖数和成本后再保存。姓名、账号和验证码请先遮挡。</p>
       <div id="accountDraftStatus" class="status">输入上方 CRON_SECRET 后，可读取、填写或上传截图。</div>
       <div id="holdingEditor"></div>
       <h2 style="margin-top:18px">次日持仓建议</h2><div id="holdingAdvice" class="status">保存持仓后读取分析。</div>

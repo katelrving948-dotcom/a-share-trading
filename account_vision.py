@@ -43,9 +43,9 @@ ACCOUNT_SCHEMA = {
 
 
 def extract_account_screenshot(image_data_url: str) -> dict:
-    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    api_key = os.getenv("DASHSCOPE_API_KEY", "").strip()
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY 未配置，暂不能识别截图；仍可手动填写持仓")
+        raise RuntimeError("DASHSCOPE_API_KEY 未配置，暂不能识别截图；仍可手动填写持仓")
     if not isinstance(image_data_url, str) or not image_data_url.startswith(
         ("data:image/jpeg;base64,", "data:image/png;base64,", "data:image/webp;base64,")
     ):
@@ -54,33 +54,38 @@ def extract_account_screenshot(image_data_url: str) -> dict:
         raise ValueError("截图过大，请压缩到约7MB以内")
 
     payload = {
-        "model": os.getenv("OPENAI_VISION_MODEL", "gpt-4o-mini"),
-        "store": False,
-        "input": [{
+        "model": os.getenv("DASHSCOPE_VISION_MODEL", "qwen3-vl-plus"),
+        "messages": [{
             "role": "user",
             "content": [
                 {
-                    "type": "input_text",
+                    "type": "text",
                     "text": (
                         "读取这张中国券商持仓截图，仅抄录清晰可见的数据。不要推测被遮挡账号，"
                         "不要计算或补全看不清的值。股票代码保留六位。界面若提示清算维护或数据不准确，"
                         "写入 screen_warning。每只股票给出识别置信度和需要人工复核的字段。"
+                        "严格按照指定 JSON 结构输出；无法识别的可空字段使用 null。"
                     ),
                 },
-                {"type": "input_image", "image_url": image_data_url, "detail": "high"},
+                {"type": "image_url", "image_url": {"url": image_data_url}},
             ],
         }],
-        "text": {
-            "format": {
-                "type": "json_schema",
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
                 "name": "broker_account_draft",
                 "strict": True,
                 "schema": ACCOUNT_SCHEMA,
-            }
+            },
         },
+        "enable_thinking": False,
     }
+    base_url = os.getenv(
+        "DASHSCOPE_BASE_URL",
+        "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    ).strip().rstrip("/")
     request = Request(
-        "https://api.openai.com/v1/responses",
+        f"{base_url}/chat/completions",
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         headers={
             "Authorization": f"Bearer {api_key}",
@@ -91,13 +96,11 @@ def extract_account_screenshot(image_data_url: str) -> dict:
     )
     with urlopen(request, timeout=90) as response:
         result = json.loads(response.read().decode("utf-8"))
-    for item in result.get("output") or []:
-        if item.get("type") != "message":
-            continue
-        for content in item.get("content") or []:
-            if content.get("type") == "output_text":
-                draft = json.loads(content.get("text") or "{}")
-                draft["source"] = "screenshot_ai_draft"
-                draft["confirmed"] = False
-                return draft
+    choices = result.get("choices") or []
+    if choices:
+        content = (choices[0].get("message") or {}).get("content") or ""
+        draft = json.loads(content)
+        draft["source"] = "screenshot_bailian_draft"
+        draft["confirmed"] = False
+        return draft
     raise RuntimeError("截图识别未返回可用字段，请改用手动填写")
