@@ -1,6 +1,8 @@
 import unittest
+from urllib.error import HTTPError
+from unittest.mock import patch
 
-from server import _public_push_payload
+from server import _public_push_payload, _sync_account_state_secret
 
 
 class AccountPrivacyTest(unittest.TestCase):
@@ -21,6 +23,15 @@ class AccountPrivacyTest(unittest.TestCase):
         self.assertNotIn("holdings", public["account"])
         self.assertEqual(public["weekly_plan"]["holding_actions"], [])
         self.assertNotIn("holdings", public["weekly_plan"]["account"])
+
+    @patch.dict("server.os.environ", {
+        "GITHUB_ACTIONS_TOKEN": "token-without-secret-permission",
+        "GITHUB_ACTIONS_REPOSITORY": "katelrving948-dotcom/a-share-trading",
+    }, clear=False)
+    @patch("server.urlopen", side_effect=HTTPError("url", 403, "Forbidden", {}, None))
+    def test_secret_sync_403_explains_required_permission(self, _urlopen):
+        with self.assertRaisesRegex(RuntimeError, "Secrets: Read and write"):
+            _sync_account_state_secret()
 
 
 if __name__ == "__main__":

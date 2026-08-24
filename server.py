@@ -12,6 +12,7 @@ import threading
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
@@ -95,8 +96,16 @@ def _sync_account_state_secret() -> dict:
         f"https://api.github.com/repos/{repository}/actions/secrets/public-key",
         headers=headers,
     )
-    with urlopen(key_request, timeout=30) as response:
-        key_data = json.loads(response.read().decode("utf-8"))
+    try:
+        with urlopen(key_request, timeout=30) as response:
+            key_data = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        if exc.code == 403:
+            raise RuntimeError(
+                "GITHUB_ACTIONS_TOKEN 无权读取仓库 Actions Secrets；"
+                "请为 a-share-trading 授予 Secrets: Read and write"
+            ) from exc
+        raise
     from nacl import encoding, public
     public_key = public.PublicKey(key_data["key"].encode("utf-8"), encoding.Base64Encoder())
     encrypted = public.SealedBox(public_key).encrypt(ACCOUNT_STATE_FILE.read_bytes())
@@ -109,9 +118,17 @@ def _sync_account_state_secret() -> dict:
         headers={**headers, "Content-Type": "application/json"},
         method="PUT",
     )
-    with urlopen(update_request, timeout=30) as response:
-        if response.status not in (201, 204):
-            raise RuntimeError(f"GitHub私密持久化返回 HTTP {response.status}")
+    try:
+        with urlopen(update_request, timeout=30) as response:
+            if response.status not in (201, 204):
+                raise RuntimeError(f"GitHub私密持久化返回 HTTP {response.status}")
+    except HTTPError as exc:
+        if exc.code == 403:
+            raise RuntimeError(
+                "GITHUB_ACTIONS_TOKEN 无权写入仓库 Actions Secrets；"
+                "请为 a-share-trading 授予 Secrets: Read and write"
+            ) from exc
+        raise
     return {"state": "synced", "message": "已写入GitHub加密Secret，将用于下一次邮件推送"}
 
 
