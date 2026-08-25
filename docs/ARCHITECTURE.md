@@ -35,7 +35,7 @@
 - `GET /api/push/status`
 - `GET /api/push/preview`
 - `POST /api/push/run`
-- `POST /api/cron/daily-email`（工作日次日持仓建议；周计划仅周一更新）
+- `POST /api/cron/daily-email`（工作日12:00合并上午行情与持仓建议；周计划仅周一更新）
 - `GET /api/cron/daily-email/status`
 - `GET /api/account`
 - `POST /api/account`（需要CRON_SECRET）

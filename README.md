@@ -17,7 +17,7 @@ python server.py
 
 ## 周度规则
 
-- 每周一08:00生成计划，周内使用同一 `plan_id`；名单只允许撤销，不因日度排行变化新增股票。
+- 每周一12:00生成计划，周内使用同一 `plan_id`；名单只允许撤销，不因日度排行变化新增股票。
 - 每周最多2只主选、1只备选；不满足条件时允许少于3只或空仓。
 - 周度分为基本面40%、中期趋势30%、板块15%、国际事件敏感度10%、估值/拥挤度5%。中期趋势直接使用日K/周结构和沪深300相对强度，不读取量化优化分数。
 - 价格明显偏离20日均线、20日涨幅过大、结构止损距离不在4%-7%、板块不足55分或财务硬风险时，不进入固定名单。
@@ -44,13 +44,13 @@ python server.py
 - 股数按 `floor[单笔风险预算 ÷ (买入中值 - 止损价) ÷ 100] × 100` 计算，并受单股、总仓和现金上限约束。
 - 计划股数是该股票的目标持仓上限，不是忽略现有仓位后的追加买入量；执行前需要自行确认账户总仓位不超过当前档位上限。
 
-账户接口均需 `Authorization: Bearer <CRON_SECRET>`：`GET/POST /api/account` 读取或更新账户，`POST /api/account/extract` 识别截图草稿，`GET /api/account/analysis` 返回私密持仓和次日建议。公开 `/api/push/preview` 不返回资金、盈亏、成本、数量或持仓动作。截图识别需要 Render 私密环境变量 `DASHSCOPE_API_KEY`；`DASHSCOPE_VISION_MODEL` 默认 `qwen3-vl-plus`，中国大陆默认接口为 `https://dashscope.aliyuncs.com/compatible-mode/v1`，使用业务空间专属地址时可通过 `DASHSCOPE_BASE_URL` 覆盖。保存时会尝试用 `GITHUB_ACTIONS_TOKEN` 更新仓库加密 Secret `ACCOUNT_STATE_JSON`，供下一次邮件任务读取；令牌权限不足时页面会明确显示仅保存到当前 Render 实例。
+账户接口均需 `Authorization: Bearer <CRON_SECRET>`：`GET/POST /api/account` 读取或更新账户，`POST /api/account/extract` 识别截图草稿，`GET /api/account/analysis` 返回私密持仓和午间建议。公开 `/api/push/preview` 不返回资金、盈亏、成本、数量或持仓动作。截图识别需要 Render 私密环境变量 `DASHSCOPE_API_KEY`；`DASHSCOPE_VISION_MODEL` 默认 `qwen3-vl-plus`，中国大陆默认接口为 `https://dashscope.aliyuncs.com/compatible-mode/v1`，使用业务空间专属地址时可通过 `DASHSCOPE_BASE_URL` 覆盖。保存时会尝试用 `GITHUB_ACTIONS_TOKEN` 更新仓库加密 Secret `ACCOUNT_STATE_JSON`，供下一次邮件任务读取；令牌权限不足时页面会明确显示仅保存到当前 Render 实例。
 
 ## 每日推送链路
 
-`.github/workflows/daily-stock-email.yml` 在工作日00:00 UTC（北京时间08:00）运行。周度名单仍只在周一生成并于周内冻结；逐股持仓建议每天使用最新可得收盘数据刷新：
+`.github/workflows/daily-stock-email.yml` 在工作日04:00 UTC（北京时间12:00）运行。任务先刷新前一交易日复盘和当日09:30-11:30上午行情，再读取已确认持仓；周度名单仍只在周一生成并于周内冻结：
 
-`GitHub Actions → 私密持仓 → 最新收盘分析 → 冻结weekly_plan.json → 邮件服务`
+`GitHub Actions → 前一交易日与上午行情研究 → 私密持仓分析 → 冻结weekly_plan.json → 一封合并邮件`
 
 邮件和网站都消费 `research_core.build_push_payload()` 的同一份 `weekly_plan`，不各自计算仓位或交易许可。`dispatched` 只说明工作流已触发，不等于收件箱已收到。
 

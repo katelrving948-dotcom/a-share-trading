@@ -124,7 +124,7 @@ class EmailDigestTest(unittest.TestCase):
         message = build_email(data)
         plain = message.get_body(preferencelist=("plain",)).get_content()
         html = message.get_body(preferencelist=("html",)).get_content()
-        self.assertIn("次日持仓建议", plain)
+        self.assertIn("午间持仓建议", plain)
         self.assertIn("000933 样本", plain)
         self.assertIn("周度趋势保持", html)
 

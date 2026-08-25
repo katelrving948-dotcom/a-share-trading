@@ -990,7 +990,7 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
         holding_actions=holding_actions,
     )
     return {
-        "subject": f"{weekly_plan['plan_id']} A股次日持仓建议与周度固定计划",
+        "subject": f"{weekly_plan['plan_id']} A股午间持仓建议与周度固定计划",
         "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
         "schedule": "工作日12:00（周计划周一生成，持仓建议每日刷新）",
         "analysis_window": "前一交易日复盘 + 当日09:30-11:30上午行情 + 已确认持仓",

@@ -204,7 +204,7 @@ def build_email(payload: dict) -> EmailMessage:
         f"总仓上限{_number((account.get('risk_profile') or {}).get('max_total_pct', 0) * 100, 0, '%')}；"
         f"是否允许开仓：{'是' if account.get('can_open_new') else '否'}。\n"
         + ("阻断原因：" + "；".join(account.get("block_reasons") or []) + "\n" if account.get("block_reasons") else "")
-        + "\n次日持仓建议（以最新可得收盘数据为准）\n"
+        + "\n午间持仓建议（结合前一交易日与当日上午行情）\n"
         + ("\n".join(holding_plain) if holding_plain else "尚未确认逐股持仓，或持仓行情数据不足。")
         + "\n本周固定名单\n"
         + ("\n".join(weekly_plain) if weekly_plain else "本周没有股票同时通过基本面、周趋势、板块、事件和风险预算，保持空仓。")
@@ -336,10 +336,10 @@ def build_email(payload: dict) -> EmailMessage:
               新开仓：{'允许' if account.get('can_open_new') else '禁止'}<br>
               {html.escape('；'.join(account.get('block_reasons') or []) or '账户风险闸门通过')}
             </div>
-            <h2 style="font-size:18px;margin-top:24px">次日持仓建议</h2>
+            <h2 style="font-size:18px;margin-top:24px">午间持仓建议</h2>
             <p style="color:#5e6b7d">使用你确认的持仓、最新可得收盘行情、周度趋势和账户风险生成；截图识别值必须先人工确认。</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:12px">
-              <thead><tr style="background:#edf2f8"><th style="padding:8px;text-align:left">持仓</th><th style="padding:8px;text-align:left">成本/行情</th><th style="padding:8px;text-align:left">次日动作</th></tr></thead>
+              <thead><tr style="background:#edf2f8"><th style="padding:8px;text-align:left">持仓</th><th style="padding:8px;text-align:left">成本/行情</th><th style="padding:8px;text-align:left">午后参考动作</th></tr></thead>
               <tbody>{holding_rows}</tbody>
             </table>
             <h2 style="font-size:18px;margin-top:24px">本周固定名单（周内只撤销，不换排行）</h2>
