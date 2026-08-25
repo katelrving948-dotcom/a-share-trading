@@ -43,7 +43,7 @@ def _scheduled_push_allowed(now: datetime | None = None) -> bool:
     if os.getenv("CRON_WINDOW_BYPASS", "0") == "1":
         return True
     current = now or datetime.now(SHANGHAI)
-    return current.weekday() < 5 and 730 <= current.hour * 100 + current.minute <= 830
+    return current.weekday() < 5 and 1150 <= current.hour * 100 + current.minute <= 1230
 
 
 def _snapshot(target: dict) -> dict:
@@ -267,7 +267,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                         state="skipped",
                         completed_at=_now(),
                         error=None,
-                        reason="非工作日07:30-08:30推送窗口，未提前生成或发送",
+                        reason="非工作日11:50-12:30推送窗口，未提前生成或发送",
                     )
                     self.send_response(204)
                     self.end_headers()
@@ -311,9 +311,9 @@ class ApiHandler(BaseHTTPRequestHandler):
     def _push_status(self) -> dict:
         state = _snapshot(_push_state)
         state.update({
-            "schedule": "工作日08:00 Asia/Shanghai（周计划周一生成，持仓建议每日刷新）",
-            "analysis_window": "最新可得收盘行情 + 已确认持仓 + 周度固定计划与事件风险",
-            "chain": ["工作日触发", "私密持仓", "最新收盘分析", "周度固定计划", "邮件服务"],
+            "schedule": "工作日12:00 Asia/Shanghai（周计划周一生成，持仓建议每日刷新）",
+            "analysis_window": "前一交易日复盘 + 当日09:30-11:30上午行情 + 已确认持仓",
+            "chain": ["12点触发", "上午行情研究", "私密持仓分析", "周度固定计划", "合并邮件"],
             "workflow_configured": bool(os.getenv("GITHUB_ACTIONS_TOKEN", "").strip()),
             "delivery_boundary": "dispatched只表示工作流已触发；收件箱是最终送达凭证",
         })

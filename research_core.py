@@ -992,9 +992,9 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
     return {
         "subject": f"{weekly_plan['plan_id']} A股次日持仓建议与周度固定计划",
         "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
-        "schedule": "工作日08:00（周计划周一生成，持仓建议每日刷新）",
-        "analysis_window": "上周完整行情 + 最新财报/资产负债表 + 周末外盘与事件",
-        "execution_window": "周一至周五固定名单；周中只允许撤销或降低风险",
+        "schedule": "工作日12:00（周计划周一生成，持仓建议每日刷新）",
+        "analysis_window": "前一交易日复盘 + 当日09:30-11:30上午行情 + 已确认持仓",
+        "execution_window": "用于当日13:00-14:00决策；周中只允许撤销或降低风险",
         **market_research,
         "account": account,
         "weekly_plan": weekly_plan,
