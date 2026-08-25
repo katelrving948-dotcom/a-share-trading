@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-24 17:31:28",
+  "updated_at": "2026-08-25 17:17:16",
   "entries": [
     {
       "generated_at": "2026-08-16 21:39:49",
@@ -842,6 +842,151 @@
         "minimum_days": 20,
         "grid_size": 0,
         "message": "已积累3个验证日，满20日后启用选股权重优化"
+      },
+      "guardrail": "技术因子只在预设参数网格内按滚动样本外结果选择；量化与后台权重试验均不写入实际选股；样本不足时保持研究默认值，单日验证不直接调参。"
+    },
+    {
+      "generated_at": "2026-08-25 17:17:16",
+      "validation": {
+        "status": "validated",
+        "signal_date": "2026-08-24",
+        "validation_date": "2026-08-25",
+        "signal_count": 20,
+        "validated_count": 16,
+        "positive_count": 6,
+        "hit_rate": 37.5,
+        "average_return": -0.804,
+        "median_return": -0.282,
+        "benchmark_return": 0.092,
+        "excess_return": -0.896,
+        "details": [
+          {
+            "code": "600941",
+            "return_pct": 1.134
+          },
+          {
+            "code": "000333",
+            "return_pct": 0.638
+          },
+          {
+            "code": "600028",
+            "return_pct": 0.282
+          },
+          {
+            "code": "000651",
+            "return_pct": 0.255
+          },
+          {
+            "code": "000001",
+            "return_pct": 0.199
+          },
+          {
+            "code": "601318",
+            "return_pct": 0.115
+          },
+          {
+            "code": "601658",
+            "return_pct": 0.0
+          },
+          {
+            "code": "600036",
+            "return_pct": -0.144
+          },
+          {
+            "code": "601998",
+            "return_pct": -0.421
+          },
+          {
+            "code": "600919",
+            "return_pct": -0.64
+          },
+          {
+            "code": "000983",
+            "return_pct": -0.95
+          },
+          {
+            "code": "601009",
+            "return_pct": -1.085
+          },
+          {
+            "code": "601919",
+            "return_pct": -1.362
+          },
+          {
+            "code": "601899",
+            "return_pct": -2.279
+          },
+          {
+            "code": "601233",
+            "return_pct": -3.0
+          },
+          {
+            "code": "603565",
+            "return_pct": -5.607
+          }
+        ],
+        "message": "已按T日收盘信号核验下一交易日收盘表现"
+      },
+      "parameter_changes": [
+        {
+          "part": "momentum_window",
+          "label": "动量计算窗口",
+          "meaning": "用最近多少个交易日计算价格动量",
+          "before": 60,
+          "after": 120
+        },
+        {
+          "part": "trend_window",
+          "label": "趋势均线窗口",
+          "meaning": "用多少个交易日的均线判断价格趋势",
+          "before": 120,
+          "after": 60
+        }
+      ],
+      "metric_changes": [
+        {
+          "metric": "annual_return",
+          "label": "样本外年化收益",
+          "meaning": "按样本外日收益折算的年化收益率",
+          "before": -1.3122,
+          "after": 27.2947,
+          "delta": 28.6069
+        },
+        {
+          "metric": "max_drawdown",
+          "label": "样本外最大回撤",
+          "meaning": "样本外净值从高点到低点的最大跌幅",
+          "before": -28.2141,
+          "after": -21.6554,
+          "delta": 6.5587
+        },
+        {
+          "metric": "sharpe_ratio",
+          "label": "样本外夏普比率",
+          "meaning": "样本外收益相对波动风险的比值",
+          "before": 0.0763,
+          "after": 1.1236,
+          "delta": 1.0473
+        }
+      ],
+      "actions": [
+        "重新运行45组参数的滚动训练与样本外回测",
+        "完成2026-08-24信号在2026-08-25的次日验证",
+        "调整2项参数",
+        "后台研究试验：已积累4个验证日，满20日后启用选股权重优化；结果不写入实际选股"
+      ],
+      "selection_optimization": {
+        "status": "accumulating",
+        "weights": {
+          "fundamental": 0.4,
+          "technical": 0.4,
+          "board": 0.1,
+          "morning_fund": 0.1
+        },
+        "validated_days": 4,
+        "minimum_days": 20,
+        "grid_size": 0,
+        "message": "已积累4个验证日，满20日后启用选股权重优化"
       },
       "guardrail": "技术因子只在预设参数网格内按滚动样本外结果选择；量化与后台权重试验均不写入实际选股；样本不足时保持研究默认值，单日验证不直接调参。"
     }
