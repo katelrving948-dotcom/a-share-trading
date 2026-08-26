@@ -2,7 +2,7 @@
   "plan_id": "2026-W35",
   "week_start": "2026-08-24",
   "week_end": "2026-08-28",
-  "generated_at": "2026-08-25 12:02:38",
+  "generated_at": "2026-08-26 12:02:16",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：道琼斯、NYMEX原油",
+      "summary": "相对偏强市场：道琼斯、标普500、纳斯达克100",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -39,7 +39,7 @@
     },
     {
       "name": "利空情景",
-      "summary": "相对偏弱市场：标普500、纳斯达克100、纳斯达克中国金龙",
+      "summary": "相对偏弱市场：NYMEX原油",
       "triggers": [
         "外部风险扩大",
         "A股相关板块破位或候选股相对强度转负"
@@ -61,29 +61,29 @@
       "industry": "工业金属",
       "role": "主选",
       "status": "撤销",
-      "weekly_score": 82.59,
+      "weekly_score": 85.83,
       "score_components": {
-        "fundamental": 81.6,
+        "fundamental": 83.42,
         "trend": 100.0,
-        "board": 70.0,
-        "external_event": 55.0,
-        "valuation_crowding": 78.9
+        "board": 89.0,
+        "external_event": 53.0,
+        "valuation_crowding": 76.28
       },
       "primary_board": {
-        "type": "概念",
-        "code": "BK0547",
-        "name": "黄金概念",
-        "change_pct": 1.19,
-        "main_net_inflow": 13.58,
-        "recent_main_net_inflow": null,
-        "positive_days": null,
-        "history_days": 0,
-        "flow_score": 74,
-        "external_score": 55,
+        "type": "行业",
+        "code": "BK1287",
+        "name": "工业金属",
+        "change_pct": 3.3,
+        "main_net_inflow": 69.02,
+        "recent_main_net_inflow": 13.2,
+        "positive_days": 3,
+        "history_days": 5,
+        "flow_score": 98,
+        "external_score": 53,
         "external_confidence": "低",
         "external_signal_count": 1,
         "external_reasons": [
-          "COMEX黄金+0.79%"
+          "COMEX铜+0.55%"
         ],
         "leaders": [
           {
@@ -91,35 +91,35 @@
             "name": "洛阳钼业",
             "role": "龙头",
             "board_rank": 1,
-            "leadership_score": 85,
-            "price": 18.99,
-            "change_pct": 1.99,
-            "market_cap": 4062.78,
-            "amount": 5725236368.0,
-            "main_net": 2.48,
-            "main_net_pct": 4.33
+            "leadership_score": 97,
+            "price": 19.92,
+            "change_pct": 8.14,
+            "market_cap": 4261.75,
+            "amount": 6958814271.0,
+            "main_net": 20.8,
+            "main_net_pct": 29.9
           },
           {
-            "code": "601899",
-            "name": "紫金矿业",
+            "code": "600362",
+            "name": "江西铜业",
             "role": "次龙头",
             "board_rank": 2,
-            "leadership_score": 84,
-            "price": 34.54,
-            "change_pct": -0.58,
-            "market_cap": 9184.43,
-            "amount": 11751472253.0,
-            "main_net": -1.11,
-            "main_net_pct": -0.95
+            "leadership_score": 97,
+            "price": 48.57,
+            "change_pct": 10.01,
+            "market_cap": 1681.85,
+            "amount": 3603358546.0,
+            "main_net": 9.66,
+            "main_net_pct": 26.82
           }
         ],
-        "rotation_score": 70,
-        "rise_count": null,
-        "fall_count": null,
+        "rotation_score": 89,
+        "rise_count": 0,
+        "fall_count": 603993,
         "effect": "资金流入且上涨扩散，板块效应较强",
         "rank": 1
       },
-      "fundamental_score": 81.6,
+      "fundamental_score": 83.42,
       "fundamental_evidence": {
         "report_date": "2026-06-30",
         "notice_date": "2026-07-30",
@@ -152,18 +152,18 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-08-24",
-        "qualified": true,
+        "as_of": "2026-08-26",
+        "qualified": false,
         "trend_score": 100.0,
-        "close": 11.87,
-        "ma20": 11.52,
-        "ma60": 11.41,
-        "atr": 0.636,
-        "atr_pct": 5.36,
-        "return_20_pct": 10.73,
-        "benchmark_return_20_pct": -2.96,
-        "relative_strength_pct": 13.69,
-        "extension_pct": 3.03,
+        "close": 12.08,
+        "ma20": 11.63,
+        "ma60": 11.39,
+        "atr": 0.642,
+        "atr_pct": 5.32,
+        "return_20_pct": 12.48,
+        "benchmark_return_20_pct": 0.01,
+        "relative_strength_pct": 12.47,
+        "extension_pct": 3.85,
         "overextended": false,
         "checks": {
           "above_ma20": true,
@@ -172,48 +172,52 @@
           "relative_strength_positive": true
         },
         "entry_zone": {
-          "low": 11.55,
-          "high": 11.87
+          "low": 11.76,
+          "high": 12.08
         },
-        "max_chase_price": 12.19,
-        "stop_price": 11.23,
-        "stop_distance_pct": 4.08,
+        "max_chase_price": 12.4,
+        "stop_price": 11.02,
+        "stop_distance_pct": 7.53,
         "take_profit": [
           {
             "name": "第一止盈",
-            "price": 12.43,
+            "price": 13.27,
             "sell_fraction": "1/3",
             "risk_reward": 1.5
           },
           {
             "name": "第二止盈",
-            "price": 12.91,
+            "price": 14.16,
             "sell_fraction": "1/3",
             "risk_reward": 2.5
           }
         ],
         "time_stop": "5个交易日未出现相对强势，减仓或退出",
         "trailing_rule": "剩余仓位按10日线、前低或周线结构跟踪；止损不得下移",
-        "reasons": []
+        "reasons": [
+          "结构止损距离7.5%不在4%-7%范围"
+        ]
       },
       "position_plan": {
-        "quantity": 600,
-        "estimated_value": 7026.0,
-        "position_pct": 15.38,
-        "planned_loss": 288.0,
+        "quantity": 300,
+        "estimated_value": 3576.0,
+        "position_pct": 7.83,
+        "planned_loss": 270.0,
         "risk_budget": 300.0,
-        "per_share_risk": 0.48,
-        "executable": true,
-        "reasons": [],
+        "per_share_risk": 0.9,
+        "executable": false,
+        "reasons": [
+          "结构止损距离7.5%不在4%-7%范围"
+        ],
         "formula": "向下取整[单笔风险预算÷(计划买入中值-止损价)÷100]×100，并受单股、总仓和可用现金上限约束"
       },
       "invalidation": [
+        "结构止损距离7.5%不在4%-7%范围",
         "跌破结构止损",
         "板块趋势或相对强度转弱",
         "重大公告或国际事件破坏核心逻辑"
       ],
-      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作",
-      "withdraw_reason": "本周更新中已无法取得候选数据或硬性资格失效"
+      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作"
     }
   ],
   "active_count": 0,
