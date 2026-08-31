@@ -1,8 +1,8 @@
 {
-  "plan_id": "2026-W35",
-  "week_start": "2026-08-24",
-  "week_end": "2026-08-28",
-  "generated_at": "2026-08-30 12:02:31",
+  "plan_id": "2026-W36",
+  "week_start": "2026-08-31",
+  "week_end": "2026-09-04",
+  "generated_at": "2026-08-31 12:02:24",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：纳斯达克中国金龙、恒生指数",
+      "summary": "相对偏强市场：纳斯达克中国金龙、NYMEX原油",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -56,73 +56,73 @@
   },
   "selections": [
     {
-      "code": "600711",
-      "name": "盛屯矿业",
-      "industry": "工业金属",
+      "code": "002602",
+      "name": "世纪华通",
+      "industry": "传媒",
       "role": "主选",
-      "status": "撤销",
-      "weekly_score": 80.81,
+      "status": "可执行",
+      "weekly_score": 86.73,
       "score_components": {
-        "fundamental": 74.93,
-        "trend": 100.0,
-        "board": 78.0,
+        "fundamental": 93.7,
+        "trend": 83.07,
+        "board": 100.0,
         "external_event": 50.0,
-        "valuation_crowding": 82.68
+        "valuation_crowding": 86.68
       },
       "primary_board": {
         "type": "概念",
-        "code": "BK1680",
-        "name": "2026一季报预增",
-        "change_pct": 0.36,
-        "main_net_inflow": 18.05,
-        "recent_main_net_inflow": 29.8,
-        "positive_days": 3,
+        "code": "BK1111",
+        "name": "AIGC概念",
+        "change_pct": 2.48,
+        "main_net_inflow": 23.29,
+        "recent_main_net_inflow": 36.88,
+        "positive_days": 4,
         "history_days": 5,
-        "flow_score": 78,
+        "flow_score": 100,
         "external_score": 50,
         "external_confidence": "低",
         "external_signal_count": 0,
         "external_reasons": [],
         "leaders": [
           {
-            "code": "300475",
-            "name": "香农芯创",
+            "code": "300857",
+            "name": "协创数据",
             "role": "龙头",
             "board_rank": 1,
-            "leadership_score": 87,
-            "price": 172.1,
-            "change_pct": 4.09,
-            "market_cap": 808.08,
-            "amount": 7438527428.55,
-            "main_net": 5.69,
-            "main_net_pct": 7.65
+            "leadership_score": 93,
+            "price": 261.98,
+            "change_pct": 3.19,
+            "market_cap": 1282.03,
+            "amount": 3267755419.85,
+            "main_net": 4.41,
+            "main_net_pct": 13.51
           },
           {
-            "code": "002463",
-            "name": "沪电股份",
+            "code": "300364",
+            "name": "中文在线",
             "role": "次龙头",
             "board_rank": 2,
-            "leadership_score": 86,
-            "price": 121.7,
-            "change_pct": -0.26,
-            "market_cap": 2341.95,
-            "amount": 7336668585.52,
-            "main_net": 3.83,
-            "main_net_pct": 5.22
+            "leadership_score": 93,
+            "price": 25.87,
+            "change_pct": 13.81,
+            "market_cap": 188.46,
+            "amount": 2612257878.15,
+            "main_net": 5.65,
+            "main_net_pct": 21.63
           }
         ],
-        "rotation_score": 78,
+        "rotation_score": 100,
         "rise_count": null,
         "fall_count": null,
         "effect": "资金流入且上涨扩散，板块效应较强",
-        "rank": 11
+        "rank": 1
       },
-      "fundamental_score": 74.93,
+      "fundamental_score": 93.7,
       "fundamental_evidence": {
         "report_date": "2026-06-30",
-        "notice_date": "2026-07-30",
+        "notice_date": "2026-08-28",
         "source": "东方财富财务指标 API",
-        "summary": "2026-06-30财务指标，公告/更新日2026-07-30；来源：东方财富财务指标 API；新闻未计分",
+        "summary": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
         "risk_note": "未触发财务量化警示，仍需核验公告"
       },
       "financial_risk": {
@@ -132,36 +132,36 @@
           "综合快讯未匹配到直接风险，不等于交易所公告已完整核验"
         ],
         "balance_sheet": {
-          "code": "600711",
+          "code": "002602",
           "available": true,
           "data_source": "东方财富资产负债表 API",
           "report_date": "2026-06-30",
-          "notice_date": "2026-07-30",
-          "debt_asset_ratio": 61.69,
-          "current_ratio": 117.38,
-          "total_assets": 505.81,
-          "total_liabilities": 312.06,
-          "monetary_funds": 85.15,
-          "accounts_receivable": 22.43,
-          "inventory": 117.76
+          "notice_date": "2026-08-28",
+          "debt_asset_ratio": 26.27,
+          "current_ratio": 217.55,
+          "total_assets": 472.24,
+          "total_liabilities": 124.05,
+          "monetary_funds": 130.38,
+          "accounts_receivable": 37.11,
+          "inventory": 7.81
         },
         "matched_news": [],
         "evidence_boundary": "财务指标和资产负债表来自东方财富已披露数据；减持、质押、解禁和监管事项仍需以交易所/公司公告复核。"
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-08-28",
-        "qualified": false,
-        "trend_score": 100.0,
-        "close": 12.0,
-        "ma20": 11.78,
-        "ma60": 11.37,
-        "atr": 0.578,
-        "atr_pct": 4.82,
-        "return_20_pct": 12.78,
-        "benchmark_return_20_pct": 0.46,
-        "relative_strength_pct": 12.32,
-        "extension_pct": 1.85,
+        "as_of": "2026-08-31",
+        "qualified": true,
+        "trend_score": 83.07,
+        "close": 14.12,
+        "ma20": 14.04,
+        "ma60": 13.76,
+        "atr": 0.469,
+        "atr_pct": 3.32,
+        "return_20_pct": 2.17,
+        "benchmark_return_20_pct": 0.64,
+        "relative_strength_pct": 1.54,
+        "extension_pct": 0.6,
         "overextended": false,
         "checks": {
           "above_ma20": true,
@@ -170,47 +170,42 @@
           "relative_strength_positive": true
         },
         "entry_zone": {
-          "low": 11.78,
-          "high": 12.0
+          "low": 14.04,
+          "high": 14.12
         },
-        "max_chase_price": 12.29,
-        "stop_price": 11.03,
-        "stop_distance_pct": 7.2,
+        "max_chase_price": 14.35,
+        "stop_price": 13.42,
+        "stop_distance_pct": 4.7,
         "take_profit": [
           {
             "name": "第一止盈",
-            "price": 13.18,
+            "price": 15.07,
             "sell_fraction": "1/3",
             "risk_reward": 1.5
           },
           {
             "name": "第二止盈",
-            "price": 14.03,
+            "price": 15.73,
             "sell_fraction": "1/3",
             "risk_reward": 2.5
           }
         ],
         "time_stop": "5个交易日未出现相对强势，减仓或退出",
         "trailing_rule": "剩余仓位按10日线、前低或周线结构跟踪；止损不得下移",
-        "reasons": [
-          "结构止损距离7.2%不在4%-7%范围"
-        ]
+        "reasons": []
       },
       "position_plan": {
-        "quantity": 300,
-        "estimated_value": 3567.0,
-        "position_pct": 7.81,
-        "planned_loss": 258.0,
+        "quantity": 400,
+        "estimated_value": 5632.0,
+        "position_pct": 12.33,
+        "planned_loss": 264.0,
         "risk_budget": 300.0,
-        "per_share_risk": 0.86,
-        "executable": false,
-        "reasons": [
-          "结构止损距离7.2%不在4%-7%范围"
-        ],
+        "per_share_risk": 0.66,
+        "executable": true,
+        "reasons": [],
         "formula": "向下取整[单笔风险预算÷(计划买入中值-止损价)÷100]×100，并受单股、总仓和可用现金上限约束"
       },
       "invalidation": [
-        "结构止损距离7.2%不在4%-7%范围",
         "跌破结构止损",
         "板块趋势或相对强度转弱",
         "重大公告或国际事件破坏核心逻辑"
@@ -218,6 +213,6 @@
       "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作"
     }
   ],
-  "active_count": 0,
+  "active_count": 1,
   "execution_note": "研究池和周度候选均不是自动买入指令；股数是单股目标上限，不代表在未知现有仓位下追加买入。只有账户级亏损、趋势、价格和事件闸门同时通过才可执行。"
 }
