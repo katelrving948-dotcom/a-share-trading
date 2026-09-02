@@ -2,7 +2,7 @@
   "plan_id": "2026-W36",
   "week_start": "2026-08-31",
   "week_end": "2026-09-04",
-  "generated_at": "2026-09-01 12:02:29",
+  "generated_at": "2026-09-02 12:02:16",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：NYMEX原油、COMEX黄金、COMEX铜",
+      "summary": "相对偏强市场：NYMEX原油",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -58,65 +58,18 @@
     {
       "code": "002602",
       "name": "世纪华通",
-      "industry": "传媒",
+      "industry": "游戏Ⅱ",
       "role": "主选",
       "status": "撤销",
-      "weekly_score": 86.73,
+      "weekly_score": 72.08,
       "score_components": {
         "fundamental": 93.7,
-        "trend": 83.07,
-        "board": 100.0,
+        "trend": 84.19,
+        "board": 0.0,
         "external_event": 50.0,
-        "valuation_crowding": 86.68
+        "valuation_crowding": 86.81
       },
-      "primary_board": {
-        "type": "概念",
-        "code": "BK1111",
-        "name": "AIGC概念",
-        "change_pct": 2.48,
-        "main_net_inflow": 23.29,
-        "recent_main_net_inflow": 36.88,
-        "positive_days": 4,
-        "history_days": 5,
-        "flow_score": 100,
-        "external_score": 50,
-        "external_confidence": "低",
-        "external_signal_count": 0,
-        "external_reasons": [],
-        "leaders": [
-          {
-            "code": "300857",
-            "name": "协创数据",
-            "role": "龙头",
-            "board_rank": 1,
-            "leadership_score": 93,
-            "price": 261.98,
-            "change_pct": 3.19,
-            "market_cap": 1282.03,
-            "amount": 3267755419.85,
-            "main_net": 4.41,
-            "main_net_pct": 13.51
-          },
-          {
-            "code": "300364",
-            "name": "中文在线",
-            "role": "次龙头",
-            "board_rank": 2,
-            "leadership_score": 93,
-            "price": 25.87,
-            "change_pct": 13.81,
-            "market_cap": 188.46,
-            "amount": 2612257878.15,
-            "main_net": 5.65,
-            "main_net_pct": 21.63
-          }
-        ],
-        "rotation_score": 100,
-        "rise_count": null,
-        "fall_count": null,
-        "effect": "资金流入且上涨扩散，板块效应较强",
-        "rank": 1
-      },
+      "primary_board": null,
       "fundamental_score": 93.7,
       "fundamental_evidence": {
         "report_date": "2026-06-30",
@@ -150,18 +103,18 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-08-31",
+        "as_of": "2026-09-02",
         "qualified": true,
-        "trend_score": 83.07,
-        "close": 14.12,
-        "ma20": 14.04,
-        "ma60": 13.76,
-        "atr": 0.469,
-        "atr_pct": 3.32,
-        "return_20_pct": 2.17,
-        "benchmark_return_20_pct": 0.64,
-        "relative_strength_pct": 1.54,
-        "extension_pct": 0.6,
+        "trend_score": 84.19,
+        "close": 14.1,
+        "ma20": 14.02,
+        "ma60": 13.74,
+        "atr": 0.485,
+        "atr_pct": 3.44,
+        "return_20_pct": -0.14,
+        "benchmark_return_20_pct": -2.24,
+        "relative_strength_pct": 2.09,
+        "extension_pct": 0.56,
         "overextended": false,
         "checks": {
           "above_ma20": true,
@@ -170,22 +123,22 @@
           "relative_strength_positive": true
         },
         "entry_zone": {
-          "low": 14.04,
-          "high": 14.12
+          "low": 14.02,
+          "high": 14.1
         },
-        "max_chase_price": 14.35,
-        "stop_price": 13.42,
-        "stop_distance_pct": 4.7,
+        "max_chase_price": 14.34,
+        "stop_price": 13.41,
+        "stop_distance_pct": 4.61,
         "take_profit": [
           {
             "name": "第一止盈",
-            "price": 15.07,
+            "price": 15.03,
             "sell_fraction": "1/3",
             "risk_reward": 1.5
           },
           {
             "name": "第二止盈",
-            "price": 15.73,
+            "price": 15.68,
             "sell_fraction": "1/3",
             "risk_reward": 2.5
           }
@@ -196,22 +149,22 @@
       },
       "position_plan": {
         "quantity": 400,
-        "estimated_value": 5632.0,
-        "position_pct": 12.33,
-        "planned_loss": 264.0,
+        "estimated_value": 5624.0,
+        "position_pct": 12.31,
+        "planned_loss": 260.0,
         "risk_budget": 300.0,
-        "per_share_risk": 0.66,
+        "per_share_risk": 0.65,
         "executable": true,
         "reasons": [],
         "formula": "向下取整[单笔风险预算÷(计划买入中值-止损价)÷100]×100，并受单股、总仓和可用现金上限约束"
       },
       "invalidation": [
+        "板块周度确认不足55分",
         "跌破结构止损",
         "板块趋势或相对强度转弱",
         "重大公告或国际事件破坏核心逻辑"
       ],
-      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作",
-      "withdraw_reason": "本周更新中已无法取得候选数据或硬性资格失效"
+      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作"
     }
   ],
   "active_count": 0,
