@@ -2,7 +2,7 @@
   "plan_id": "2026-W36",
   "week_start": "2026-08-31",
   "week_end": "2026-09-04",
-  "generated_at": "2026-09-05 12:02:23",
+  "generated_at": "2026-09-06 12:01:58",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -61,57 +61,57 @@
       "industry": "传媒",
       "role": "主选",
       "status": "撤销",
-      "weekly_score": 71.73,
+      "weekly_score": 71.18,
       "score_components": {
         "fundamental": 62.3,
         "trend": 80.0,
-        "board": 100.0,
+        "board": 99.0,
         "external_event": 50.0,
-        "valuation_crowding": 56.25
+        "valuation_crowding": 48.12
       },
       "primary_board": {
         "type": "概念",
         "code": "BK1629",
         "name": "AI应用",
-        "change_pct": 2.51,
-        "main_net_inflow": 96.19,
-        "recent_main_net_inflow": 2.64,
+        "change_pct": 1.02,
+        "main_net_inflow": 85.55,
+        "recent_main_net_inflow": 55.24,
         "positive_days": 3,
         "history_days": 5,
-        "flow_score": 100,
+        "flow_score": 99,
         "external_score": 50,
         "external_confidence": "低",
         "external_signal_count": 0,
         "external_reasons": [],
         "leaders": [
           {
-            "code": "300058",
-            "name": "蓝色光标",
-            "role": "龙头",
-            "board_rank": 1,
-            "leadership_score": 96,
-            "price": 14.18,
-            "change_pct": 7.51,
-            "market_cap": 509.09,
-            "amount": 6960904055.1,
-            "main_net": 9.95,
-            "main_net_pct": 14.3
-          },
-          {
             "code": "301171",
             "name": "易点天下",
+            "role": "龙头",
+            "board_rank": 1,
+            "leadership_score": 94,
+            "price": 38.28,
+            "change_pct": 11.12,
+            "market_cap": 236.77,
+            "amount": 6314085223.19,
+            "main_net": 8.09,
+            "main_net_pct": 12.81
+          },
+          {
+            "code": "300058",
+            "name": "蓝色光标",
             "role": "次龙头",
             "board_rank": 2,
-            "leadership_score": 96,
-            "price": 39.16,
-            "change_pct": 13.67,
-            "market_cap": 242.21,
-            "amount": 5338215708.84,
-            "main_net": 7.88,
-            "main_net_pct": 14.77
+            "leadership_score": 93,
+            "price": 13.97,
+            "change_pct": 5.91,
+            "market_cap": 501.55,
+            "amount": 8653559606.54,
+            "main_net": 10.4,
+            "main_net_pct": 12.02
           }
         ],
-        "rotation_score": 100,
+        "rotation_score": 99,
         "rise_count": null,
         "fall_count": null,
         "effect": "资金流入且上涨扩散，板块效应较强",
@@ -153,15 +153,15 @@
         "as_of": "2026-09-04",
         "qualified": false,
         "trend_score": 80.0,
-        "close": 15.35,
-        "ma20": 14.13,
-        "ma60": 13.75,
-        "atr": 0.496,
-        "atr_pct": 3.23,
-        "return_20_pct": 11.47,
-        "benchmark_return_20_pct": -2.6,
-        "relative_strength_pct": 14.08,
-        "extension_pct": 8.61,
+        "close": 15.73,
+        "ma20": 14.15,
+        "ma60": 13.76,
+        "atr": 0.524,
+        "atr_pct": 3.33,
+        "return_20_pct": 14.23,
+        "benchmark_return_20_pct": -3.12,
+        "relative_strength_pct": 17.35,
+        "extension_pct": 11.15,
         "overextended": true,
         "checks": {
           "above_ma20": true,
@@ -170,22 +170,22 @@
           "relative_strength_positive": true
         },
         "entry_zone": {
-          "low": 15.1,
-          "high": 15.35
+          "low": 15.47,
+          "high": 15.73
         },
-        "max_chase_price": 15.12,
+        "max_chase_price": 15.2,
         "stop_price": 13.45,
-        "stop_distance_pct": 11.66,
+        "stop_distance_pct": 13.81,
         "take_profit": [
           {
             "name": "第一止盈",
-            "price": 17.89,
+            "price": 18.83,
             "sell_fraction": "1/3",
             "risk_reward": 1.5
           },
           {
             "name": "第二止盈",
-            "price": 19.66,
+            "price": 20.98,
             "sell_fraction": "1/3",
             "risk_reward": 2.5
           }
@@ -194,32 +194,31 @@
         "trailing_rule": "剩余仓位按10日线、前低或周线结构跟踪；止损不得下移",
         "reasons": [
           "价格偏离20日均线或20日涨幅过大，禁止追高",
-          "结构止损距离11.7%不在4%-7%范围"
+          "结构止损距离13.8%不在4%-7%范围"
         ]
       },
       "position_plan": {
         "quantity": 100,
-        "estimated_value": 1522.5,
-        "position_pct": 3.33,
-        "planned_loss": 177.5,
+        "estimated_value": 1560.0,
+        "position_pct": 3.41,
+        "planned_loss": 215.0,
         "risk_budget": 300.0,
-        "per_share_risk": 1.78,
+        "per_share_risk": 2.15,
         "executable": false,
         "reasons": [
           "价格偏离20日均线或20日涨幅过大，禁止追高",
-          "结构止损距离11.7%不在4%-7%范围"
+          "结构止损距离13.8%不在4%-7%范围"
         ],
         "formula": "向下取整[单笔风险预算÷(计划买入中值-止损价)÷100]×100，并受单股、总仓和可用现金上限约束"
       },
       "invalidation": [
         "价格偏离20日均线或20日涨幅过大，禁止追高",
-        "结构止损距离11.7%不在4%-7%范围",
+        "结构止损距离13.8%不在4%-7%范围",
         "跌破结构止损",
         "板块趋势或相对强度转弱",
         "重大公告或国际事件破坏核心逻辑"
       ],
-      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作",
-      "withdraw_reason": "本周更新中已无法取得候选数据或硬性资格失效"
+      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作"
     }
   ],
   "active_count": 0,
