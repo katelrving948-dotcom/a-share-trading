@@ -1,10 +1,10 @@
 {
-  "plan_id": "2026-W36",
-  "week_start": "2026-08-31",
-  "week_end": "2026-09-04",
-  "generated_at": "2026-09-06 12:01:58",
+  "plan_id": "2026-W37",
+  "week_start": "2026-09-07",
+  "week_end": "2026-09-11",
+  "generated_at": "2026-09-07 12:02:26",
   "frozen": true,
-  "state": "冻结执行",
+  "state": "空仓",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
   "account": {
     "equity": 45682.77,
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：纳斯达克中国金龙、恒生指数、COMEX铜",
+      "summary": "相对偏强市场：纳斯达克中国金龙、NYMEX原油",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -54,173 +54,7 @@
     "external_event": 0.1,
     "valuation_crowding": 0.05
   },
-  "selections": [
-    {
-      "code": "002602",
-      "name": "世纪华通",
-      "industry": "传媒",
-      "role": "主选",
-      "status": "撤销",
-      "weekly_score": 71.18,
-      "score_components": {
-        "fundamental": 62.3,
-        "trend": 80.0,
-        "board": 99.0,
-        "external_event": 50.0,
-        "valuation_crowding": 48.12
-      },
-      "primary_board": {
-        "type": "概念",
-        "code": "BK1629",
-        "name": "AI应用",
-        "change_pct": 1.02,
-        "main_net_inflow": 85.55,
-        "recent_main_net_inflow": 55.24,
-        "positive_days": 3,
-        "history_days": 5,
-        "flow_score": 99,
-        "external_score": 50,
-        "external_confidence": "低",
-        "external_signal_count": 0,
-        "external_reasons": [],
-        "leaders": [
-          {
-            "code": "301171",
-            "name": "易点天下",
-            "role": "龙头",
-            "board_rank": 1,
-            "leadership_score": 94,
-            "price": 38.28,
-            "change_pct": 11.12,
-            "market_cap": 236.77,
-            "amount": 6314085223.19,
-            "main_net": 8.09,
-            "main_net_pct": 12.81
-          },
-          {
-            "code": "300058",
-            "name": "蓝色光标",
-            "role": "次龙头",
-            "board_rank": 2,
-            "leadership_score": 93,
-            "price": 13.97,
-            "change_pct": 5.91,
-            "market_cap": 501.55,
-            "amount": 8653559606.54,
-            "main_net": 10.4,
-            "main_net_pct": 12.02
-          }
-        ],
-        "rotation_score": 99,
-        "rise_count": null,
-        "fall_count": null,
-        "effect": "资金流入且上涨扩散，板块效应较强",
-        "rank": 1
-      },
-      "fundamental_score": 62.3,
-      "fundamental_evidence": {
-        "report_date": "2026-06-30",
-        "notice_date": "2026-08-28",
-        "source": "东方财富财务指标 API",
-        "summary": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
-        "risk_note": "未触发财务量化警示，仍需核验公告"
-      },
-      "financial_risk": {
-        "hard_block": false,
-        "risks": [],
-        "warnings": [
-          "综合快讯未匹配到直接风险，不等于交易所公告已完整核验"
-        ],
-        "balance_sheet": {
-          "code": "002602",
-          "available": true,
-          "data_source": "东方财富资产负债表 API",
-          "report_date": "2026-06-30",
-          "notice_date": "2026-08-28",
-          "debt_asset_ratio": 26.27,
-          "current_ratio": 217.55,
-          "total_assets": 472.24,
-          "total_liabilities": 124.05,
-          "monetary_funds": 130.38,
-          "accounts_receivable": 37.11,
-          "inventory": 7.81
-        },
-        "matched_news": [],
-        "evidence_boundary": "财务指标和资产负债表来自东方财富已披露数据；减持、质押、解禁和监管事项仍需以交易所/公司公告复核。"
-      },
-      "weekly_trend": {
-        "available": true,
-        "as_of": "2026-09-04",
-        "qualified": false,
-        "trend_score": 80.0,
-        "close": 15.73,
-        "ma20": 14.15,
-        "ma60": 13.76,
-        "atr": 0.524,
-        "atr_pct": 3.33,
-        "return_20_pct": 14.23,
-        "benchmark_return_20_pct": -3.12,
-        "relative_strength_pct": 17.35,
-        "extension_pct": 11.15,
-        "overextended": true,
-        "checks": {
-          "above_ma20": true,
-          "ma20_above_ma60": true,
-          "ma20_rising": true,
-          "relative_strength_positive": true
-        },
-        "entry_zone": {
-          "low": 15.47,
-          "high": 15.73
-        },
-        "max_chase_price": 15.2,
-        "stop_price": 13.45,
-        "stop_distance_pct": 13.81,
-        "take_profit": [
-          {
-            "name": "第一止盈",
-            "price": 18.83,
-            "sell_fraction": "1/3",
-            "risk_reward": 1.5
-          },
-          {
-            "name": "第二止盈",
-            "price": 20.98,
-            "sell_fraction": "1/3",
-            "risk_reward": 2.5
-          }
-        ],
-        "time_stop": "5个交易日未出现相对强势，减仓或退出",
-        "trailing_rule": "剩余仓位按10日线、前低或周线结构跟踪；止损不得下移",
-        "reasons": [
-          "价格偏离20日均线或20日涨幅过大，禁止追高",
-          "结构止损距离13.8%不在4%-7%范围"
-        ]
-      },
-      "position_plan": {
-        "quantity": 100,
-        "estimated_value": 1560.0,
-        "position_pct": 3.41,
-        "planned_loss": 215.0,
-        "risk_budget": 300.0,
-        "per_share_risk": 2.15,
-        "executable": false,
-        "reasons": [
-          "价格偏离20日均线或20日涨幅过大，禁止追高",
-          "结构止损距离13.8%不在4%-7%范围"
-        ],
-        "formula": "向下取整[单笔风险预算÷(计划买入中值-止损价)÷100]×100，并受单股、总仓和可用现金上限约束"
-      },
-      "invalidation": [
-        "价格偏离20日均线或20日涨幅过大，禁止追高",
-        "结构止损距离13.8%不在4%-7%范围",
-        "跌破结构止损",
-        "板块趋势或相对强度转弱",
-        "重大公告或国际事件破坏核心逻辑"
-      ],
-      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作"
-    }
-  ],
+  "selections": [],
   "active_count": 0,
   "execution_note": "研究池和周度候选均不是自动买入指令；股数是单股目标上限，不代表在未知现有仓位下追加买入。只有账户级亏损、趋势、价格和事件闸门同时通过才可执行。"
 }
