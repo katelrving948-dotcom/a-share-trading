@@ -20,7 +20,9 @@ SCREEN = {
 LONG_TERM = {
     "universe_limit": 0,
     "minimum_score": 60,
-    "market_cap_min": 50,
+    "market_cap_min": 20,  # 亿元；扩大到中小市值，基本面门槛不降
+    "small_cap_boundary": 500,
+    "small_cap_amount_min": 0.5,  # 亿元；使用行情快照成交额，不冒称日均
     "average_amount_min": 0.2,
     "turnover_max": 12.0,
     "weights": {
@@ -29,4 +31,16 @@ LONG_TERM = {
         "valuation": 0.20,
         "cashflow": 0.15,
     },
+}
+
+PULLBACK = {
+    "version": 1,
+    "support_atr": 0.5,
+    "minimum_retrace_atr": 1.0,
+    "max_entry_atr": 0.5,
+    "stop_buffer_atr": 0.2,
+    "valid_sessions": 5,
+    "minimum_risk_pct": 0.04,
+    "maximum_risk_pct": 0.07,
+    "minimum_reward_risk": 1.5,
 }

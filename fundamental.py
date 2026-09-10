@@ -52,7 +52,10 @@ class FundamentalScorer:
         pool = self._candidate_pool(stocks)
         limit = LONG_TERM.get("universe_limit", 0) if universe_limit is None else int(universe_limit)
         if limit > 0:
-            pool = pool.head(limit)
+            # Reserve scan capacity for liquid smaller companies, then fill in
+            # liquidity order. This is scan coverage, never an entry exemption.
+            small = pool[pool["market_cap"] < LONG_TERM["small_cap_boundary"]].head(max(1, limit // 3))
+            pool = pd.concat([small, pool]).drop_duplicates("code").head(limit)
         codes = pool["code"].astype(str).tolist()
         self._set_progress("fundamentals", 0, len(codes), "逐股读取已披露财务指标", progress_callback)
 
@@ -80,6 +83,8 @@ class FundamentalScorer:
             "financial_success_count": len(rows),
             "qualified_count": sum(item["fundamental_score"] >= minimum for item in rows),
             "minimum_score": minimum,
+            "market_cap_min_yi": LONG_TERM["market_cap_min"],
+            "small_cap_boundary_yi": LONG_TERM["small_cap_boundary"],
             "weights": dict(LONG_TERM["weights"]),
             "scan_scope": "全部初筛股票" if limit <= 0 else f"流动性前 {limit} 只",
             "data_source": "东方财富已披露财务指标与行情估值快照",
@@ -114,6 +119,8 @@ class FundamentalScorer:
             & (stocks["amount"] >= LONG_TERM["average_amount_min"] * 1e8)
             & (stocks["turnover_rate"] <= LONG_TERM["turnover_max"])
         )
+        conditions &= ((stocks["market_cap"] >= LONG_TERM["small_cap_boundary"])
+                       | (stocks["amount"] >= LONG_TERM["small_cap_amount_min"] * 1e8))
         if SCREEN.get("exclude_st"):
             conditions &= ~stocks["is_st"]
         if SCREEN.get("exclude_kcb"):

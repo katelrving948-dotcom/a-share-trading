@@ -89,19 +89,20 @@ class WeeklyStrategyTest(unittest.TestCase):
             "can_open_new": True, "block_reasons": [],
             "risk_profile": {"max_total_pct": 0.6, "max_stock_pct": 0.2, "risk_per_trade": 300},
         }
-        trend = {"qualified": True, "entry_zone": {"low": 19.9, "high": 20.1}, "stop_price": 19.0}
-        plan = position_plan(trend, account, "主选")
+        trend = {"qualified": True, "trend_qualified": True, "entry_zone": {"low": 19.9, "high": 20.1}, "stop_price": 19.0}
+        plan = position_plan(trend, account, "主选", gate={"passed": True, "reference_price": 20.0})
         self.assertEqual(plan["quantity"], 300)
         self.assertEqual(plan["planned_loss"], 300)
         self.assertTrue(plan["executable"])
 
-    def test_trend_analysis_rejects_overextended_price(self):
+    def test_overextended_stock_can_be_observed_but_has_no_pullback_signal(self):
         frame = rising_frame()
         frame.loc[frame.index[-1], ["open", "high", "low", "close"]] = [20, 22, 19.8, 21.5]
         result = analyze_weekly_trend(frame, rising_frame(start=10.0))
         self.assertTrue(result["available"])
         self.assertTrue(result["overextended"])
-        self.assertFalse(result["qualified"])
+        self.assertTrue(result["trend_qualified"])
+        self.assertEqual(result["pullback_plan"]["state"], "waiting_pullback")
 
     def test_same_week_plan_keeps_frozen_codes(self):
         account = {

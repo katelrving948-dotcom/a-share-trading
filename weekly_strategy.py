@@ -11,6 +11,9 @@ from typing import Any
 
 import pandas as pd
 
+from config import PULLBACK
+from pullback_strategy import SHANGHAI, build_pullback_plan, entry_gate, holding_horizon
+
 
 ACCOUNT_STATE_FILE = Path("output/research/account_state.json")
 WEEKLY_PLAN_FILE = Path("output/research/weekly_plan.json")
@@ -102,6 +105,7 @@ def load_account_state(path: Path = ACCOUNT_STATE_FILE, now: datetime | None = N
         profile = {"name": market_state, "max_total_pct": 0.30, "max_stock_pct": 0.15, "risk_per_trade": 200.0}
     else:
         profile = {"name": "普通", "max_total_pct": 0.60, "max_stock_pct": 0.20, "risk_per_trade": 300.0}
+    profile["risk_per_trade"] = min(profile["risk_per_trade"], round(equity * 0.006, 2))
 
     holdings_value = 0.0
     holdings_risk = 0.0
@@ -224,10 +228,27 @@ def _atr(frame: pd.DataFrame, period: int = 14) -> float:
     return _number(true_range.tail(period).mean())
 
 
-def analyze_weekly_trend(frame: pd.DataFrame, benchmark: pd.DataFrame | None = None) -> dict:
+def analyze_weekly_trend(frame: pd.DataFrame, benchmark: pd.DataFrame | None = None,
+                         previous_plan: dict | None = None, now: datetime | None = None) -> dict:
+    current = now or datetime.now(SHANGHAI)
+    if current.tzinfo:
+        current = current.astimezone(SHANGHAI)
     if frame is None or frame.empty or len(frame) < 60:
         return {"available": False, "qualified": False, "reason": "日K数据不足60个交易日"}
     ordered = frame.sort_values("date").reset_index(drop=True).copy()
+    dates = pd.to_datetime(ordered["date"], errors="coerce")
+    cutoff = pd.Timestamp(current.date())
+    completed = dates < cutoff if current.hour < 15 else dates <= cutoff
+    ordered = ordered[completed].copy()
+    required = ["open", "high", "low", "close"]
+    if not set(required).issubset(ordered.columns) or len(ordered) < 60:
+        return {"available": False, "qualified": False, "reason": "已完成日K不足60个交易日"}
+    values = ordered[required].apply(pd.to_numeric, errors="coerce")
+    if (not values.apply(lambda col: col.map(lambda x: pd.notna(x) and 0 < x < float("inf"))).all().all()
+            or (values["low"] > values[["open", "close"]].min(axis=1)).any()
+            or (values["high"] < values[["open", "close"]].max(axis=1)).any()
+            or dates[completed].duplicated().any()):
+        return {"available": False, "qualified": False, "reason": "日K价格或日期异常"}
     close = ordered["close"].astype(float)
     latest = ordered.iloc[-1]
     latest_close = _number(latest.get("close"))
@@ -240,11 +261,17 @@ def analyze_weekly_trend(frame: pd.DataFrame, benchmark: pd.DataFrame | None = N
     atr_pct = atr / latest_close if latest_close else 0.0
     return_20 = latest_close / _number(close.iloc[-21], latest_close) - 1 if len(close) > 20 else 0.0
     benchmark_return_20 = 0.0
+    if benchmark is None or benchmark.empty or len(benchmark) <= 20:
+        return {"available": False, "qualified": False, "reason": "同期基准日K不足"}
     if benchmark is not None and not benchmark.empty and len(benchmark) > 20:
-        bench_close = benchmark.sort_values("date")["close"].astype(float)
+        bench = benchmark[pd.to_datetime(benchmark["date"]) <= pd.Timestamp(ordered.iloc[-1]["date"])]
+        bench_close = bench.sort_values("date")["close"].astype(float)
+        if len(bench_close) <= 20:
+            return {"available": False, "qualified": False, "reason": "同期基准日K不足"}
+        if not bench_close.map(lambda x: pd.notna(x) and 0 < x < float("inf")).all():
+            return {"available": False, "qualified": False, "reason": "基准价格异常"}
         benchmark_return_20 = _number(bench_close.iloc[-1]) / _number(bench_close.iloc[-21], 1) - 1
     relative_strength = return_20 - benchmark_return_20
-    recent_low = _number(ordered["low"].astype(float).tail(10).min(), latest_close)
     extension_pct = (latest_close / ma20 - 1) if ma20 else 0.0
     overextended = bool(
         extension_pct > max(0.08, atr_pct * 2)
@@ -254,7 +281,7 @@ def analyze_weekly_trend(frame: pd.DataFrame, benchmark: pd.DataFrame | None = N
         "above_ma20": latest_close > ma20,
         "ma20_above_ma60": ma20 > ma60,
         "ma20_rising": ma20 > ma20_previous,
-        "relative_strength_positive": relative_strength > 0,
+        "relative_strength_positive": benchmark is not None and not benchmark.empty and relative_strength > 0,
     }
     trend_score = 20.0
     trend_score += 20 if trend_checks["above_ma20"] else 0
@@ -265,22 +292,25 @@ def analyze_weekly_trend(frame: pd.DataFrame, benchmark: pd.DataFrame | None = N
         trend_score -= 20
     trend_score = round(max(0.0, min(100.0, trend_score)), 2)
 
-    entry_high = latest_close
-    entry_low = max(ma20, latest_close - atr * 0.5)
-    if entry_low > entry_high:
-        entry_low = entry_high
+    pullback = build_pullback_plan(ordered, ma20, atr, previous_plan)
+    entry_low = pullback["support_low"]
+    entry_high = pullback["max_entry_price"]
     entry_mid = (entry_low + entry_high) / 2
-    structure_stop = recent_low - atr * 0.2
-    stop_price = min(structure_stop, entry_mid * 0.96)
+    stop_price = pullback["stop_price"]
     stop_distance_pct = (entry_mid - stop_price) / entry_mid if entry_mid else 1.0
-    risk_valid = 0.04 <= stop_distance_pct <= 0.07
-    max_chase = min(latest_close + atr * 0.5, ma20 + atr * 2) if atr > 0 else latest_close * 1.02
+    risk_valid = PULLBACK["minimum_risk_pct"] <= stop_distance_pct <= PULLBACK["maximum_risk_pct"]
+    max_chase = pullback["max_entry_price"]
     risk_per_share = max(0.0, entry_mid - stop_price)
     target_one = entry_mid + risk_per_share * 1.5
     target_two = entry_mid + risk_per_share * 2.5
-    qualified = all(trend_checks.values()) and not overextended and risk_valid
+    # Candidate quality must survive a normal pullback near MA20. Above-MA20 is
+    # still scored, but the rising medium-term structure defines the trend.
+    trend_qualified = all(trend_checks[key] for key in (
+        "ma20_above_ma60", "ma20_rising", "relative_strength_positive"
+    )) and latest_close > ma60
+    qualified = trend_qualified
     reasons = []
-    if not all(trend_checks.values()):
+    if not trend_qualified:
         reasons.append("周度趋势或相对强度未完全确认")
     if overextended:
         reasons.append("价格偏离20日均线或20日涨幅过大，禁止追高")
@@ -291,6 +321,8 @@ def analyze_weekly_trend(frame: pd.DataFrame, benchmark: pd.DataFrame | None = N
         "available": True,
         "as_of": str(pd.Timestamp(latest.get("date")).date()),
         "qualified": qualified,
+        "trend_qualified": trend_qualified,
+        "pullback_plan": pullback,
         "trend_score": trend_score,
         "close": round(latest_close, 2),
         "ma20": round(ma20, 2),
@@ -317,9 +349,11 @@ def analyze_weekly_trend(frame: pd.DataFrame, benchmark: pd.DataFrame | None = N
     }
 
 
-def position_plan(trend: dict, account: dict, role: str, reserved_value: float = 0.0) -> dict:
+def position_plan(trend: dict, account: dict, role: str, reserved_value: float = 0.0,
+                  gate: dict | None = None, code: str = "", listing_board: str = "") -> dict:
     entry = trend.get("entry_zone") or {}
-    entry_mid = (_number(entry.get("low")) + _number(entry.get("high"))) / 2
+    gate = gate or {"passed": False, "reason": "等待回调企稳与实时价格复核"}
+    entry_mid = _number(gate.get("reference_price")) or _number(entry.get("high"))
     stop = _number(trend.get("stop_price"))
     per_share_risk = max(0.0, entry_mid - stop)
     profile = account["risk_profile"]
@@ -327,18 +361,25 @@ def position_plan(trend: dict, account: dict, role: str, reserved_value: float =
     available_cash = _number(account.get("available_cash"))
     remaining_total = max(0.0, equity * profile["max_total_pct"] - _number(account.get("holdings_value")) - reserved_value)
     maximum_stock_value = equity * profile["max_stock_pct"]
-    risk_quantity = math.floor(profile["risk_per_trade"] / per_share_risk / 100) * 100 if per_share_risk > 0 else 0
+    risk_budget = min(profile["risk_per_trade"], equity * 0.006)
+    risk_quantity = math.floor(risk_budget / per_share_risk / 100) * 100 if per_share_risk > 0 else 0
     stock_cap_quantity = math.floor(maximum_stock_value / entry_mid / 100) * 100 if entry_mid > 0 else 0
-    total_cap_quantity = math.floor(min(remaining_total, available_cash) / entry_mid / 100) * 100 if entry_mid > 0 else 0
+    total_cap_quantity = math.floor(min(remaining_total, max(0, available_cash - reserved_value)) / entry_mid / 100) * 100 if entry_mid > 0 else 0
     quantity = max(0, min(risk_quantity, stock_cap_quantity, total_cap_quantity))
+    minimum_quantity = 200 if listing_board == "科创板" or code.startswith("688") else 100
+    if quantity < minimum_quantity:
+        quantity = 0
     estimated_value = round(quantity * entry_mid, 2)
     planned_loss = round(quantity * per_share_risk, 2)
-    executable = bool(account.get("can_open_new") and role == "主选" and quantity >= 100 and trend.get("qualified"))
+    executable = bool(account.get("can_open_new") and role == "主选" and quantity >= minimum_quantity
+                      and trend.get("trend_qualified") and gate.get("passed"))
     reasons = list(account.get("block_reasons") or [])
     if role == "备选":
         reasons.append("备选股只有在主选撤销后才能启用")
-    if quantity < 100:
-        reasons.append("100股最小交易单位超过当前仓位或风险预算")
+    if quantity < minimum_quantity:
+        reasons.append(f"{minimum_quantity}股最小买入量超过当前仓位或风险预算")
+    if not gate.get("passed"):
+        reasons.append(gate.get("reason") or "回调买点尚未通过")
     if not trend.get("qualified"):
         reasons.extend(trend.get("reasons") or ["周度趋势未通过"])
     return {
@@ -346,11 +387,13 @@ def position_plan(trend: dict, account: dict, role: str, reserved_value: float =
         "estimated_value": estimated_value,
         "position_pct": round(estimated_value / equity * 100, 2) if equity else 0.0,
         "planned_loss": planned_loss,
-        "risk_budget": profile["risk_per_trade"],
+        "risk_budget": risk_budget,
+        "reference_price": entry_mid,
+        "minimum_quantity": minimum_quantity,
         "per_share_risk": round(per_share_risk, 2),
         "executable": executable,
         "reasons": list(dict.fromkeys(reasons)),
-        "formula": "向下取整[单笔风险预算÷(计划买入中值-止损价)÷100]×100，并受单股、总仓和可用现金上限约束",
+        "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股",
     }
 
 
@@ -415,6 +458,7 @@ def build_holding_action(holding: dict, trend: dict, account: dict) -> dict:
 def score_weekly_candidate(item: dict) -> dict:
     trend = item.get("weekly_trend") or {}
     fundamental = _number(item.get("sector_adjusted_fundamental_score"), _number(item.get("fundamental_score")))
+    raw_fundamental = _number(item.get("fundamental_score"))
     board = _number(item.get("board_strength_score"), 0.0)
     primary_board = item.get("primary_board") or {}
     external = _number(primary_board.get("external_score"), 50.0)
@@ -432,14 +476,14 @@ def score_weekly_candidate(item: dict) -> dict:
     score = round(sum(components[key] * weight for key, weight in WEEKLY_WEIGHTS.items()), 2)
     fundamental_risk = item.get("financial_risk") or {}
     eligible = bool(
-        fundamental >= 60
+        fundamental >= 60 and raw_fundamental >= 60
         and board >= 55
         and trend.get("qualified")
         and not fundamental_risk.get("hard_block")
     )
     reasons = []
-    if fundamental < 60:
-        reasons.append("行业校准基本面不足60分")
+    if fundamental < 60 or raw_fundamental < 60:
+        reasons.append("原始或行业校准基本面不足60分")
     if board < 55:
         reasons.append("板块周度确认不足55分")
     if not trend.get("qualified"):
@@ -519,22 +563,41 @@ def build_weekly_plan(
         item = current_by_code.get(code)
         if not item:
             old = old_by_code.get(code, {})
-            selections.append({**old, "code": code, "role": role, "status": "撤销", "withdraw_reason": "本周更新中已无法取得候选数据或硬性资格失效"})
+            selections.append({**old, "code": code, "role": role, "status": "撤销",
+                               "position_plan": {**(old.get("position_plan") or {}), "executable": False},
+                               "entry_gate": {"passed": False, "reason": "候选数据不可用"},
+                               "withdraw_reason": "本周更新中已无法取得候选数据或硬性资格失效"})
             continue
         trend = item.get("weekly_trend") or {}
-        position = position_plan(trend, account, role, reserved)
+        gate = entry_gate(trend, item.get("entry_quote"), now)
+        if gate["state"] == "invalidated" and trend.get("pullback_plan"):
+            trend["pullback_plan"].update(state="invalidated", invalidated_on=now.date().isoformat())
+        position = position_plan(trend, account, role, reserved, gate, code, str(item.get("listing_board") or ""))
         if role == "主选":
             reserved += position["estimated_value"]
         evaluation = item.get("weekly_evaluation") or {}
         status = "可执行" if position["executable"] else "等待/不交易"
         if not evaluation.get("eligible"):
             status = "撤销"
+            position["executable"] = False
+            position["reasons"] = list(dict.fromkeys(position["reasons"] + (evaluation.get("reasons") or [])))
+        elif gate["state"] in {"invalidated", "expired"}:
+            status = "撤销"
+        elif status != "可执行":
+            status = gate["reason"]
+        if frozen and old_by_code.get(code, {}).get("status") == "撤销":
+            status = "撤销"
+            position["executable"] = False
+            position["reasons"].append("本周已撤销的计划不重新启用")
         selections.append({
             "code": code,
             "name": item.get("name"),
             "industry": item.get("selection_industry") or item.get("industry"),
             "role": role,
             "status": status,
+            "market_cap": item.get("market_cap"),
+            "entry_gate": gate,
+            "holding_plan": holding_horizon(_number(item.get("market_cap"))),
             "weekly_score": evaluation.get("score"),
             "score_components": evaluation.get("components"),
             "primary_board": item.get("primary_board"),
@@ -564,7 +627,8 @@ def build_weekly_plan(
         "weights": WEEKLY_WEIGHTS,
         "selections": selections,
         "active_count": len(active),
-        "execution_note": "研究池和周度候选均不是自动买入指令；股数是单股目标上限，不代表在未知现有仓位下追加买入。只有账户级亏损、趋势、价格和事件闸门同时通过才可执行。",
+        "strategy_version": "fundamental-trend-pullback-v1",
+        "execution_note": "基本面原始及行业分均≥60、上升趋势、回调企稳必须同时满足，再复核实时价格和账户风险；股数是目标上限，不是追加量。持仓期限从实际买入日起计，破位提前退出。",
     }
 
 

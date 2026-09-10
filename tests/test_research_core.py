@@ -53,6 +53,8 @@ class ResearchCoreTest(unittest.TestCase):
             "board_strength_score": 70,
             "fundamental_score": 75,
             "technical_score": 72,
+            "weekly_trend": {"trend_qualified": True},
+            "entry_gate": {"passed": True, "reason": "回调企稳通过"},
             "morning_plan": {
                 "actionable": True,
                 "status": "上午强势承接",
@@ -126,6 +128,8 @@ class ResearchCoreTest(unittest.TestCase):
         self.assertFalse(result[0]["quant_model_passed"])
         result[0].update({
             "board_strength_score": 80,
+            "weekly_trend": {"trend_qualified": True},
+            "entry_gate": {"passed": True, "reason": "回调企稳通过"},
             "morning_plan": {
                 "actionable": True,
                 "status": "上午强势承接",

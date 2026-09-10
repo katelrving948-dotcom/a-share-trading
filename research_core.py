@@ -19,6 +19,8 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from data_feed import DataFeed
+from config import LONG_TERM
+from pullback_strategy import entry_gate, holding_horizon
 from fundamental import FundamentalScorer
 from quant_factors import FACTOR_REGISTRY
 from selection_model import ACTIVE_SELECTION_WEIGHTS, DEFAULT_SELECTION_WEIGHTS, normalize_selection_weights, score_selection_components
@@ -31,6 +33,7 @@ from weekly_strategy import (
     load_weekly_plan,
     save_weekly_plan,
     score_weekly_candidate,
+    week_identity,
 )
 
 
@@ -376,6 +379,7 @@ def score_intersection(
             "name": item.get("name") or factor.get("name", ""),
             "industry": industry,
             "listing_board": item.get("listing_board") or (raw_industry if raw_industry in listing_boards else ""),
+            "market_cap": item.get("market_cap"),
             "fundamental_score": fundamental_score,
             "technical_score": technical_score,
             "combined_score": round((fundamental_score + technical_score) / 2, 2) if technical_score is not None else fundamental_score,
@@ -416,9 +420,23 @@ def score_intersection(
             continue
         merged.append(row)
     merged.sort(key=lambda row: row["sector_adjusted_fundamental_score"], reverse=True)
-    for rank, row in enumerate(merged[:display_limit], start=1):
+    merged = _cap_scan(merged, display_limit)
+    for rank, row in enumerate(merged, start=1):
         row["rank"] = rank
     return merged[:display_limit]
+
+
+def _cap_scan(rows: list[dict], limit: int, keep_codes: set | None = None) -> list[dict]:
+    """Preserve small-cap scan coverage and frozen codes without changing gates."""
+    keep = [row for row in rows if row.get("code") in (keep_codes or set())]
+    small = [row for row in rows if 0 < float(row.get("market_cap") or 0) < LONG_TERM["small_cap_boundary"]]
+    selected = {row["code"]: row for row in keep}
+    for row in small[:max(1, limit // 3)] + rows:
+        if len(selected) >= max(limit, len(keep)):
+            break
+        selected.setdefault(row["code"], row)
+    codes = set(selected)
+    return [row for row in rows if row["code"] in codes]
 
 
 def build_morning_entry_plan(intraday: dict, atr_pct: float | None = None) -> dict:
@@ -507,7 +525,7 @@ def build_morning_entry_plan(intraday: dict, atr_pct: float | None = None) -> di
     breakout = high * 1.002
     max_chase = high * 1.015
     actionable = True
-    execution_state = "等待回踩进场区或放量突破确认"
+    execution_state = "等待回踩进场区；实际许可须日线回调企稳"
     status = "上午强势承接" if strong else "上午均价承接"
     if current_price < stop_high:
         actionable = False
@@ -520,7 +538,8 @@ def build_morning_entry_plan(intraday: dict, atr_pct: float | None = None) -> di
     elif entry_low <= current_price <= entry_high:
         execution_state = "当前价进入回踩进场区"
     elif current_price >= breakout:
-        execution_state = "已触发突破确认"
+        actionable = False
+        execution_state = "突破不买，等待日线回调企稳"
     base.update({
         "actionable": actionable,
         "levels_available": True,
@@ -545,17 +564,15 @@ def build_morning_entry_plan(intraday: dict, atr_pct: float | None = None) -> di
 
 
 def build_trade_decision(item: dict) -> dict:
-    """Apply sector, fundamental and live-entry gates; quant stays research-only."""
+    """Expose the same pullback gate; an intraday VWAP touch is not permission."""
     board_score = item.get("board_strength_score")
     fundamental_score = float(item.get("sector_adjusted_fundamental_score") or item.get("fundamental_score") or 0)
-    plan = item.get("morning_plan") or {}
-    state = str(plan.get("execution_state") or "")
-    board_pass = board_score is not None and float(board_score) >= 60
-    fundamental_pass = fundamental_score >= 60
-    entry_pass = bool(plan.get("actionable")) and (
-        "进入回踩进场区" in state or "已触发突破确认" in state
-    )
-    blocked = any(word in f"{plan.get('status', '')}{state}" for word in ("暂不", "失效", "异常"))
+    gate = item.get("entry_gate") or {}
+    state = str(gate.get("reason") or "尚未完成日线回调企稳复核")
+    board_pass = board_score is not None and float(board_score) >= 55
+    fundamental_pass = fundamental_score >= 60 and float(item.get("fundamental_score") or 0) >= 60
+    entry_pass = bool(gate.get("passed") and (item.get("weekly_trend") or {}).get("trend_qualified"))
+    blocked = gate.get("state") in {"invalidated", "expired", "trend_failed"}
     if blocked or not (board_pass and fundamental_pass):
         status = "不交易"
     elif entry_pass:
@@ -564,11 +581,11 @@ def build_trade_decision(item: dict) -> dict:
         status = "等待确认"
     reasons = []
     if not board_pass:
-        reasons.append("板块资金/效应未达到60分")
+        reasons.append("板块资金/效应未达到55分")
     if not fundamental_pass:
-        reasons.append("行业校准基本面未达到60分")
+        reasons.append("原始或行业校准基本面未达到60分")
     if board_pass and fundamental_pass and not entry_pass:
-        reasons.append(plan.get("status") or "午后进场条件尚未触发")
+        reasons.append(state)
     return {
         "status": status,
         "board_gate": {"score": board_score, "passed": board_pass},
@@ -576,7 +593,7 @@ def build_trade_decision(item: dict) -> dict:
         "quant_gate": {"participates": False, "passed": True, "note": "量化因子仅独立优化和展示，不参与选股、排名或进场许可"},
         "entry_gate": {"passed": entry_pass, "state": state},
         "reasons": reasons,
-        "note": "该结论只描述旧日度研究条件，不构成交易许可；实际执行只看周度固定名单与账户风险闸门。",
+        "note": "日度回调条件不等于交易许可；还须进入周度主选并通过账户风险预算。",
     }
 
 
@@ -702,9 +719,14 @@ def build_market_research(
     technical: dict,
     feed: DataFeed | None = None,
     display_limit: int = 20,
+    existing_plan: dict | None = None,
+    now: datetime | None = None,
 ) -> dict:
     """Build the external-market → sector → stock → entry research chain."""
     feed = feed or DataFeed()
+    now = now or datetime.now(SHANGHAI)
+    previous_by_code = {row["code"]: row for row in (existing_plan or {}).get("selections", [])}
+    frozen_codes = set(previous_by_code)
     selection_weights = normalize_selection_weights(ACTIVE_SELECTION_WEIGHTS)
     try:
         news = feed.get_financial_news()
@@ -796,7 +818,8 @@ def build_market_research(
             break
     if len(selected) < weekly_scan_limit:
         selected.extend(overflow[:weekly_scan_limit - len(selected)])
-    observations[:] = selected
+    prioritized = selected + [row for row in observations if row not in selected]
+    observations[:] = _cap_scan(prioritized, weekly_scan_limit, frozen_codes)
 
     try:
         benchmark = feed.get_kline("000300", count=120)
@@ -823,7 +846,9 @@ def build_market_research(
                 weekly_enriched[code] = (kline, balance)
     for item in observations:
         kline, balance = weekly_enriched.get(item["code"], (pd.DataFrame(), {"available": False}))
-        item["weekly_trend"] = analyze_weekly_trend(kline, benchmark)
+        old_trend = previous_by_code.get(item["code"], {}).get("weekly_trend") or {}
+        item["weekly_trend"] = analyze_weekly_trend(kline, benchmark, old_trend.get("pullback_plan"), now)
+        item["holding_plan"] = holding_horizon(float(item.get("market_cap") or 0))
         item["financial_risk"] = _financial_risk_review(item, balance, news)
         item["fundamental_evidence"] = {
             "report_date": item.get("report_date"),
@@ -840,13 +865,16 @@ def build_market_research(
         ),
         reverse=True,
     )
-    observations[:] = observations[:display_limit]
+    observations[:] = _cap_scan(observations, display_limit, frozen_codes)
 
     def intraday_enrichment(item: dict) -> tuple[str, dict, dict]:
         try:
             intraday = feed.get_intraday_minute(item["code"])
         except Exception as exc:
             intraday = {"available": False, "error": str(exc)}
+        item["entry_quote"] = {key: intraday.get(key) for key in (
+            "available", "trade_date", "last_time", "close_price", "low"
+        )}
         try:
             flow = feed.get_intraday_stock_fund_flow(item["code"])
         except Exception as exc:
@@ -864,6 +892,7 @@ def build_market_research(
         item["morning_plan"], item["intraday_fund_flow"] = enriched.get(
             item["code"], (build_morning_entry_plan({}), {"available": False})
         )
+        item["entry_gate"] = entry_gate(item.get("weekly_trend") or {}, item.get("entry_quote"), now)
         item["trade_decision"] = build_trade_decision(item)
         item["selection_components"] = _selection_components(item)
         item["selection_score"] = score_selection_components(item["selection_components"], selection_weights)
@@ -970,12 +999,18 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
     model_gate = quant_model_gate(technical)
     display_limit = max(1, int(os.getenv("PUSH_DISPLAY_LIMIT", "20")))
     candidate_multiplier = max(1, int(os.getenv("PUSH_CANDIDATE_MULTIPLIER", "5")))
-    observations = score_intersection(
-        fundamental, technical, display_limit * candidate_multiplier,
+    now = datetime.now(SHANGHAI)
+    existing = load_weekly_plan()
+    if existing.get("plan_id") != week_identity(now)["plan_id"]:
+        existing = {}
+    all_candidates = score_intersection(
+        fundamental, technical, max(1, len(fundamental.get("rows", []))),
         allow_pending_industry=True,
     )
+    observations = _cap_scan(all_candidates, display_limit * candidate_multiplier,
+                             {row["code"] for row in existing.get("selections", [])})
     market_research = build_market_research(
-        observations, fundamental, technical, display_limit=display_limit
+        observations, fundamental, technical, display_limit=display_limit, existing_plan=existing, now=now
     )
     now = datetime.now(SHANGHAI)
     selection_weights = normalize_selection_weights(ACTIVE_SELECTION_WEIGHTS)
@@ -986,7 +1021,7 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
         account,
         market_research.get("external_market") or {},
         now,
-        existing=load_weekly_plan(),
+        existing=existing,
         holding_actions=holding_actions,
     )
     return {
@@ -1014,6 +1049,8 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
             "selection_formula": "综合分 = 行业校准基本面×66.67% + 板块强度×16.67% + 上午个股资金×16.67%；技术量化权重为0，仅独立研究",
             "meaning": "每日综合分保留为研究池；实际执行改用周度固定名单、周线趋势、账户仓位和事件风险闸门；量化优化仍不自动参与交易许可",
             "weekly_formula": "周度分 = 基本面40% + 中期趋势30% + 板块15% + 国际事件敏感度10% + 估值/拥挤度5%",
+            "entry_policy": "基本面原始和行业分均≥60 + 上升趋势 + 日线回调企稳；突破不买，实时价格与账户风控另行复核",
+            "market_cap_min_yi": LONG_TERM["market_cap_min"],
         },
     }
 

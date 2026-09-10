@@ -1513,6 +1513,7 @@ class DataFeed:
             "available": True,
             "trade_date": str(trade_date or "").replace("-", "")[:8],
             "minute_count": len(rows),
+            "last_time": rows[-1]["time"],
             "open_price": round(first_price, 2),
             "close_price": round(last_price, 2),
             "avg_price": round(avg_price, 2),

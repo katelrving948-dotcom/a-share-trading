@@ -49,6 +49,16 @@ def _change_value(part: str, value) -> str:
 
 
 def _plan_text(item: dict) -> str:
+    trend = item.get("weekly_trend") or {}
+    if trend.get("pullback_plan"):
+        pullback = trend["pullback_plan"]
+        return (
+            f"回调支撑{_number(pullback.get('support_low'), 2)}-{_number(pullback.get('support_high'), 2)}；"
+            f"企稳后最高买价{_number(pullback.get('max_entry_price'), 2)}；"
+            f"失效价{_number(pullback.get('stop_price'), 2)}；"
+            f"{(item.get('entry_gate') or {}).get('reason', '等待回调企稳')}；"
+            f"持仓观察{(item.get('holding_plan') or {}).get('label', '待复核')}；未进入周度主选及账户许可不执行"
+        )
     plan = item.get("morning_plan") or {}
     if not plan.get("levels_available"):
         return f"{plan.get('status') or '暂无上午盘价位'}：{plan.get('reason') or '等待数据'}"
@@ -58,8 +68,9 @@ def _plan_text(item: dict) -> str:
     first = targets[0] if targets else {}
     second = targets[1] if len(targets) > 1 else {}
     return (
+        "分时研究参考（尚未验证日线回调，不构成买点）："
         f"进场{_number(entry.get('low'), 2)}-{_number(entry.get('high'), 2)}；"
-        f"突破{_number(plan.get('breakout_trigger'), 2)}；禁追>{_number(plan.get('max_chase_price'), 2)}；"
+        f"突破不买；禁追>{_number(plan.get('max_chase_price'), 2)}；"
         f"止损{_number(stop.get('low'), 2)}-{_number(stop.get('high'), 2)}；"
         f"止盈一{_number(first.get('low'), 2)}-{_number(first.get('high'), 2)}；"
         f"止盈二{_number(second.get('low'), 2)}-{_number(second.get('high'), 2)}；"
@@ -173,6 +184,8 @@ def build_email(payload: dict) -> EmailMessage:
         weekly_plain.append(
             f"{item.get('role')} {item.get('code')} {item.get('name')} | {item.get('status')} | "
             f"周度分{_number(item.get('weekly_score'), 1)} | "
+            f"市值{_number(item.get('market_cap'), 1)}亿元 | 持仓观察{(item.get('holding_plan') or {}).get('label', '待复核')} | "
+            f"买点状态：{(item.get('entry_gate') or {}).get('reason', '待复核')} | "
             f"买入{_number(entry.get('low'), 2)}-{_number(entry.get('high'), 2)} | "
             f"禁追>{_number(trend.get('max_chase_price'), 2)} | 止损{_number(trend.get('stop_price'), 2)} | "
             f"止盈{_number((targets[0] if targets else {}).get('price'), 2)}/{_number((targets[1] if len(targets) > 1 else {}).get('price'), 2)} | "
@@ -282,7 +295,7 @@ def build_email(payload: dict) -> EmailMessage:
     weekly_rows = "".join(
         '<tr>'
         f'<td style="padding:8px;border-bottom:1px solid #dbe5ef"><strong>{html.escape(str(item.get("role") or ""))}</strong><br>{html.escape(str(item.get("code") or ""))} {html.escape(str(item.get("name") or ""))}</td>'
-        f'<td style="padding:8px;border-bottom:1px solid #dbe5ef">{html.escape(str(item.get("status") or ""))}<br>周度分 {_number(item.get("weekly_score"), 1)}</td>'
+        f'<td style="padding:8px;border-bottom:1px solid #dbe5ef">{html.escape(str(item.get("status") or ""))}<br>周度分 {_number(item.get("weekly_score"), 1)}<br>市值 {_number(item.get("market_cap"), 1)}亿元<br>持仓观察 {html.escape(str((item.get("holding_plan") or {}).get("label", "待复核")))}<br>{html.escape(str((item.get("entry_gate") or {}).get("reason", "等待回调企稳")))}</td>'
         f'<td style="padding:8px;border-bottom:1px solid #dbe5ef">买入 {_number((item.get("weekly_trend") or {}).get("entry_zone", {}).get("low"), 2)}-{_number((item.get("weekly_trend") or {}).get("entry_zone", {}).get("high"), 2)}<br>禁追 {_number((item.get("weekly_trend") or {}).get("max_chase_price"), 2)} · 止损 {_number((item.get("weekly_trend") or {}).get("stop_price"), 2)}</td>'
         f'<td style="padding:8px;border-bottom:1px solid #dbe5ef">{(item.get("position_plan") or {}).get("quantity", 0)}股<br>约{_number((item.get("position_plan") or {}).get("estimated_value"), 0)}元 · 风险{_number((item.get("position_plan") or {}).get("planned_loss"), 0)}元</td>'
         '</tr>'
@@ -392,7 +405,7 @@ def build_email(payload: dict) -> EmailMessage:
             <h3 style="font-size:15px;margin-bottom:6px">样本外指标变化</h3><ul style="padding-left:20px">{metric_change_html}</ul>
             <p style="font-size:12px;color:#64748b">{html.escape(str(optimization.get('guardrail') or '单日验证只记录，不直接改写因子定义。'))}</p>
             <div style="margin-top:22px;padding:12px;background:#fff7ed;border-left:4px solid #f59e0b;color:#7c2d12">
-              价位是条件计划，不自动委托；板块、基本面和午后触发未同时通过时，不进入可执行观察。量化仅独立优化，回测表现不保证未来收益。
+              基本面合格、上升趋势、回调企稳必须同时满足；突破不买。持仓期限从实际买入日起计，破位提前退出；价位是条件计划，不自动委托。量化仅独立优化，回测表现不保证未来收益。
             </div>
             <p style="margin-top:22px"><a href="{html.escape(site_url, quote=True)}">打开三核研究网站</a></p>
           </td></tr>

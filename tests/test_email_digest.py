@@ -59,6 +59,9 @@ class EmailDigestTest(unittest.TestCase):
             "event_scenarios": [{"name": "基准情景", "summary": "等待A股确认", "triggers": ["板块趋势保持"]}],
             "selections": [{
                 "role": "主选", "code": "000001", "name": "周度样本", "status": "可执行", "weekly_score": 82,
+                "market_cap": 25,
+                "holding_plan": {"label": "3-10个交易日"},
+                "entry_gate": {"passed": False, "reason": "等待回调"},
                 "weekly_trend": {"entry_zone": {"low": 10, "high": 10.2}, "max_chase_price": 10.5, "stop_price": 9.6, "take_profit": [{"price": 11}, {"price": 12}]},
                 "position_plan": {"quantity": 300, "estimated_value": 3030, "planned_loss": 180, "reasons": []},
             }],
@@ -73,6 +76,10 @@ class EmailDigestTest(unittest.TestCase):
         self.assertIn("恢复期", html)
         self.assertIn("国际事件三情景", html)
         self.assertIn("目标上限", plain)
+        self.assertIn("3-10个交易日", plain)
+        self.assertIn("3-10个交易日", html)
+        self.assertIn("等待回调", html)
+        self.assertIn("市值25.0亿元", plain)
 
     def test_build_email_contains_only_score_observation(self):
         message = build_email(payload([{
