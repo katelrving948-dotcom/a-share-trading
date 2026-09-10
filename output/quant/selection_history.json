@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-09 21:10:01",
+  "updated_at": "2026-09-10 21:07:20",
   "snapshots": [
     {
       "generated_at": "2026-08-18 12:02:03",
@@ -2989,7 +2989,8 @@
             "technical": 77.54,
             "board": 67.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": -1.7988
         },
         {
           "code": "600989",
@@ -3000,7 +3001,8 @@
             "technical": 42.27,
             "board": 61.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": -0.7468
         },
         {
           "code": "000933",
@@ -3011,7 +3013,8 @@
             "technical": 63.67,
             "board": 61.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": -2.2377
         },
         {
           "code": "603268",
@@ -3022,7 +3025,8 @@
             "technical": 0.0,
             "board": 74.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": 0.9517
         },
         {
           "code": "601225",
@@ -3033,7 +3037,8 @@
             "technical": 79.23,
             "board": 61.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": -1.257
         },
         {
           "code": "001389",
@@ -3044,7 +3049,8 @@
             "technical": 47.88,
             "board": 89.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": 0.0456
         },
         {
           "code": "600176",
@@ -3055,7 +3061,8 @@
             "technical": 60.08,
             "board": 74.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": 1.726
         },
         {
           "code": "600105",
@@ -3066,7 +3073,8 @@
             "technical": 48.45,
             "board": 89.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": -2.614
         },
         {
           "code": "000338",
@@ -3077,7 +3085,8 @@
             "technical": 64.78,
             "board": 67.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": -3.1223
         },
         {
           "code": "600183",
@@ -3088,7 +3097,8 @@
             "technical": 60.57,
             "board": 89.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": -0.7754
         },
         {
           "code": "601628",
@@ -3099,7 +3109,8 @@
             "technical": 81.46,
             "board": 0.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": 0.2779
         },
         {
           "code": "000807",
@@ -3110,7 +3121,8 @@
             "technical": 51.13,
             "board": 61.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": -2.1988
         },
         {
           "code": "600601",
@@ -3121,7 +3133,8 @@
             "technical": 77.8,
             "board": 89.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": 1.472
         },
         {
           "code": "601600",
@@ -3132,7 +3145,8 @@
             "technical": 45.48,
             "board": 74.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": -0.9955
         },
         {
           "code": "688002",
@@ -3143,7 +3157,8 @@
             "technical": 67.69,
             "board": 74.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": 0.7703
         },
         {
           "code": "600988",
@@ -3154,7 +3169,8 @@
             "technical": 73.27,
             "board": 0.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": 0.9462
         },
         {
           "code": "300765",
@@ -3165,7 +3181,8 @@
             "technical": 0.0,
             "board": 0.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": 2.1542
         },
         {
           "code": "601899",
@@ -3176,7 +3193,8 @@
             "technical": 70.07,
             "board": 0.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": -0.7624
         },
         {
           "code": "002222",
@@ -3187,7 +3205,8 @@
             "technical": 26.14,
             "board": 72.0,
             "morning_fund": 50.0
-          }
+          },
+          "return_pct": 0.5011
         },
         {
           "code": "688183",
@@ -3197,6 +3216,241 @@
             "fundamental": 67.5,
             "technical": 54.77,
             "board": 88.0,
+            "morning_fund": 50.0
+          },
+          "return_pct": -2.2713
+        }
+      ],
+      "status": "validated",
+      "validation_date": "2026-09-10"
+    },
+    {
+      "generated_at": "2026-09-10 12:02:13",
+      "signal_date": "2026-09-10",
+      "selection_weights": {
+        "fundamental": 0.666667,
+        "technical": 0.0,
+        "board": 0.166667,
+        "morning_fund": 0.166667
+      },
+      "rows": [
+        {
+          "code": "001389",
+          "rank": 1,
+          "selection_score": 85.43,
+          "components": {
+            "fundamental": 78.9,
+            "technical": 54.15,
+            "board": 97.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "600938",
+          "rank": 2,
+          "selection_score": 83.7,
+          "components": {
+            "fundamental": 80.8,
+            "technical": 64.86,
+            "board": 79.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "000776",
+          "rank": 3,
+          "selection_score": 82.8,
+          "components": {
+            "fundamental": 87.7,
+            "technical": 0.0,
+            "board": 46.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "601628",
+          "rank": 4,
+          "selection_score": 82.4,
+          "components": {
+            "fundamental": 98.6,
+            "technical": 78.72,
+            "board": 0.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "600183",
+          "rank": 5,
+          "selection_score": 81.17,
+          "components": {
+            "fundamental": 72.5,
+            "technical": 45.61,
+            "board": 97.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "600919",
+          "rank": 6,
+          "selection_score": 80.89,
+          "components": {
+            "fundamental": 86.7,
+            "technical": 0.0,
+            "board": 43.0,
+            "morning_fund": 95.55
+          }
+        },
+        {
+          "code": "601991",
+          "rank": 7,
+          "selection_score": 80.23,
+          "components": {
+            "fundamental": 88.1,
+            "technical": 36.88,
+            "board": 79.0,
+            "morning_fund": 50.0
+          }
+        },
+        {
+          "code": "600989",
+          "rank": 8,
+          "selection_score": 79.6,
+          "components": {
+            "fundamental": 94.4,
+            "technical": 47.33,
+            "board": 0.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "000933",
+          "rank": 9,
+          "selection_score": 79.6,
+          "components": {
+            "fundamental": 94.4,
+            "technical": 72.14,
+            "board": 0.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "601872",
+          "rank": 10,
+          "selection_score": 79.6,
+          "components": {
+            "fundamental": 94.4,
+            "technical": 81.17,
+            "board": 0.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "300765",
+          "rank": 11,
+          "selection_score": 79.13,
+          "components": {
+            "fundamental": 93.7,
+            "technical": 31.46,
+            "board": 0.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "600999",
+          "rank": 12,
+          "selection_score": 78.93,
+          "components": {
+            "fundamental": 94.4,
+            "technical": 0.0,
+            "board": 46.0,
+            "morning_fund": 50.0
+          }
+        },
+        {
+          "code": "300475",
+          "rank": 13,
+          "selection_score": 78.83,
+          "components": {
+            "fundamental": 74.5,
+            "technical": 40.84,
+            "board": 75.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "600988",
+          "rank": 14,
+          "selection_score": 78.2,
+          "components": {
+            "fundamental": 92.3,
+            "technical": 71.24,
+            "board": 0.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "600601",
+          "rank": 15,
+          "selection_score": 77.83,
+          "components": {
+            "fundamental": 67.5,
+            "technical": 70.16,
+            "board": 97.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "605117",
+          "rank": 16,
+          "selection_score": 77.8,
+          "components": {
+            "fundamental": 78.7,
+            "technical": 38.45,
+            "board": 52.0,
+            "morning_fund": 100.0
+          }
+        },
+        {
+          "code": "688110",
+          "rank": 17,
+          "selection_score": 76.24,
+          "components": {
+            "fundamental": 83.11,
+            "technical": 41.0,
+            "board": 75.0,
+            "morning_fund": 50.0
+          }
+        },
+        {
+          "code": "300037",
+          "rank": 18,
+          "selection_score": 71.5,
+          "components": {
+            "fundamental": 76.0,
+            "technical": 0.0,
+            "board": 75.0,
+            "morning_fund": 50.0
+          }
+        },
+        {
+          "code": "600176",
+          "rank": 19,
+          "selection_score": 70.57,
+          "components": {
+            "fundamental": 69.6,
+            "technical": 49.21,
+            "board": 95.0,
+            "morning_fund": 50.0
+          }
+        },
+        {
+          "code": "601225",
+          "rank": 20,
+          "selection_score": 68.93,
+          "components": {
+            "fundamental": 90.9,
+            "technical": 83.06,
+            "board": 0.0,
             "morning_fund": 50.0
           }
         }

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-09 21:13:34",
+  "updated_at": "2026-09-10 21:11:07",
   "entries": [
     {
       "generated_at": "2026-08-16 21:39:49",
@@ -2428,6 +2428,176 @@
         "minimum_days": 20,
         "grid_size": 0,
         "message": "已积累14个验证日，满20日后启用选股权重优化"
+      },
+      "guardrail": "技术因子只在预设参数网格内按滚动样本外结果选择；量化与后台权重试验均不写入实际选股；样本不足时保持研究默认值，单日验证不直接调参。"
+    },
+    {
+      "generated_at": "2026-09-10 21:11:07",
+      "validation": {
+        "status": "validated",
+        "signal_date": "2026-09-09",
+        "validation_date": "2026-09-10",
+        "signal_count": 20,
+        "validated_count": 17,
+        "positive_count": 6,
+        "hit_rate": 35.29,
+        "average_return": -0.671,
+        "median_return": -0.359,
+        "benchmark_return": -0.719,
+        "excess_return": 0.048,
+        "details": [
+          {
+            "code": "002011",
+            "return_pct": 5.087
+          },
+          {
+            "code": "603268",
+            "return_pct": 0.952
+          },
+          {
+            "code": "601939",
+            "return_pct": 0.817
+          },
+          {
+            "code": "301366",
+            "return_pct": 0.518
+          },
+          {
+            "code": "300760",
+            "return_pct": 0.254
+          },
+          {
+            "code": "000333",
+            "return_pct": 0.163
+          },
+          {
+            "code": "601088",
+            "return_pct": -0.069
+          },
+          {
+            "code": "601857",
+            "return_pct": -0.306
+          },
+          {
+            "code": "002648",
+            "return_pct": -0.359
+          },
+          {
+            "code": "601919",
+            "return_pct": -0.659
+          },
+          {
+            "code": "601899",
+            "return_pct": -0.762
+          },
+          {
+            "code": "000923",
+            "return_pct": -0.941
+          },
+          {
+            "code": "601225",
+            "return_pct": -1.257
+          },
+          {
+            "code": "601872",
+            "return_pct": -1.799
+          },
+          {
+            "code": "600256",
+            "return_pct": -2.371
+          },
+          {
+            "code": "002258",
+            "return_pct": -4.291
+          },
+          {
+            "code": "000912",
+            "return_pct": -6.381
+          }
+        ],
+        "message": "已按T日收盘信号核验下一交易日收盘表现"
+      },
+      "parameter_changes": [
+        {
+          "part": "factor_weights.low_atr",
+          "label": "低ATR因子权重",
+          "meaning": "低ATR映射分在技术研究分中的占比",
+          "before": 0.15,
+          "after": 0.1
+        },
+        {
+          "part": "factor_weights.low_volatility",
+          "label": "低波动因子权重",
+          "meaning": "低波动映射分在技术研究分中的占比",
+          "before": 0.2,
+          "after": 0.15
+        },
+        {
+          "part": "factor_weights.momentum",
+          "label": "动量因子权重",
+          "meaning": "动量映射分在技术研究分中的占比",
+          "before": 0.15,
+          "after": 0.3
+        },
+        {
+          "part": "factor_weights.trend",
+          "label": "趋势因子权重",
+          "meaning": "趋势映射分在技术研究分中的占比",
+          "before": 0.25,
+          "after": 0.2
+        },
+        {
+          "part": "momentum_window",
+          "label": "动量计算窗口",
+          "meaning": "用最近多少个交易日计算价格动量",
+          "before": 60,
+          "after": 20
+        }
+      ],
+      "metric_changes": [
+        {
+          "metric": "annual_return",
+          "label": "样本外年化收益",
+          "meaning": "按样本外日收益折算的年化收益率",
+          "before": 13.841,
+          "after": 44.2006,
+          "delta": 30.3596
+        },
+        {
+          "metric": "max_drawdown",
+          "label": "样本外最大回撤",
+          "meaning": "样本外净值从高点到低点的最大跌幅",
+          "before": -22.731,
+          "after": -18.668,
+          "delta": 4.063
+        },
+        {
+          "metric": "sharpe_ratio",
+          "label": "样本外夏普比率",
+          "meaning": "样本外收益相对波动风险的比值",
+          "before": 0.6496,
+          "after": 1.5219,
+          "delta": 0.8723
+        }
+      ],
+      "actions": [
+        "重新运行45组参数的滚动训练与样本外回测",
+        "完成2026-09-09信号在2026-09-10的次日验证",
+        "调整5项参数",
+        "后台研究试验：已积累15个验证日，满20日后启用选股权重优化；结果不写入实际选股"
+      ],
+      "selection_optimization": {
+        "status": "accumulating",
+        "weights": {
+          "fundamental": 0.4,
+          "technical": 0.4,
+          "board": 0.1,
+          "morning_fund": 0.1
+        },
+        "validated_days": 15,
+        "minimum_days": 20,
+        "grid_size": 0,
+        "message": "已积累15个验证日，满20日后启用选股权重优化"
       },
       "guardrail": "技术因子只在预设参数网格内按滚动样本外结果选择；量化与后台权重试验均不写入实际选股；样本不足时保持研究默认值，单日验证不直接调参。"
     }
