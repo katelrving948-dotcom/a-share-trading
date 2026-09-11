@@ -2,7 +2,7 @@
   "plan_id": "2026-W37",
   "week_start": "2026-09-07",
   "week_end": "2026-09-11",
-  "generated_at": "2026-09-10 12:02:13",
+  "generated_at": "2026-09-11 12:02:02",
   "frozen": true,
   "state": "空仓",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -15,7 +15,7 @@
       "name": "普通",
       "max_total_pct": 0.6,
       "max_stock_pct": 0.2,
-      "risk_per_trade": 300.0
+      "risk_per_trade": 274.1
     },
     "can_open_new": true,
     "block_reasons": []
@@ -56,5 +56,6 @@
   },
   "selections": [],
   "active_count": 0,
-  "execution_note": "研究池和周度候选均不是自动买入指令；股数是单股目标上限，不代表在未知现有仓位下追加买入。只有账户级亏损、趋势、价格和事件闸门同时通过才可执行。"
+  "strategy_version": "fundamental-trend-pullback-v1",
+  "execution_note": "基本面原始及行业分均≥60、上升趋势、回调企稳必须同时满足，再复核实时价格和账户风险；股数是目标上限，不是追加量。持仓期限从实际买入日起计，破位提前退出。"
 }
