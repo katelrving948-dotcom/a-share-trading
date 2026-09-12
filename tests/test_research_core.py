@@ -4,11 +4,34 @@ from pathlib import Path
 from unittest.mock import patch
 
 from fundamental import FundamentalScorer
-from research_core import _morning_fund_score, build_morning_entry_plan, build_trade_decision, quant_model_gate, save_selection_snapshot, score_intersection
+from research_core import _cap_scan, _morning_fund_score, build_morning_entry_plan, build_trade_decision, quant_model_gate, save_selection_snapshot, score_intersection
 from selection_model import ACTIVE_SELECTION_WEIGHTS, score_selection_components
 
 
 class ResearchCoreTest(unittest.TestCase):
+    def test_small_cap_scan_prefers_strength_without_bypassing_fundamentals(self):
+        rows = [
+            {"code": "large", "market_cap": 800, "fundamental_score": 90},
+            {"code": "weak", "market_cap": 80, "fundamental_score": 85, "technical_score": 20},
+            {"code": "bad", "market_cap": 40, "fundamental_score": 59, "technical_score": 100},
+            {"code": "strong", "market_cap": 30, "fundamental_score": 70, "technical_score": 90},
+        ]
+        selected = _cap_scan(rows, 2)
+        self.assertEqual([row["code"] for row in selected], ["large", "strong"])
+        self.assertNotIn("entry_gate", selected[1])
+        frozen = _cap_scan(rows, 2, {"weak"})
+        self.assertEqual({row["code"] for row in frozen}, {"weak", "strong"})
+
+    def test_small_cap_scan_respects_adjusted_quality_and_missing_factors(self):
+        rows = [
+            {"code": "large", "market_cap": 800},
+            {"code": "missing", "market_cap": 20, "fundamental_score": 75, "technical_score": None},
+            {"code": "bad", "market_cap": 30, "fundamental_score": 80,
+             "sector_adjusted_fundamental_score": 59, "technical_score": 100},
+            {"code": "tiny", "market_cap": 19, "fundamental_score": 80, "technical_score": 100},
+        ]
+        self.assertEqual([row["code"] for row in _cap_scan(rows, 2)], ["large", "missing"])
+
     def test_active_selection_score_excludes_technical_factor(self):
         components = {"fundamental": 80, "technical": 0, "board": 70, "morning_fund": 60}
         without_technical = score_selection_components(components, ACTIVE_SELECTION_WEIGHTS)

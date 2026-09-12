@@ -113,7 +113,7 @@ class PullbackTest(unittest.TestCase):
         self.assertEqual(holding_horizon(600)["label"], "5-20个交易日")
 
     def test_scan_preserves_small_and_frozen_names(self):
-        rows = [{"code": str(i), "market_cap": 600} for i in range(10)] + [{"code": "small", "market_cap": 25}]
+        rows = [{"code": str(i), "market_cap": 600} for i in range(10)] + [{"code": "small", "market_cap": 25, "fundamental_score": 70}]
         result = _cap_scan(rows, 3, {"9"})
         self.assertEqual(len(result), 3)
         self.assertTrue({"9", "small"}.issubset({r["code"] for r in result}))

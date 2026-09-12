@@ -429,7 +429,15 @@ def score_intersection(
 def _cap_scan(rows: list[dict], limit: int, keep_codes: set | None = None) -> list[dict]:
     """Preserve small-cap scan coverage and frozen codes without changing gates."""
     keep = [row for row in rows if row.get("code") in (keep_codes or set())]
-    small = [row for row in rows if 0 < float(row.get("market_cap") or 0) < LONG_TERM["small_cap_boundary"]]
+    small = [row for row in rows
+             if LONG_TERM["market_cap_min"] <= float(row.get("market_cap") or 0) < LONG_TERM["small_cap_boundary"]
+             and float(row.get("fundamental_score") or 0) >= 60
+             and float(row.get("sector_adjusted_fundamental_score", row.get("fundamental_score")) or 0) >= 60]
+    # Technical factors allocate research capacity only. Completed daily bars
+    # still determine trend eligibility, and the pullback gate controls entry.
+    small.sort(key=lambda row: float(row.get("sector_adjusted_technical_score")
+                                    if row.get("sector_adjusted_technical_score") is not None
+                                    else row.get("technical_score") or 0), reverse=True)
     selected = {row["code"]: row for row in keep}
     for row in small[:max(1, limit // 3)] + rows:
         if len(selected) >= max(limit, len(keep)):
