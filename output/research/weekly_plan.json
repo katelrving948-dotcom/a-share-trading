@@ -2,7 +2,7 @@
   "plan_id": "2026-W37",
   "week_start": "2026-09-07",
   "week_end": "2026-09-11",
-  "generated_at": "2026-09-12 12:02:24",
+  "generated_at": "2026-09-12 16:24:54",
   "frozen": true,
   "state": "空仓",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
