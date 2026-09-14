@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at": "2026-09-11 21:04:45",
-    "signal_date": "2026-09-11",
+    "generated_at": "2026-09-14 23:18:56",
+    "signal_date": "2026-09-14",
     "provider": "akshare",
     "stock_count": 500,
     "trading_days": 970,
@@ -9,8 +9,8 @@
     "current_trading_day_confirmed": true
   },
   "best_params": {
-    "momentum_window": 60,
-    "trend_window": 60,
+    "momentum_window": 20,
+    "trend_window": 120,
     "volatility_window": 20,
     "volume_window": 20,
     "rsi_window": 14,
@@ -33,18 +33,18 @@
     }
   },
   "oos_metrics": {
-    "total_return": 32.3116,
-    "annual_return": 20.5217,
-    "max_drawdown": -18.6078,
-    "sharpe_ratio": 0.8273,
+    "total_return": 87.5808,
+    "annual_return": 52.0988,
+    "max_drawdown": -17.37,
+    "sharpe_ratio": 1.6665,
     "trading_days": 378
   },
   "folds": [
     {
-      "train_start": "2022-09-13",
-      "train_end": "2024-10-16",
-      "validation_start": "2024-10-17",
-      "validation_end": "2025-04-22",
+      "train_start": "2022-09-14",
+      "train_end": "2024-10-17",
+      "validation_start": "2024-10-18",
+      "validation_end": "2025-04-23",
       "best_params": {
         "momentum_window": 20,
         "trend_window": 120,
@@ -64,27 +64,27 @@
         }
       },
       "train_metrics": {
-        "sharpe_ratio": -0.4108,
-        "annual_return": -9.7112,
-        "max_drawdown": -30.0116
+        "sharpe_ratio": -0.6265,
+        "annual_return": -13.7023,
+        "max_drawdown": -32.2981
       },
       "validation_metrics": {
-        "total_return": 9.6614,
-        "annual_return": 20.2562,
-        "max_drawdown": -15.7555,
-        "sharpe_ratio": 0.8158,
+        "total_return": 4.8196,
+        "annual_return": 9.8716,
+        "max_drawdown": -15.4129,
+        "sharpe_ratio": 0.4874,
         "trading_days": 126,
         "top_n": 20,
-        "average_daily_turnover": 0.9413,
-        "total_trading_cost": 21.298
+        "average_daily_turnover": 0.9381,
+        "total_trading_cost": 21.226
       },
       "trial_count": 45
     },
     {
-      "train_start": "2023-03-23",
-      "train_end": "2025-04-22",
-      "validation_start": "2025-04-23",
-      "validation_end": "2025-10-29",
+      "train_start": "2023-03-24",
+      "train_end": "2025-04-23",
+      "validation_start": "2025-04-24",
+      "validation_end": "2025-10-30",
       "best_params": {
         "momentum_window": 20,
         "trend_window": 120,
@@ -104,30 +104,30 @@
         }
       },
       "train_metrics": {
-        "sharpe_ratio": -0.1607,
-        "annual_return": -5.8103,
-        "max_drawdown": -30.0116
+        "sharpe_ratio": -0.2513,
+        "annual_return": -7.7581,
+        "max_drawdown": -32.2981
       },
       "validation_metrics": {
-        "total_return": 14.9269,
-        "annual_return": 32.082,
-        "max_drawdown": -8.7898,
-        "sharpe_ratio": 1.244,
+        "total_return": 23.3793,
+        "annual_return": 52.2245,
+        "max_drawdown": -9.4657,
+        "sharpe_ratio": 1.847,
         "trading_days": 126,
         "top_n": 20,
-        "average_daily_turnover": 1.0579,
-        "total_trading_cost": 23.944
+        "average_daily_turnover": 1.0095,
+        "total_trading_cost": 22.846
       },
       "trial_count": 45
     },
     {
-      "train_start": "2023-09-25",
-      "train_end": "2025-10-29",
-      "validation_start": "2025-10-30",
-      "validation_end": "2026-05-11",
+      "train_start": "2023-09-26",
+      "train_end": "2025-10-30",
+      "validation_start": "2025-10-31",
+      "validation_end": "2026-05-12",
       "best_params": {
-        "momentum_window": 60,
-        "trend_window": 60,
+        "momentum_window": 20,
+        "trend_window": 120,
         "volatility_window": 20,
         "volume_window": 20,
         "rsi_window": 14,
@@ -144,19 +144,19 @@
         }
       },
       "train_metrics": {
-        "sharpe_ratio": 0.602,
-        "annual_return": 12.3115,
-        "max_drawdown": -21.9573
+        "sharpe_ratio": 0.6017,
+        "annual_return": 12.5069,
+        "max_drawdown": -19.6776
       },
       "validation_metrics": {
-        "total_return": 4.9838,
-        "annual_return": 10.216,
-        "max_drawdown": -13.9339,
-        "sharpe_ratio": 0.4828,
+        "total_return": 45.0453,
+        "annual_return": 110.3813,
+        "max_drawdown": -12.143,
+        "sharpe_ratio": 2.572,
         "trading_days": 126,
         "top_n": 20,
-        "average_daily_turnover": 0.9333,
-        "total_trading_cost": 21.118
+        "average_daily_turnover": 0.9992,
+        "total_trading_cost": 22.612
       },
       "trial_count": 45
     }
@@ -168,178 +168,186 @@
   },
   "latest_validation": {
     "status": "validated",
-    "signal_date": "2026-09-10",
-    "validation_date": "2026-09-11",
+    "signal_date": "2026-09-11",
+    "validation_date": "2026-09-14",
     "signal_count": 20,
-    "validated_count": 18,
-    "positive_count": 5,
-    "hit_rate": 27.78,
-    "average_return": -0.97,
-    "median_return": -1.754,
-    "benchmark_return": -1.434,
-    "excess_return": 0.464,
+    "validated_count": 19,
+    "positive_count": 7,
+    "hit_rate": 36.84,
+    "average_return": 0.283,
+    "median_return": -0.155,
+    "benchmark_return": 0.914,
+    "excess_return": -0.631,
     "details": [
       {
         "code": "000993",
-        "return_pct": 9.429
+        "return_pct": 9.486
       },
       {
-        "code": "002815",
-        "return_pct": 8.847
+        "code": "601328",
+        "return_pct": 1.129
       },
       {
-        "code": "600391",
-        "return_pct": 3.065
-      },
-      {
-        "code": "002913",
-        "return_pct": 2.0
-      },
-      {
-        "code": "002011",
-        "return_pct": 1.052
-      },
-      {
-        "code": "600919",
-        "return_pct": -0.31
+        "code": "601398",
+        "return_pct": 0.912
       },
       {
         "code": "002142",
-        "return_pct": -0.906
+        "return_pct": 0.643
       },
       {
-        "code": "603268",
-        "return_pct": -1.043
+        "code": "000333",
+        "return_pct": 0.491
       },
       {
-        "code": "600026",
-        "return_pct": -1.715
+        "code": "600900",
+        "return_pct": 0.463
       },
       {
-        "code": "600256",
-        "return_pct": -1.794
+        "code": "601288",
+        "return_pct": 0.304
       },
       {
-        "code": "600150",
-        "return_pct": -2.432
+        "code": "600938",
+        "return_pct": 0.0
       },
       {
-        "code": "601872",
-        "return_pct": -2.612
+        "code": "601766",
+        "return_pct": 0.0
+      },
+      {
+        "code": "600919",
+        "return_pct": -0.155
+      },
+      {
+        "code": "601728",
+        "return_pct": -0.396
+      },
+      {
+        "code": "601088",
+        "return_pct": -0.426
+      },
+      {
+        "code": "002011",
+        "return_pct": -0.761
+      },
+      {
+        "code": "600310",
+        "return_pct": -0.811
+      },
+      {
+        "code": "000807",
+        "return_pct": -0.9
+      },
+      {
+        "code": "000933",
+        "return_pct": -0.93
       },
       {
         "code": "002648",
-        "return_pct": -2.8
+        "return_pct": -1.05
       },
       {
-        "code": "601975",
-        "return_pct": -3.704
+        "code": "601857",
+        "return_pct": -1.229
       },
       {
-        "code": "000912",
-        "return_pct": -4.489
-      },
-      {
-        "code": "002493",
-        "return_pct": -4.982
-      },
-      {
-        "code": "000923",
-        "return_pct": -6.411
-      },
-      {
-        "code": "601949",
-        "return_pct": -8.657
+        "code": "600256",
+        "return_pct": -1.399
       }
     ],
     "message": "已按T日收盘信号核验下一交易日收盘表现"
   },
   "optimization_log_entry": {
-    "generated_at": "2026-09-11 21:04:45",
+    "generated_at": "2026-09-14 23:18:56",
     "validation": {
       "status": "validated",
-      "signal_date": "2026-09-10",
-      "validation_date": "2026-09-11",
+      "signal_date": "2026-09-11",
+      "validation_date": "2026-09-14",
       "signal_count": 20,
-      "validated_count": 18,
-      "positive_count": 5,
-      "hit_rate": 27.78,
-      "average_return": -0.97,
-      "median_return": -1.754,
-      "benchmark_return": -1.434,
-      "excess_return": 0.464,
+      "validated_count": 19,
+      "positive_count": 7,
+      "hit_rate": 36.84,
+      "average_return": 0.283,
+      "median_return": -0.155,
+      "benchmark_return": 0.914,
+      "excess_return": -0.631,
       "details": [
         {
           "code": "000993",
-          "return_pct": 9.429
+          "return_pct": 9.486
         },
         {
-          "code": "002815",
-          "return_pct": 8.847
+          "code": "601328",
+          "return_pct": 1.129
         },
         {
-          "code": "600391",
-          "return_pct": 3.065
-        },
-        {
-          "code": "002913",
-          "return_pct": 2.0
-        },
-        {
-          "code": "002011",
-          "return_pct": 1.052
-        },
-        {
-          "code": "600919",
-          "return_pct": -0.31
+          "code": "601398",
+          "return_pct": 0.912
         },
         {
           "code": "002142",
-          "return_pct": -0.906
+          "return_pct": 0.643
         },
         {
-          "code": "603268",
-          "return_pct": -1.043
+          "code": "000333",
+          "return_pct": 0.491
         },
         {
-          "code": "600026",
-          "return_pct": -1.715
+          "code": "600900",
+          "return_pct": 0.463
         },
         {
-          "code": "600256",
-          "return_pct": -1.794
+          "code": "601288",
+          "return_pct": 0.304
         },
         {
-          "code": "600150",
-          "return_pct": -2.432
+          "code": "600938",
+          "return_pct": 0.0
         },
         {
-          "code": "601872",
-          "return_pct": -2.612
+          "code": "601766",
+          "return_pct": 0.0
+        },
+        {
+          "code": "600919",
+          "return_pct": -0.155
+        },
+        {
+          "code": "601728",
+          "return_pct": -0.396
+        },
+        {
+          "code": "601088",
+          "return_pct": -0.426
+        },
+        {
+          "code": "002011",
+          "return_pct": -0.761
+        },
+        {
+          "code": "600310",
+          "return_pct": -0.811
+        },
+        {
+          "code": "000807",
+          "return_pct": -0.9
+        },
+        {
+          "code": "000933",
+          "return_pct": -0.93
         },
         {
           "code": "002648",
-          "return_pct": -2.8
+          "return_pct": -1.05
         },
         {
-          "code": "601975",
-          "return_pct": -3.704
+          "code": "601857",
+          "return_pct": -1.229
         },
         {
-          "code": "000912",
-          "return_pct": -4.489
-        },
-        {
-          "code": "002493",
-          "return_pct": -4.982
-        },
-        {
-          "code": "000923",
-          "return_pct": -6.411
-        },
-        {
-          "code": "601949",
-          "return_pct": -8.657
+          "code": "600256",
+          "return_pct": -1.399
         }
       ],
       "message": "已按T日收盘信号核验下一交易日收盘表现"
@@ -349,15 +357,15 @@
         "part": "momentum_window",
         "label": "动量计算窗口",
         "meaning": "用最近多少个交易日计算价格动量",
-        "before": 20,
-        "after": 60
+        "before": 60,
+        "after": 20
       },
       {
         "part": "trend_window",
         "label": "趋势均线窗口",
         "meaning": "用多少个交易日的均线判断价格趋势",
-        "before": 120,
-        "after": 60
+        "before": 60,
+        "after": 120
       }
     ],
     "metric_changes": [
@@ -365,32 +373,32 @@
         "metric": "annual_return",
         "label": "样本外年化收益",
         "meaning": "按样本外日收益折算的年化收益率",
-        "before": 44.2006,
-        "after": 20.5217,
-        "delta": -23.6789
+        "before": 20.5217,
+        "after": 52.0988,
+        "delta": 31.5771
       },
       {
         "metric": "max_drawdown",
         "label": "样本外最大回撤",
         "meaning": "样本外净值从高点到低点的最大跌幅",
-        "before": -18.668,
-        "after": -18.6078,
-        "delta": 0.0602
+        "before": -18.6078,
+        "after": -17.37,
+        "delta": 1.2378
       },
       {
         "metric": "sharpe_ratio",
         "label": "样本外夏普比率",
         "meaning": "样本外收益相对波动风险的比值",
-        "before": 1.5219,
-        "after": 0.8273,
-        "delta": -0.6946
+        "before": 0.8273,
+        "after": 1.6665,
+        "delta": 0.8392
       }
     ],
     "actions": [
       "重新运行45组参数的滚动训练与样本外回测",
-      "完成2026-09-10信号在2026-09-11的次日验证",
+      "完成2026-09-11信号在2026-09-14的次日验证",
       "调整2项参数",
-      "后台研究试验：已积累16个验证日，满20日后启用选股权重优化；结果不写入实际选股"
+      "后台研究试验：已积累17个验证日，满20日后启用选股权重优化；结果不写入实际选股"
     ],
     "selection_optimization": {
       "status": "accumulating",
@@ -400,10 +408,10 @@
         "board": 0.1,
         "morning_fund": 0.1
       },
-      "validated_days": 16,
+      "validated_days": 17,
       "minimum_days": 20,
       "grid_size": 0,
-      "message": "已积累16个验证日，满20日后启用选股权重优化"
+      "message": "已积累17个验证日，满20日后启用选股权重优化"
     },
     "guardrail": "技术因子只在预设参数网格内按滚动样本外结果选择；量化与后台权重试验均不写入实际选股；样本不足时保持研究默认值，单日验证不直接调参。"
   },
@@ -415,9 +423,9 @@
       "board": 0.1,
       "morning_fund": 0.1
     },
-    "validated_days": 16,
+    "validated_days": 17,
     "minimum_days": 20,
     "grid_size": 0,
-    "message": "已积累16个验证日，满20日后启用选股权重优化"
+    "message": "已积累17个验证日，满20日后启用选股权重优化"
   }
 }
