@@ -2,7 +2,7 @@
   "plan_id": "2026-W38",
   "week_start": "2026-09-14",
   "week_end": "2026-09-18",
-  "generated_at": "2026-09-14 12:02:07",
+  "generated_at": "2026-09-15 12:02:24",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：道琼斯、标普500、纳斯达克100",
+      "summary": "相对偏强市场：纳斯达克中国金龙、NYMEX原油",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -39,7 +39,7 @@
     },
     {
       "name": "利空情景",
-      "summary": "相对偏弱市场：COMEX黄金、COMEX铜",
+      "summary": "相对偏弱市场：道琼斯、标普500、纳斯达克100",
       "triggers": [
         "外部风险扩大",
         "A股相关板块破位或候选股相对强度转负"
@@ -60,8 +60,8 @@
       "name": "方正科技",
       "industry": "元件",
       "role": "主选",
-      "status": "等待回调",
-      "market_cap": 636.36,
+      "status": "撤销",
+      "market_cap": 629.52,
       "entry_gate": {
         "passed": false,
         "state": "waiting_pullback",
@@ -76,63 +76,16 @@
         "label": "5-20个交易日",
         "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
       },
-      "weekly_score": 71.72,
+      "weekly_score": 57.03,
       "score_components": {
-        "fundamental": 67.5,
+        "fundamental": 69.1,
         "trend": 80.0,
-        "board": 100.0,
+        "board": 0.0,
         "external_event": 50.0,
-        "valuation_crowding": 14.4
+        "valuation_crowding": 7.8
       },
-      "primary_board": {
-        "type": "行业",
-        "code": "BK0459",
-        "name": "元件",
-        "change_pct": 2.96,
-        "main_net_inflow": 38.45,
-        "recent_main_net_inflow": 261.53,
-        "positive_days": 4,
-        "history_days": 5,
-        "flow_score": 100,
-        "external_score": 50,
-        "external_confidence": "低",
-        "external_signal_count": 0,
-        "external_reasons": [],
-        "leaders": [
-          {
-            "code": "300408",
-            "name": "三环集团",
-            "role": "龙头",
-            "board_rank": 1,
-            "leadership_score": 88,
-            "price": 128.09,
-            "change_pct": 3.0,
-            "market_cap": 2557.6,
-            "amount": 7424848125.7,
-            "main_net": 4.98,
-            "main_net_pct": 6.7
-          },
-          {
-            "code": "600183",
-            "name": "生益科技",
-            "role": "次龙头",
-            "board_rank": 2,
-            "leadership_score": 85,
-            "price": 148.68,
-            "change_pct": 0.17,
-            "market_cap": 3611.44,
-            "amount": 5416164923.0,
-            "main_net": 2.06,
-            "main_net_pct": 3.8
-          }
-        ],
-        "rotation_score": 100,
-        "rise_count": 0,
-        "fall_count": 603186,
-        "effect": "资金流入且上涨扩散，板块效应较强",
-        "rank": 1
-      },
-      "fundamental_score": 67.5,
+      "primary_board": null,
+      "fundamental_score": 69.1,
       "fundamental_evidence": {
         "report_date": "2026-06-30",
         "notice_date": "2026-08-20",
@@ -165,7 +118,7 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-09-11",
+        "as_of": "2026-09-14",
         "qualified": true,
         "trend_qualified": true,
         "pullback_plan": {
@@ -181,19 +134,19 @@
           "state": "waiting_pullback",
           "touched_on": null,
           "confirmed_on": null,
-          "elapsed_sessions": 0,
-          "as_of": "2026-09-11"
+          "elapsed_sessions": 1,
+          "as_of": "2026-09-14"
         },
         "trend_score": 80.0,
-        "close": 14.83,
-        "ma20": 12.91,
-        "ma60": 12.38,
-        "atr": 0.827,
-        "atr_pct": 5.58,
-        "return_20_pct": 17.14,
-        "benchmark_return_20_pct": -3.34,
-        "relative_strength_pct": 20.48,
-        "extension_pct": 14.87,
+        "close": 14.82,
+        "ma20": 13.0,
+        "ma60": 12.39,
+        "atr": 0.844,
+        "atr_pct": 5.69,
+        "return_20_pct": 14.09,
+        "benchmark_return_20_pct": -5.51,
+        "relative_strength_pct": 19.59,
+        "extension_pct": 13.98,
         "overextended": true,
         "checks": {
           "above_ma20": true,
@@ -240,11 +193,13 @@
         "per_share_risk": 2.0,
         "executable": false,
         "reasons": [
-          "等待回调"
+          "等待回调",
+          "板块周度确认不足55分"
         ],
         "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
       },
       "invalidation": [
+        "板块周度确认不足55分",
         "跌破结构止损",
         "板块趋势或相对强度转弱",
         "重大公告或国际事件破坏核心逻辑"
@@ -254,14 +209,14 @@
     {
       "code": "600479",
       "name": "千金药业",
-      "industry": "医药生物",
+      "industry": "中药Ⅱ",
       "role": "主选",
-      "status": "等待回调",
-      "market_cap": 59.02,
+      "status": "撤销",
+      "market_cap": 57.1,
       "entry_gate": {
         "passed": false,
-        "state": "waiting_pullback",
-        "reason": "等待回调",
+        "state": "waiting_confirmation",
+        "reason": "等待企稳",
         "reference_price": null
       },
       "holding_plan": {
@@ -272,62 +227,15 @@
         "label": "3-10个交易日",
         "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
       },
-      "weekly_score": 71.01,
+      "weekly_score": 58.6,
       "score_components": {
         "fundamental": 63.3,
         "trend": 80.0,
-        "board": 86.0,
+        "board": 0.0,
         "external_event": 50.0,
-        "valuation_crowding": 75.89
+        "valuation_crowding": 85.68
       },
-      "primary_board": {
-        "type": "概念",
-        "code": "BK1633",
-        "name": "昨日高振幅",
-        "change_pct": 0.45,
-        "main_net_inflow": 47.64,
-        "recent_main_net_inflow": 53.38,
-        "positive_days": 1,
-        "history_days": 5,
-        "flow_score": 86,
-        "external_score": 50,
-        "external_confidence": "低",
-        "external_signal_count": 0,
-        "external_reasons": [],
-        "leaders": [
-          {
-            "code": "600172",
-            "name": "黄河旋风",
-            "role": "龙头",
-            "board_rank": 1,
-            "leadership_score": 94,
-            "price": 16.53,
-            "change_pct": 9.98,
-            "market_cap": 238.39,
-            "amount": 4123386301.0,
-            "main_net": 12.54,
-            "main_net_pct": 30.41
-          },
-          {
-            "code": "600330",
-            "name": "天通股份",
-            "role": "次龙头",
-            "board_rank": 2,
-            "leadership_score": 94,
-            "price": 30.23,
-            "change_pct": 10.01,
-            "market_cap": 372.87,
-            "amount": 2179945214.0,
-            "main_net": 4.73,
-            "main_net_pct": 21.69
-          }
-        ],
-        "rotation_score": 86,
-        "rise_count": null,
-        "fall_count": null,
-        "effect": "资金流入且上涨扩散，板块效应较强",
-        "rank": 6
-      },
+      "primary_board": null,
       "fundamental_score": 63.3,
       "fundamental_evidence": {
         "report_date": "2026-06-30",
@@ -361,7 +269,7 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-09-11",
+        "as_of": "2026-09-14",
         "qualified": true,
         "trend_qualified": true,
         "pullback_plan": {
@@ -374,22 +282,22 @@
           "stop_price": 11.15,
           "max_entry_price": 13.36,
           "valid_sessions": 5,
-          "state": "waiting_pullback",
-          "touched_on": null,
+          "state": "waiting_confirmation",
+          "touched_on": "2026-09-14",
           "confirmed_on": null,
-          "elapsed_sessions": 0,
-          "as_of": "2026-09-11"
+          "elapsed_sessions": 1,
+          "as_of": "2026-09-14"
         },
         "trend_score": 80.0,
-        "close": 11.44,
-        "ma20": 11.94,
-        "ma60": 10.41,
-        "atr": 1.427,
-        "atr_pct": 12.48,
-        "return_20_pct": 14.4,
-        "benchmark_return_20_pct": -3.34,
-        "relative_strength_pct": 17.74,
-        "extension_pct": -4.16,
+        "close": 11.9,
+        "ma20": 12.03,
+        "ma60": 10.45,
+        "atr": 1.483,
+        "atr_pct": 12.46,
+        "return_20_pct": 19.24,
+        "benchmark_return_20_pct": -5.51,
+        "relative_strength_pct": 24.74,
+        "extension_pct": -1.1,
         "overextended": false,
         "checks": {
           "above_ma20": false,
@@ -435,11 +343,13 @@
         "per_share_risk": 2.21,
         "executable": false,
         "reasons": [
-          "等待回调"
+          "等待企稳",
+          "板块周度确认不足55分"
         ],
         "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
       },
       "invalidation": [
+        "板块周度确认不足55分",
         "跌破结构止损",
         "板块趋势或相对强度转弱",
         "重大公告或国际事件破坏核心逻辑"
@@ -447,7 +357,7 @@
       "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作"
     }
   ],
-  "active_count": 2,
+  "active_count": 0,
   "strategy_version": "fundamental-trend-pullback-v1",
   "execution_note": "基本面原始及行业分均≥60、上升趋势、回调企稳必须同时满足，再复核实时价格和账户风险；股数是目标上限，不是追加量。持仓期限从实际买入日起计，破位提前退出。"
 }
