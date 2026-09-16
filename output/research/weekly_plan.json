@@ -2,7 +2,7 @@
   "plan_id": "2026-W38",
   "week_start": "2026-09-14",
   "week_end": "2026-09-18",
-  "generated_at": "2026-09-15 12:02:24",
+  "generated_at": "2026-09-16 12:02:15",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：纳斯达克中国金龙、NYMEX原油",
+      "summary": "相对偏强市场：恒生指数、COMEX黄金、COMEX铜",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -61,7 +61,7 @@
       "industry": "元件",
       "role": "主选",
       "status": "撤销",
-      "market_cap": 629.52,
+      "market_cap": 640.63,
       "entry_gate": {
         "passed": false,
         "state": "waiting_pullback",
@@ -76,16 +76,16 @@
         "label": "5-20个交易日",
         "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
       },
-      "weekly_score": 57.03,
+      "weekly_score": 59.92,
       "score_components": {
-        "fundamental": 69.1,
-        "trend": 80.0,
+        "fundamental": 60.0,
+        "trend": 100.0,
         "board": 0.0,
         "external_event": 50.0,
-        "valuation_crowding": 7.8
+        "valuation_crowding": 18.46
       },
       "primary_board": null,
-      "fundamental_score": 69.1,
+      "fundamental_score": 60.0,
       "fundamental_evidence": {
         "report_date": "2026-06-30",
         "notice_date": "2026-08-20",
@@ -118,7 +118,7 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-09-14",
+        "as_of": "2026-09-15",
         "qualified": true,
         "trend_qualified": true,
         "pullback_plan": {
@@ -134,20 +134,20 @@
           "state": "waiting_pullback",
           "touched_on": null,
           "confirmed_on": null,
-          "elapsed_sessions": 1,
-          "as_of": "2026-09-14"
+          "elapsed_sessions": 2,
+          "as_of": "2026-09-15"
         },
-        "trend_score": 80.0,
-        "close": 14.82,
-        "ma20": 13.0,
-        "ma60": 12.39,
-        "atr": 0.844,
-        "atr_pct": 5.69,
-        "return_20_pct": 14.09,
-        "benchmark_return_20_pct": -5.51,
-        "relative_strength_pct": 19.59,
-        "extension_pct": 13.98,
-        "overextended": true,
+        "trend_score": 100.0,
+        "close": 14.54,
+        "ma20": 13.07,
+        "ma60": 12.41,
+        "atr": 0.859,
+        "atr_pct": 5.91,
+        "return_20_pct": 10.65,
+        "benchmark_return_20_pct": -5.84,
+        "relative_strength_pct": 16.49,
+        "extension_pct": 11.23,
+        "overextended": false,
         "checks": {
           "above_ma20": true,
           "ma20_above_ma60": true,
@@ -178,7 +178,6 @@
         "time_stop": "5个交易日未出现相对强势，减仓或退出",
         "trailing_rule": "剩余仓位按10日线、前低或周线结构跟踪；止损不得下移",
         "reasons": [
-          "价格偏离20日均线或20日涨幅过大，禁止追高",
           "结构止损距离10.6%不在4%-7%范围"
         ]
       },
@@ -194,7 +193,8 @@
         "executable": false,
         "reasons": [
           "等待回调",
-          "板块周度确认不足55分"
+          "板块周度确认不足55分",
+          "本周已撤销的计划不重新启用"
         ],
         "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
       },
@@ -215,9 +215,7 @@
       "market_cap": 57.1,
       "entry_gate": {
         "passed": false,
-        "state": "waiting_confirmation",
-        "reason": "等待企稳",
-        "reference_price": null
+        "reason": "候选数据不可用"
       },
       "holding_plan": {
         "style": "中小市值趋势波段",
@@ -354,7 +352,8 @@
         "板块趋势或相对强度转弱",
         "重大公告或国际事件破坏核心逻辑"
       ],
-      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作"
+      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作",
+      "withdraw_reason": "本周更新中已无法取得候选数据或硬性资格失效"
     }
   ],
   "active_count": 0,
