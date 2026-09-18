@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-17 21:50:08",
+  "updated_at": "2026-09-18 21:11:27",
   "entries": [
     {
       "generated_at": "2026-08-16 21:39:49",
@@ -3362,6 +3362,138 @@
           "average_excess_return": 0.0824,
           "positive_day_rate": 65.0,
           "evaluated_days": 20
+        },
+        "message": "使用逐日留存的午间候选快照及下一交易日收益优化选股权重"
+      },
+      "guardrail": "技术因子只在预设参数网格内按滚动样本外结果选择；量化与后台权重试验均不写入实际选股；样本不足时保持研究默认值，单日验证不直接调参。"
+    },
+    {
+      "generated_at": "2026-09-18 21:11:27",
+      "validation": {
+        "status": "validated",
+        "signal_date": "2026-09-17",
+        "validation_date": "2026-09-18",
+        "signal_count": 20,
+        "validated_count": 15,
+        "positive_count": 6,
+        "hit_rate": 40.0,
+        "average_return": 1.025,
+        "median_return": -0.478,
+        "benchmark_return": 2.323,
+        "excess_return": -1.298,
+        "details": [
+          {
+            "code": "001216",
+            "return_pct": 9.321
+          },
+          {
+            "code": "300661",
+            "return_pct": 7.373
+          },
+          {
+            "code": "003006",
+            "return_pct": 5.392
+          },
+          {
+            "code": "300725",
+            "return_pct": 1.904
+          },
+          {
+            "code": "603888",
+            "return_pct": 1.871
+          },
+          {
+            "code": "600919",
+            "return_pct": 0.913
+          },
+          {
+            "code": "603259",
+            "return_pct": -0.295
+          },
+          {
+            "code": "600900",
+            "return_pct": -0.478
+          },
+          {
+            "code": "601398",
+            "return_pct": -0.531
+          },
+          {
+            "code": "601939",
+            "return_pct": -0.58
+          },
+          {
+            "code": "601288",
+            "return_pct": -0.816
+          },
+          {
+            "code": "601328",
+            "return_pct": -0.988
+          },
+          {
+            "code": "300759",
+            "return_pct": -1.007
+          },
+          {
+            "code": "600256",
+            "return_pct": -1.422
+          },
+          {
+            "code": "300741",
+            "return_pct": -5.281
+          }
+        ],
+        "message": "已按T日收盘信号核验下一交易日收盘表现"
+      },
+      "parameter_changes": [],
+      "metric_changes": [
+        {
+          "metric": "annual_return",
+          "label": "样本外年化收益",
+          "meaning": "按样本外日收益折算的年化收益率",
+          "before": 17.7347,
+          "after": 2.1699,
+          "delta": -15.5648
+        },
+        {
+          "metric": "max_drawdown",
+          "label": "样本外最大回撤",
+          "meaning": "样本外净值从高点到低点的最大跌幅",
+          "before": -19.3074,
+          "after": -21.705,
+          "delta": -2.3976
+        },
+        {
+          "metric": "sharpe_ratio",
+          "label": "样本外夏普比率",
+          "meaning": "样本外收益相对波动风险的比值",
+          "before": 0.8883,
+          "after": 0.2087,
+          "delta": -0.6796
+        }
+      ],
+      "actions": [
+        "重新运行45组参数的滚动训练与样本外回测",
+        "完成2026-09-17信号在2026-09-18的次日验证",
+        "参数保持不变，避免根据单日结果追涨杀跌式调参",
+        "后台研究试验：使用逐日留存的午间候选快照及下一交易日收益优化选股权重；结果不写入实际选股"
+      ],
+      "selection_optimization": {
+        "status": "optimized",
+        "weights": {
+          "fundamental": 0.3,
+          "technical": 0.5,
+          "board": 0.05,
+          "morning_fund": 0.15
+        },
+        "validated_days": 21,
+        "minimum_days": 20,
+        "grid_size": 56,
+        "metrics": {
+          "sharpe_ratio": 2.194,
+          "average_excess_return": 0.1243,
+          "positive_day_rate": 66.67,
+          "evaluated_days": 21
         },
         "message": "使用逐日留存的午间候选快照及下一交易日收益优化选股权重"
       },
