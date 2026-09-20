@@ -1,9 +1,9 @@
 {
   "summary": {
-    "generated_at": "2026-09-19 12:02:40",
+    "generated_at": "2026-09-20 12:02:41",
     "pool_count": 500,
-    "financial_success_count": 498,
-    "qualified_count": 214,
+    "financial_success_count": 499,
+    "qualified_count": 215,
     "minimum_score": 60.0,
     "market_cap_min_yi": 20,
     "small_cap_boundary_yi": 500,
@@ -172,6 +172,35 @@
       "fundamental_rank": 5
     },
     {
+      "code": "000933",
+      "name": "神火股份",
+      "industry": "",
+      "listing_board": "深圳主板",
+      "report_date": "2026-06-30",
+      "notice_date": "2026-07-28",
+      "price": 26.81,
+      "market_cap": 602.96,
+      "fundamental_score": 91,
+      "quality_score": 92,
+      "growth_score": 96,
+      "valuation_score": 73,
+      "cashflow_score": 100,
+      "roe": 18.41,
+      "annualized_roe": 36.82,
+      "revenue_growth": 21.35,
+      "profit_growth": 151.06,
+      "gross_margin": 36.17,
+      "eps": 2.16,
+      "operating_cf_per_share": 3.2016,
+      "pe": 14.81,
+      "pb": 2.18,
+      "score_explanation": "质量92×35% + 成长96×30% + 估值73×20% + 现金流100×15% = 91",
+      "evidence": "2026-06-30财务指标，公告/更新日2026-07-28；来源：东方财富财务指标 API；新闻未计分",
+      "risk": "未触发财务量化警示，仍需核验公告",
+      "data_source": "东方财富财务指标 API",
+      "fundamental_rank": 6
+    },
+    {
       "code": "605117",
       "name": "德业股份",
       "industry": "",
@@ -198,7 +227,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 6
+      "fundamental_rank": 7
     },
     {
       "code": "601899",
@@ -227,7 +256,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 7
+      "fundamental_rank": 8
     },
     {
       "code": "300059",
@@ -256,7 +285,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 8
+      "fundamental_rank": 9
     },
     {
       "code": "000792",
@@ -285,7 +314,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 9
+      "fundamental_rank": 10
     },
     {
       "code": "000776",
@@ -314,7 +343,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 10
+      "fundamental_rank": 11
     },
     {
       "code": "600989",
@@ -343,7 +372,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-13；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 11
+      "fundamental_rank": 12
     },
     {
       "code": "002517",
@@ -372,7 +401,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 12
+      "fundamental_rank": 13
     },
     {
       "code": "600999",
@@ -401,7 +430,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 13
+      "fundamental_rank": 14
     },
     {
       "code": "600909",
@@ -430,7 +459,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 14
+      "fundamental_rank": 15
     },
     {
       "code": "600030",
@@ -459,7 +488,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 15
+      "fundamental_rank": 16
     },
     {
       "code": "002602",
@@ -488,7 +517,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 16
+      "fundamental_rank": 17
     },
     {
       "code": "002648",
@@ -517,7 +546,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 17
+      "fundamental_rank": 18
     },
     {
       "code": "601872",
@@ -546,7 +575,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 18
+      "fundamental_rank": 19
     },
     {
       "code": "300442",
@@ -575,7 +604,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 19
+      "fundamental_rank": 20
     },
     {
       "code": "601168",
@@ -604,7 +633,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-07-30；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 20
+      "fundamental_rank": 21
     },
     {
       "code": "002558",
@@ -633,7 +662,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 21
+      "fundamental_rank": 22
     },
     {
       "code": "600026",
@@ -662,7 +691,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 22
+      "fundamental_rank": 23
     },
     {
       "code": "601600",
@@ -691,7 +720,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 23
+      "fundamental_rank": 24
     },
     {
       "code": "000975",
@@ -720,7 +749,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 24
+      "fundamental_rank": 25
     },
     {
       "code": "601601",
@@ -749,7 +778,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 25
+      "fundamental_rank": 26
     },
     {
       "code": "000603",
@@ -778,7 +807,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-01；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 26
+      "fundamental_rank": 27
     },
     {
       "code": "000807",
@@ -807,7 +836,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 27
+      "fundamental_rank": 28
     },
     {
       "code": "603259",
@@ -836,7 +865,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-04；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 28
+      "fundamental_rank": 29
     },
     {
       "code": "600988",
@@ -865,7 +894,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 29
+      "fundamental_rank": 30
     },
     {
       "code": "601688",
@@ -894,7 +923,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 30
+      "fundamental_rank": 31
     },
     {
       "code": "601225",
@@ -923,7 +952,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 31
+      "fundamental_rank": 32
     },
     {
       "code": "603993",
@@ -952,7 +981,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 32
+      "fundamental_rank": 33
     },
     {
       "code": "600309",
@@ -981,7 +1010,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 33
+      "fundamental_rank": 34
     },
     {
       "code": "000426",
@@ -1010,7 +1039,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 34
+      "fundamental_rank": 35
     },
     {
       "code": "688825",
@@ -1039,7 +1068,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 35
+      "fundamental_rank": 36
     },
     {
       "code": "601211",
@@ -1068,7 +1097,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-19；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 36
+      "fundamental_rank": 37
     },
     {
       "code": "300765",
@@ -1097,7 +1126,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 37
+      "fundamental_rank": 38
     },
     {
       "code": "688213",
@@ -1126,7 +1155,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 38
+      "fundamental_rank": 39
     },
     {
       "code": "600961",
@@ -1155,7 +1184,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-19；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 39
+      "fundamental_rank": 40
     },
     {
       "code": "603629",
@@ -1184,7 +1213,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 40
+      "fundamental_rank": 41
     },
     {
       "code": "002222",
@@ -1213,7 +1242,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 41
+      "fundamental_rank": 42
     },
     {
       "code": "601991",
@@ -1242,7 +1271,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 42
+      "fundamental_rank": 43
     },
     {
       "code": "600919",
@@ -1271,7 +1300,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 43
+      "fundamental_rank": 44
     },
     {
       "code": "601975",
@@ -1300,7 +1329,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 44
+      "fundamental_rank": 45
     },
     {
       "code": "300199",
@@ -1329,7 +1358,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 45
+      "fundamental_rank": 46
     },
     {
       "code": "600188",
@@ -1358,7 +1387,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 46
+      "fundamental_rank": 47
     },
     {
       "code": "002142",
@@ -1387,7 +1416,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 47
+      "fundamental_rank": 48
     },
     {
       "code": "600497",
@@ -1416,7 +1445,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 48
+      "fundamental_rank": 49
     },
     {
       "code": "301396",
@@ -1445,7 +1474,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 49
+      "fundamental_rank": 50
     },
     {
       "code": "000338",
@@ -1474,7 +1503,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 50
+      "fundamental_rank": 51
     },
     {
       "code": "688002",
@@ -1503,7 +1532,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 51
+      "fundamental_rank": 52
     },
     {
       "code": "600233",
@@ -1532,7 +1561,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 52
+      "fundamental_rank": 53
     },
     {
       "code": "600362",
@@ -1561,7 +1590,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 53
+      "fundamental_rank": 54
     },
     {
       "code": "002415",
@@ -1590,7 +1619,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-07-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 54
+      "fundamental_rank": 55
     },
     {
       "code": "600160",
@@ -1619,7 +1648,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 55
+      "fundamental_rank": 56
     },
     {
       "code": "002192",
@@ -1648,7 +1677,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 56
+      "fundamental_rank": 57
     },
     {
       "code": "688385",
@@ -1677,7 +1706,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 57
+      "fundamental_rank": 58
     },
     {
       "code": "000737",
@@ -1706,7 +1735,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 58
+      "fundamental_rank": 59
     },
     {
       "code": "688110",
@@ -1735,7 +1764,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 59
+      "fundamental_rank": 60
     },
     {
       "code": "600900",
@@ -1764,7 +1793,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 60
+      "fundamental_rank": 61
     },
     {
       "code": "300037",
@@ -1793,7 +1822,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 61
+      "fundamental_rank": 62
     },
     {
       "code": "601958",
@@ -1822,7 +1851,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 62
+      "fundamental_rank": 63
     },
     {
       "code": "600547",
@@ -1851,7 +1880,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 63
+      "fundamental_rank": 64
     },
     {
       "code": "603893",
@@ -1880,7 +1909,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 64
+      "fundamental_rank": 65
     },
     {
       "code": "000333",
@@ -1909,7 +1938,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 65
+      "fundamental_rank": 66
     },
     {
       "code": "600489",
@@ -1938,7 +1967,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 66
+      "fundamental_rank": 67
     },
     {
       "code": "600031",
@@ -1967,7 +1996,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 67
+      "fundamental_rank": 68
     },
     {
       "code": "002466",
@@ -1996,7 +2025,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 68
+      "fundamental_rank": 69
     },
     {
       "code": "001232",
@@ -2025,7 +2054,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 69
+      "fundamental_rank": 70
     },
     {
       "code": "000408",
@@ -2054,7 +2083,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-11；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 70
+      "fundamental_rank": 71
     },
     {
       "code": "000960",
@@ -2083,7 +2112,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 71
+      "fundamental_rank": 72
     },
     {
       "code": "600176",
@@ -2112,7 +2141,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 72
+      "fundamental_rank": 73
     },
     {
       "code": "002156",
@@ -2141,7 +2170,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 73
+      "fundamental_rank": 74
     },
     {
       "code": "300475",
@@ -2170,7 +2199,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 74
+      "fundamental_rank": 75
     },
     {
       "code": "300223",
@@ -2199,7 +2228,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 75
+      "fundamental_rank": 76
     },
     {
       "code": "603256",
@@ -2228,7 +2257,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-14；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 76
+      "fundamental_rank": 77
     },
     {
       "code": "300054",
@@ -2257,7 +2286,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 77
+      "fundamental_rank": 78
     },
     {
       "code": "688183",
@@ -2286,7 +2315,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 78
+      "fundamental_rank": 79
     },
     {
       "code": "603799",
@@ -2315,7 +2344,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-19；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 79
+      "fundamental_rank": 80
     },
     {
       "code": "001389",
@@ -2344,7 +2373,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-08；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 80
+      "fundamental_rank": 81
     },
     {
       "code": "601857",
@@ -2373,7 +2402,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 81
+      "fundamental_rank": 82
     },
     {
       "code": "300450",
@@ -2402,7 +2431,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 82
+      "fundamental_rank": 83
     },
     {
       "code": "688378",
@@ -2431,7 +2460,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 83
+      "fundamental_rank": 84
     },
     {
       "code": "600150",
@@ -2460,7 +2489,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 84
+      "fundamental_rank": 85
     },
     {
       "code": "000100",
@@ -2489,7 +2518,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 85
+      "fundamental_rank": 86
     },
     {
       "code": "002768",
@@ -2518,7 +2547,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 86
+      "fundamental_rank": 87
     },
     {
       "code": "688257",
@@ -2547,7 +2576,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 87
+      "fundamental_rank": 88
     },
     {
       "code": "600183",
@@ -2576,7 +2605,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 88
+      "fundamental_rank": 89
     },
     {
       "code": "600601",
@@ -2605,7 +2634,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 89
+      "fundamental_rank": 90
     },
     {
       "code": "600036",
@@ -2634,7 +2663,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 90
+      "fundamental_rank": 91
     },
     {
       "code": "300458",
@@ -2663,7 +2692,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 91
+      "fundamental_rank": 92
     },
     {
       "code": "002463",
@@ -2692,7 +2721,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 92
+      "fundamental_rank": 93
     },
     {
       "code": "301536",
@@ -2721,7 +2750,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 93
+      "fundamental_rank": 94
     },
     {
       "code": "002245",
@@ -2750,7 +2779,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 94
+      "fundamental_rank": 95
     },
     {
       "code": "300760",
@@ -2779,7 +2808,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 95
+      "fundamental_rank": 96
     },
     {
       "code": "300398",
@@ -2808,7 +2837,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 96
+      "fundamental_rank": 97
     },
     {
       "code": "688222",
@@ -2837,7 +2866,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 97
+      "fundamental_rank": 98
     },
     {
       "code": "688372",
@@ -2866,7 +2895,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 98
+      "fundamental_rank": 99
     },
     {
       "code": "002432",
@@ -2895,7 +2924,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 99
+      "fundamental_rank": 100
     },
     {
       "code": "300661",
@@ -2924,7 +2953,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 100
+      "fundamental_rank": 101
     },
     {
       "code": "002709",
@@ -2953,7 +2982,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 101
+      "fundamental_rank": 102
     },
     {
       "code": "002460",
@@ -2982,7 +3011,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 102
+      "fundamental_rank": 103
     },
     {
       "code": "603119",
@@ -3011,7 +3040,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-11；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 103
+      "fundamental_rank": 104
     },
     {
       "code": "300390",
@@ -3040,7 +3069,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 104
+      "fundamental_rank": 105
     },
     {
       "code": "000506",
@@ -3069,7 +3098,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 105
+      "fundamental_rank": 106
     },
     {
       "code": "002384",
@@ -3098,7 +3127,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 106
+      "fundamental_rank": 107
     },
     {
       "code": "300408",
@@ -3127,7 +3156,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 107
+      "fundamental_rank": 108
     },
     {
       "code": "601288",
@@ -3156,7 +3185,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 108
+      "fundamental_rank": 109
     },
     {
       "code": "600549",
@@ -3185,7 +3214,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 109
+      "fundamental_rank": 110
     },
     {
       "code": "603296",
@@ -3214,7 +3243,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 110
+      "fundamental_rank": 111
     },
     {
       "code": "002049",
@@ -3243,7 +3272,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 111
+      "fundamental_rank": 112
     },
     {
       "code": "600887",
@@ -3272,7 +3301,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 112
+      "fundamental_rank": 113
     },
     {
       "code": "601088",
@@ -3301,7 +3330,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 113
+      "fundamental_rank": 114
     },
     {
       "code": "603588",
@@ -3330,7 +3359,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 114
+      "fundamental_rank": 115
     },
     {
       "code": "688308",
@@ -3359,7 +3388,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 115
+      "fundamental_rank": 116
     },
     {
       "code": "300672",
@@ -3388,7 +3417,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 116
+      "fundamental_rank": 117
     },
     {
       "code": "300623",
@@ -3417,7 +3446,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 117
+      "fundamental_rank": 118
     },
     {
       "code": "601138",
@@ -3446,7 +3475,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-12；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 118
+      "fundamental_rank": 119
     },
     {
       "code": "002636",
@@ -3475,7 +3504,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 119
+      "fundamental_rank": 120
     },
     {
       "code": "601939",
@@ -3504,7 +3533,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 120
+      "fundamental_rank": 121
     },
     {
       "code": "688690",
@@ -3533,7 +3562,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 121
+      "fundamental_rank": 122
     },
     {
       "code": "300613",
@@ -3562,7 +3591,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 122
+      "fundamental_rank": 123
     },
     {
       "code": "688123",
@@ -3591,7 +3620,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 123
+      "fundamental_rank": 124
     },
     {
       "code": "002975",
@@ -3620,7 +3649,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 124
+      "fundamental_rank": 125
     },
     {
       "code": "600378",
@@ -3649,7 +3678,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 125
+      "fundamental_rank": 126
     },
     {
       "code": "300373",
@@ -3678,7 +3707,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 126
+      "fundamental_rank": 127
     },
     {
       "code": "000858",
@@ -3707,7 +3736,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 127
+      "fundamental_rank": 128
     },
     {
       "code": "000001",
@@ -3736,7 +3765,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 128
+      "fundamental_rank": 129
     },
     {
       "code": "300953",
@@ -3765,7 +3794,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 129
+      "fundamental_rank": 130
     },
     {
       "code": "601233",
@@ -3794,7 +3823,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 130
+      "fundamental_rank": 131
     },
     {
       "code": "601658",
@@ -3823,7 +3852,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 131
+      "fundamental_rank": 132
     },
     {
       "code": "688700",
@@ -3852,7 +3881,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-08；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 132
+      "fundamental_rank": 133
     },
     {
       "code": "603929",
@@ -3881,7 +3910,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-07-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 133
+      "fundamental_rank": 134
     },
     {
       "code": "301566",
@@ -3910,7 +3939,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 134
+      "fundamental_rank": 135
     },
     {
       "code": "603236",
@@ -3939,7 +3968,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-13；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 135
+      "fundamental_rank": 136
     },
     {
       "code": "603345",
@@ -3968,7 +3997,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 136
+      "fundamental_rank": 137
     },
     {
       "code": "601988",
@@ -3997,7 +4026,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 137
+      "fundamental_rank": 138
     },
     {
       "code": "000651",
@@ -4026,7 +4055,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 138
+      "fundamental_rank": 139
     },
     {
       "code": "688018",
@@ -4055,7 +4084,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-07-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 139
+      "fundamental_rank": 140
     },
     {
       "code": "002738",
@@ -4084,7 +4113,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 140
+      "fundamental_rank": 141
     },
     {
       "code": "300438",
@@ -4113,7 +4142,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 141
+      "fundamental_rank": 142
     },
     {
       "code": "300302",
@@ -4142,7 +4171,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 142
+      "fundamental_rank": 143
     },
     {
       "code": "300346",
@@ -4171,7 +4200,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 143
+      "fundamental_rank": 144
     },
     {
       "code": "688195",
@@ -4200,7 +4229,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 144
+      "fundamental_rank": 145
     },
     {
       "code": "600396",
@@ -4229,7 +4258,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 145
+      "fundamental_rank": 146
     },
     {
       "code": "000070",
@@ -4258,7 +4287,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 146
+      "fundamental_rank": 147
     },
     {
       "code": "003031",
@@ -4287,7 +4316,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 147
+      "fundamental_rank": 148
     },
     {
       "code": "601398",
@@ -4316,7 +4345,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 148
+      "fundamental_rank": 149
     },
     {
       "code": "600256",
@@ -4345,7 +4374,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 149
+      "fundamental_rank": 150
     },
     {
       "code": "688548",
@@ -4374,7 +4403,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 150
+      "fundamental_rank": 151
     },
     {
       "code": "300726",
@@ -4403,7 +4432,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 151
+      "fundamental_rank": 152
     },
     {
       "code": "000725",
@@ -4432,7 +4461,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 152
+      "fundamental_rank": 153
     },
     {
       "code": "002475",
@@ -4461,7 +4490,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 153
+      "fundamental_rank": 154
     },
     {
       "code": "300418",
@@ -4490,7 +4519,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 154
+      "fundamental_rank": 155
     },
     {
       "code": "601328",
@@ -4519,7 +4548,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 155
+      "fundamental_rank": 156
     },
     {
       "code": "600111",
@@ -4548,7 +4577,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 156
+      "fundamental_rank": 157
     },
     {
       "code": "002422",
@@ -4577,7 +4606,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 157
+      "fundamental_rank": 158
     },
     {
       "code": "600028",
@@ -4606,7 +4635,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-24；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 158
+      "fundamental_rank": 159
     },
     {
       "code": "002842",
@@ -4635,7 +4664,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 159
+      "fundamental_rank": 160
     },
     {
       "code": "002273",
@@ -4664,7 +4693,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-24；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 160
+      "fundamental_rank": 161
     },
     {
       "code": "000878",
@@ -4693,7 +4722,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 161
+      "fundamental_rank": 162
     },
     {
       "code": "603127",
@@ -4722,7 +4751,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 162
+      "fundamental_rank": 163
     },
     {
       "code": "002155",
@@ -4751,7 +4780,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 163
+      "fundamental_rank": 164
     },
     {
       "code": "300975",
@@ -4780,7 +4809,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 164
+      "fundamental_rank": 165
     },
     {
       "code": "688028",
@@ -4809,7 +4838,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 165
+      "fundamental_rank": 166
     },
     {
       "code": "002552",
@@ -4838,7 +4867,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 166
+      "fundamental_rank": 167
     },
     {
       "code": "301021",
@@ -4867,7 +4896,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 167
+      "fundamental_rank": 168
     },
     {
       "code": "300811",
@@ -4896,7 +4925,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 168
+      "fundamental_rank": 169
     },
     {
       "code": "003006",
@@ -4925,7 +4954,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 169
+      "fundamental_rank": 170
     },
     {
       "code": "688313",
@@ -4954,7 +4983,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-01；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 170
+      "fundamental_rank": 171
     },
     {
       "code": "002028",
@@ -4983,7 +5012,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 171
+      "fundamental_rank": 172
     },
     {
       "code": "688678",
@@ -5012,7 +5041,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 172
+      "fundamental_rank": 173
     },
     {
       "code": "000700",
@@ -5041,7 +5070,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 173
+      "fundamental_rank": 174
     },
     {
       "code": "002130",
@@ -5070,7 +5099,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 174
+      "fundamental_rank": 175
     },
     {
       "code": "600845",
@@ -5099,7 +5128,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 175
+      "fundamental_rank": 176
     },
     {
       "code": "300395",
@@ -5128,7 +5157,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 176
+      "fundamental_rank": 177
     },
     {
       "code": "002518",
@@ -5157,7 +5186,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 177
+      "fundamental_rank": 178
     },
     {
       "code": "688090",
@@ -5186,7 +5215,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 178
+      "fundamental_rank": 179
     },
     {
       "code": "688001",
@@ -5215,7 +5244,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 179
+      "fundamental_rank": 180
     },
     {
       "code": "000938",
@@ -5244,7 +5273,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 180
+      "fundamental_rank": 181
     },
     {
       "code": "000657",
@@ -5273,7 +5302,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-24；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 181
+      "fundamental_rank": 182
     },
     {
       "code": "300759",
@@ -5302,7 +5331,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "未触发财务量化警示，仍需核验公告",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 182
+      "fundamental_rank": 183
     },
     {
       "code": "301165",
@@ -5331,7 +5360,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 183
+      "fundamental_rank": 184
     },
     {
       "code": "300747",
@@ -5360,7 +5389,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 184
+      "fundamental_rank": 185
     },
     {
       "code": "688099",
@@ -5389,7 +5418,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 185
+      "fundamental_rank": 186
     },
     {
       "code": "000630",
@@ -5418,7 +5447,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 186
+      "fundamental_rank": 187
     },
     {
       "code": "300821",
@@ -5447,7 +5476,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 187
+      "fundamental_rank": 188
     },
     {
       "code": "300236",
@@ -5476,7 +5505,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 188
+      "fundamental_rank": 189
     },
     {
       "code": "300602",
@@ -5505,7 +5534,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 189
+      "fundamental_rank": 190
     },
     {
       "code": "300607",
@@ -5534,7 +5563,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 190
+      "fundamental_rank": 191
     },
     {
       "code": "002407",
@@ -5563,7 +5592,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 191
+      "fundamental_rank": 192
     },
     {
       "code": "600186",
@@ -5592,7 +5621,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 192
+      "fundamental_rank": 193
     },
     {
       "code": "300568",
@@ -5621,7 +5650,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 193
+      "fundamental_rank": 194
     },
     {
       "code": "600487",
@@ -5650,7 +5679,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 194
+      "fundamental_rank": 195
     },
     {
       "code": "002185",
@@ -5679,7 +5708,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 195
+      "fundamental_rank": 196
     },
     {
       "code": "300014",
@@ -5708,7 +5737,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 196
+      "fundamental_rank": 197
     },
     {
       "code": "688396",
@@ -5737,7 +5766,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 197
+      "fundamental_rank": 198
     },
     {
       "code": "000703",
@@ -5766,7 +5795,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-11；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 198
+      "fundamental_rank": 199
     },
     {
       "code": "300843",
@@ -5795,7 +5824,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 199
+      "fundamental_rank": 200
     },
     {
       "code": "688268",
@@ -5824,7 +5853,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 200
+      "fundamental_rank": 201
     },
     {
       "code": "601888",
@@ -5853,7 +5882,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 201
+      "fundamental_rank": 202
     },
     {
       "code": "688202",
@@ -5882,7 +5911,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 202
+      "fundamental_rank": 203
     },
     {
       "code": "300684",
@@ -5911,7 +5940,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 203
+      "fundamental_rank": 204
     },
     {
       "code": "600163",
@@ -5940,7 +5969,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 204
+      "fundamental_rank": 205
     },
     {
       "code": "301128",
@@ -5969,7 +5998,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-12；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 205
+      "fundamental_rank": 206
     },
     {
       "code": "002167",
@@ -5998,7 +6027,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 206
+      "fundamental_rank": 207
     },
     {
       "code": "603283",
@@ -6027,7 +6056,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 207
+      "fundamental_rank": 208
     },
     {
       "code": "600737",
@@ -6056,7 +6085,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 208
+      "fundamental_rank": 209
     },
     {
       "code": "002354",
@@ -6085,7 +6114,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 209
+      "fundamental_rank": 210
     },
     {
       "code": "000977",
@@ -6114,7 +6143,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 210
+      "fundamental_rank": 211
     },
     {
       "code": "688981",
@@ -6143,7 +6172,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 211
+      "fundamental_rank": 212
     },
     {
       "code": "000425",
@@ -6172,7 +6201,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 212
+      "fundamental_rank": 213
     },
     {
       "code": "300153",
@@ -6201,7 +6230,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 213
+      "fundamental_rank": 214
     },
     {
       "code": "002957",
@@ -6230,7 +6259,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 214
+      "fundamental_rank": 215
     },
     {
       "code": "002138",
@@ -6259,7 +6288,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-07-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 215
+      "fundamental_rank": 216
     },
     {
       "code": "600699",
@@ -6288,7 +6317,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 216
+      "fundamental_rank": 217
     },
     {
       "code": "300456",
@@ -6317,7 +6346,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 217
+      "fundamental_rank": 218
     },
     {
       "code": "301047",
@@ -6346,7 +6375,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 218
+      "fundamental_rank": 219
     },
     {
       "code": "603738",
@@ -6375,7 +6404,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 219
+      "fundamental_rank": 220
     },
     {
       "code": "603663",
@@ -6404,7 +6433,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 220
+      "fundamental_rank": 221
     },
     {
       "code": "002008",
@@ -6433,7 +6462,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 221
+      "fundamental_rank": 222
     },
     {
       "code": "688432",
@@ -6462,7 +6491,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-14；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 222
+      "fundamental_rank": 223
     },
     {
       "code": "300285",
@@ -6491,7 +6520,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-06；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 223
+      "fundamental_rank": 224
     },
     {
       "code": "600276",
@@ -6520,7 +6549,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 224
+      "fundamental_rank": 225
     },
     {
       "code": "300124",
@@ -6549,7 +6578,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 225
+      "fundamental_rank": 226
     },
     {
       "code": "601919",
@@ -6578,7 +6607,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 226
+      "fundamental_rank": 227
     },
     {
       "code": "688392",
@@ -6607,7 +6636,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 227
+      "fundamental_rank": 228
     },
     {
       "code": "600941",
@@ -6636,7 +6665,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-14；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 228
+      "fundamental_rank": 229
     },
     {
       "code": "300184",
@@ -6665,7 +6694,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-10；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 229
+      "fundamental_rank": 230
     },
     {
       "code": "300209",
@@ -6694,7 +6723,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-07-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 230
+      "fundamental_rank": 231
     },
     {
       "code": "601126",
@@ -6723,7 +6752,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 231
+      "fundamental_rank": 232
     },
     {
       "code": "600875",
@@ -6752,7 +6781,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 232
+      "fundamental_rank": 233
     },
     {
       "code": "001270",
@@ -6781,7 +6810,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-11；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 233
+      "fundamental_rank": 234
     },
     {
       "code": "688625",
@@ -6810,7 +6839,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 234
+      "fundamental_rank": 235
     },
     {
       "code": "003018",
@@ -6839,7 +6868,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 235
+      "fundamental_rank": 236
     },
     {
       "code": "688300",
@@ -6868,7 +6897,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 236
+      "fundamental_rank": 237
     },
     {
       "code": "002859",
@@ -6897,7 +6926,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 237
+      "fundamental_rank": 238
     },
     {
       "code": "600522",
@@ -6926,7 +6955,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 238
+      "fundamental_rank": 239
     },
     {
       "code": "002050",
@@ -6955,7 +6984,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 239
+      "fundamental_rank": 240
     },
     {
       "code": "600345",
@@ -6984,7 +7013,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 240
+      "fundamental_rank": 241
     },
     {
       "code": "688135",
@@ -7013,7 +7042,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 241
+      "fundamental_rank": 242
     },
     {
       "code": "605358",
@@ -7042,7 +7071,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-08；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 242
+      "fundamental_rank": 243
     },
     {
       "code": "605376",
@@ -7071,7 +7100,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 243
+      "fundamental_rank": 244
     },
     {
       "code": "600722",
@@ -7100,7 +7129,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 244
+      "fundamental_rank": 245
     },
     {
       "code": "605006",
@@ -7129,7 +7158,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-19；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 245
+      "fundamental_rank": 246
     },
     {
       "code": "301373",
@@ -7158,7 +7187,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-19；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 246
+      "fundamental_rank": 247
     },
     {
       "code": "600584",
@@ -7187,7 +7216,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 247
+      "fundamental_rank": 248
     },
     {
       "code": "000988",
@@ -7216,7 +7245,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 248
+      "fundamental_rank": 249
     },
     {
       "code": "002484",
@@ -7245,7 +7274,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 249
+      "fundamental_rank": 250
     },
     {
       "code": "688629",
@@ -7274,7 +7303,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 250
+      "fundamental_rank": 251
     },
     {
       "code": "688469",
@@ -7303,7 +7332,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-11；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 251
+      "fundamental_rank": 252
     },
     {
       "code": "600930",
@@ -7332,7 +7361,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 252
+      "fundamental_rank": 253
     },
     {
       "code": "600089",
@@ -7361,7 +7390,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 253
+      "fundamental_rank": 254
     },
     {
       "code": "601169",
@@ -7390,7 +7419,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低；毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 254
+      "fundamental_rank": 255
     },
     {
       "code": "600869",
@@ -7419,7 +7448,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 255
+      "fundamental_rank": 256
     },
     {
       "code": "603650",
@@ -7448,7 +7477,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 256
+      "fundamental_rank": 257
     },
     {
       "code": "002015",
@@ -7477,7 +7506,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 257
+      "fundamental_rank": 258
     },
     {
       "code": "688652",
@@ -7506,7 +7535,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 258
+      "fundamental_rank": 259
     },
     {
       "code": "300739",
@@ -7535,7 +7564,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 259
+      "fundamental_rank": 260
     },
     {
       "code": "301489",
@@ -7564,7 +7593,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 260
+      "fundamental_rank": 261
     },
     {
       "code": "002202",
@@ -7593,7 +7622,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 261
+      "fundamental_rank": 262
     },
     {
       "code": "603067",
@@ -7622,7 +7651,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 262
+      "fundamental_rank": 263
     },
     {
       "code": "603124",
@@ -7651,7 +7680,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 263
+      "fundamental_rank": 264
     },
     {
       "code": "688368",
@@ -7680,7 +7709,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 264
+      "fundamental_rank": 265
     },
     {
       "code": "300244",
@@ -7709,7 +7738,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 265
+      "fundamental_rank": 266
     },
     {
       "code": "601579",
@@ -7738,7 +7767,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 266
+      "fundamental_rank": 267
     },
     {
       "code": "000523",
@@ -7767,7 +7796,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 267
+      "fundamental_rank": 268
     },
     {
       "code": "301196",
@@ -7796,7 +7825,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 268
+      "fundamental_rank": 269
     },
     {
       "code": "688388",
@@ -7825,7 +7854,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 269
+      "fundamental_rank": 270
     },
     {
       "code": "603002",
@@ -7854,7 +7883,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 270
+      "fundamental_rank": 271
     },
     {
       "code": "688362",
@@ -7883,7 +7912,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 271
+      "fundamental_rank": 272
     },
     {
       "code": "603823",
@@ -7912,7 +7941,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 272
+      "fundamental_rank": 273
     },
     {
       "code": "688603",
@@ -7941,7 +7970,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 273
+      "fundamental_rank": 274
     },
     {
       "code": "600552",
@@ -7970,7 +7999,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 274
+      "fundamental_rank": 275
     },
     {
       "code": "002080",
@@ -7999,7 +8028,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 275
+      "fundamental_rank": 276
     },
     {
       "code": "300274",
@@ -8028,7 +8057,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 276
+      "fundamental_rank": 277
     },
     {
       "code": "600460",
@@ -8057,7 +8086,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 277
+      "fundamental_rank": 278
     },
     {
       "code": "002409",
@@ -8086,7 +8115,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 278
+      "fundamental_rank": 279
     },
     {
       "code": "300803",
@@ -8115,7 +8144,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 279
+      "fundamental_rank": 280
     },
     {
       "code": "600016",
@@ -8144,7 +8173,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 280
+      "fundamental_rank": 281
     },
     {
       "code": "688729",
@@ -8173,7 +8202,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 281
+      "fundamental_rank": 282
     },
     {
       "code": "000831",
@@ -8202,7 +8231,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-08；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 282
+      "fundamental_rank": 283
     },
     {
       "code": "600693",
@@ -8231,7 +8260,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-12；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 283
+      "fundamental_rank": 284
     },
     {
       "code": "688726",
@@ -8260,7 +8289,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 284
+      "fundamental_rank": 285
     },
     {
       "code": "600219",
@@ -8289,7 +8318,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 285
+      "fundamental_rank": 286
     },
     {
       "code": "300671",
@@ -8318,7 +8347,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-07-30；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 286
+      "fundamental_rank": 287
     },
     {
       "code": "301297",
@@ -8347,7 +8376,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 287
+      "fundamental_rank": 288
     },
     {
       "code": "002747",
@@ -8376,7 +8405,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 288
+      "fundamental_rank": 289
     },
     {
       "code": "603538",
@@ -8405,7 +8434,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-12；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 289
+      "fundamental_rank": 290
     },
     {
       "code": "002938",
@@ -8434,7 +8463,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-12；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 290
+      "fundamental_rank": 291
     },
     {
       "code": "601766",
@@ -8463,7 +8492,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 291
+      "fundamental_rank": 292
     },
     {
       "code": "300776",
@@ -8492,7 +8521,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 292
+      "fundamental_rank": 293
     },
     {
       "code": "300741",
@@ -8521,7 +8550,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 293
+      "fundamental_rank": 294
     },
     {
       "code": "601208",
@@ -8550,7 +8579,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 294
+      "fundamental_rank": 295
     },
     {
       "code": "605111",
@@ -8579,7 +8608,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 295
+      "fundamental_rank": 296
     },
     {
       "code": "603019",
@@ -8608,7 +8637,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 296
+      "fundamental_rank": 297
     },
     {
       "code": "002821",
@@ -8637,7 +8666,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 297
+      "fundamental_rank": 298
     },
     {
       "code": "601689",
@@ -8666,7 +8695,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 298
+      "fundamental_rank": 299
     },
     {
       "code": "000559",
@@ -8695,7 +8724,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 299
+      "fundamental_rank": 300
     },
     {
       "code": "002174",
@@ -8724,7 +8753,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 300
+      "fundamental_rank": 301
     },
     {
       "code": "603938",
@@ -8753,7 +8782,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 301
+      "fundamental_rank": 302
     },
     {
       "code": "603989",
@@ -8782,7 +8811,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 302
+      "fundamental_rank": 303
     },
     {
       "code": "300142",
@@ -8811,7 +8840,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 303
+      "fundamental_rank": 304
     },
     {
       "code": "002281",
@@ -8840,7 +8869,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 304
+      "fundamental_rank": 305
     },
     {
       "code": "002428",
@@ -8869,7 +8898,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 305
+      "fundamental_rank": 306
     },
     {
       "code": "301511",
@@ -8898,7 +8927,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 306
+      "fundamental_rank": 307
     },
     {
       "code": "002594",
@@ -8927,7 +8956,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 307
+      "fundamental_rank": 308
     },
     {
       "code": "603179",
@@ -8956,7 +8985,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-04；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 308
+      "fundamental_rank": 309
     },
     {
       "code": "688209",
@@ -8985,7 +9014,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 309
+      "fundamental_rank": 310
     },
     {
       "code": "301086",
@@ -9014,7 +9043,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 310
+      "fundamental_rank": 311
     },
     {
       "code": "300740",
@@ -9043,7 +9072,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 311
+      "fundamental_rank": 312
     },
     {
       "code": "688820",
@@ -9072,7 +9101,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 312
+      "fundamental_rank": 313
     },
     {
       "code": "300454",
@@ -9101,7 +9130,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 313
+      "fundamental_rank": 314
     },
     {
       "code": "603005",
@@ -9130,7 +9159,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 314
+      "fundamental_rank": 315
     },
     {
       "code": "301150",
@@ -9159,7 +9188,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 315
+      "fundamental_rank": 316
     },
     {
       "code": "603308",
@@ -9188,7 +9217,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 316
+      "fundamental_rank": 317
     },
     {
       "code": "600577",
@@ -9217,7 +9246,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 317
+      "fundamental_rank": 318
     },
     {
       "code": "603115",
@@ -9246,7 +9275,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 318
+      "fundamental_rank": 319
     },
     {
       "code": "688535",
@@ -9275,7 +9304,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 319
+      "fundamental_rank": 320
     },
     {
       "code": "300657",
@@ -9304,7 +9333,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 320
+      "fundamental_rank": 321
     },
     {
       "code": "300852",
@@ -9333,7 +9362,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-04；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 321
+      "fundamental_rank": 322
     },
     {
       "code": "000636",
@@ -9362,7 +9391,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 322
+      "fundamental_rank": 323
     },
     {
       "code": "000021",
@@ -9391,7 +9420,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 323
+      "fundamental_rank": 324
     },
     {
       "code": "000533",
@@ -9420,7 +9449,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 324
+      "fundamental_rank": 325
     },
     {
       "code": "603009",
@@ -9449,7 +9478,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 325
+      "fundamental_rank": 326
     },
     {
       "code": "002741",
@@ -9478,7 +9507,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-08；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 326
+      "fundamental_rank": 327
     },
     {
       "code": "000811",
@@ -9507,7 +9536,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 327
+      "fundamental_rank": 328
     },
     {
       "code": "688545",
@@ -9536,7 +9565,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 328
+      "fundamental_rank": 329
     },
     {
       "code": "002600",
@@ -9565,7 +9594,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 329
+      "fundamental_rank": 330
     },
     {
       "code": "300913",
@@ -9594,7 +9623,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 330
+      "fundamental_rank": 331
     },
     {
       "code": "600596",
@@ -9623,7 +9652,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 331
+      "fundamental_rank": 332
     },
     {
       "code": "600641",
@@ -9652,7 +9681,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-01；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 332
+      "fundamental_rank": 333
     },
     {
       "code": "002716",
@@ -9681,7 +9710,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 333
+      "fundamental_rank": 334
     },
     {
       "code": "002851",
@@ -9710,7 +9739,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 334
+      "fundamental_rank": 335
     },
     {
       "code": "600184",
@@ -9739,7 +9768,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 335
+      "fundamental_rank": 336
     },
     {
       "code": "600360",
@@ -9768,7 +9797,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 336
+      "fundamental_rank": 337
     },
     {
       "code": "688185",
@@ -9797,7 +9826,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 337
+      "fundamental_rank": 338
     },
     {
       "code": "002498",
@@ -9826,7 +9855,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 338
+      "fundamental_rank": 339
     },
     {
       "code": "603228",
@@ -9855,7 +9884,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 339
+      "fundamental_rank": 340
     },
     {
       "code": "002241",
@@ -9884,7 +9913,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 340
+      "fundamental_rank": 341
     },
     {
       "code": "601231",
@@ -9913,7 +9942,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-07-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 341
+      "fundamental_rank": 342
     },
     {
       "code": "600397",
@@ -9942,7 +9971,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 342
+      "fundamental_rank": 343
     },
     {
       "code": "000066",
@@ -9971,7 +10000,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 343
+      "fundamental_rank": 344
     },
     {
       "code": "603078",
@@ -10000,7 +10029,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 344
+      "fundamental_rank": 345
     },
     {
       "code": "603466",
@@ -10029,7 +10058,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 345
+      "fundamental_rank": 346
     },
     {
       "code": "301319",
@@ -10058,7 +10087,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-06；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 346
+      "fundamental_rank": 347
     },
     {
       "code": "601360",
@@ -10087,7 +10116,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 347
+      "fundamental_rank": 348
     },
     {
       "code": "300676",
@@ -10116,7 +10145,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 348
+      "fundamental_rank": 349
     },
     {
       "code": "600673",
@@ -10145,7 +10174,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 349
+      "fundamental_rank": 350
     },
     {
       "code": "688220",
@@ -10174,7 +10203,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 350
+      "fundamental_rank": 351
     },
     {
       "code": "301217",
@@ -10203,7 +10232,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 351
+      "fundamental_rank": 352
     },
     {
       "code": "601166",
@@ -10232,7 +10261,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低；毛利率未披露或不适用",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 352
+      "fundamental_rank": 353
     },
     {
       "code": "000620",
@@ -10261,7 +10290,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 353
+      "fundamental_rank": 354
     },
     {
       "code": "603328",
@@ -10290,7 +10319,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 354
+      "fundamental_rank": 355
     },
     {
       "code": "601179",
@@ -10319,7 +10348,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 355
+      "fundamental_rank": 356
     },
     {
       "code": "600110",
@@ -10348,7 +10377,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-07-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 356
+      "fundamental_rank": 357
     },
     {
       "code": "300017",
@@ -10377,7 +10406,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 357
+      "fundamental_rank": 358
     },
     {
       "code": "002025",
@@ -10406,7 +10435,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 358
+      "fundamental_rank": 359
     },
     {
       "code": "688233",
@@ -10435,7 +10464,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 359
+      "fundamental_rank": 360
     },
     {
       "code": "300814",
@@ -10464,7 +10493,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-14；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 360
+      "fundamental_rank": 361
     },
     {
       "code": "688147",
@@ -10493,7 +10522,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 361
+      "fundamental_rank": 362
     },
     {
       "code": "600516",
@@ -10522,7 +10551,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 362
+      "fundamental_rank": 363
     },
     {
       "code": "688106",
@@ -10551,7 +10580,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 363
+      "fundamental_rank": 364
     },
     {
       "code": "002436",
@@ -10580,7 +10609,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 364
+      "fundamental_rank": 365
     },
     {
       "code": "300679",
@@ -10609,7 +10638,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 365
+      "fundamental_rank": 366
     },
     {
       "code": "688655",
@@ -10638,7 +10667,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 366
+      "fundamental_rank": 367
     },
     {
       "code": "002625",
@@ -10667,7 +10696,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 367
+      "fundamental_rank": 368
     },
     {
       "code": "688608",
@@ -10696,7 +10725,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 368
+      "fundamental_rank": 369
     },
     {
       "code": "300820",
@@ -10725,7 +10754,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 369
+      "fundamental_rank": 370
     },
     {
       "code": "300369",
@@ -10754,7 +10783,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 370
+      "fundamental_rank": 371
     },
     {
       "code": "603269",
@@ -10783,7 +10812,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 371
+      "fundamental_rank": 372
     },
     {
       "code": "300806",
@@ -10812,7 +10841,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 372
+      "fundamental_rank": 373
     },
     {
       "code": "605589",
@@ -10841,7 +10870,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 373
+      "fundamental_rank": 374
     },
     {
       "code": "300260",
@@ -10870,7 +10899,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 374
+      "fundamental_rank": 375
     },
     {
       "code": "688114",
@@ -10899,7 +10928,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 375
+      "fundamental_rank": 376
     },
     {
       "code": "300364",
@@ -10928,7 +10957,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 376
+      "fundamental_rank": 377
     },
     {
       "code": "301550",
@@ -10957,7 +10986,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 377
+      "fundamental_rank": 378
     },
     {
       "code": "300136",
@@ -10986,7 +11015,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 378
+      "fundamental_rank": 379
     },
     {
       "code": "603888",
@@ -11015,7 +11044,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 379
+      "fundamental_rank": 380
     },
     {
       "code": "002364",
@@ -11044,7 +11073,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 380
+      "fundamental_rank": 381
     },
     {
       "code": "301316",
@@ -11073,7 +11102,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 381
+      "fundamental_rank": 382
     },
     {
       "code": "600353",
@@ -11102,7 +11131,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 382
+      "fundamental_rank": 383
     },
     {
       "code": "603920",
@@ -11131,7 +11160,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-14；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 383
+      "fundamental_rank": 384
     },
     {
       "code": "002897",
@@ -11160,7 +11189,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 384
+      "fundamental_rank": 385
     },
     {
       "code": "301611",
@@ -11189,7 +11218,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 385
+      "fundamental_rank": 386
     },
     {
       "code": "603501",
@@ -11218,7 +11247,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 386
+      "fundamental_rank": 387
     },
     {
       "code": "002179",
@@ -11247,7 +11276,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 387
+      "fundamental_rank": 388
     },
     {
       "code": "600893",
@@ -11276,7 +11305,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 388
+      "fundamental_rank": 389
     },
     {
       "code": "301123",
@@ -11305,7 +11334,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 389
+      "fundamental_rank": 390
     },
     {
       "code": "301176",
@@ -11334,7 +11363,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 390
+      "fundamental_rank": 391
     },
     {
       "code": "600580",
@@ -11363,7 +11392,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 391
+      "fundamental_rank": 392
     },
     {
       "code": "300323",
@@ -11392,7 +11421,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 392
+      "fundamental_rank": 393
     },
     {
       "code": "301171",
@@ -11421,7 +11450,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 393
+      "fundamental_rank": 394
     },
     {
       "code": "603118",
@@ -11450,7 +11479,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 394
+      "fundamental_rank": 395
     },
     {
       "code": "002913",
@@ -11479,7 +11508,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 395
+      "fundamental_rank": 396
     },
     {
       "code": "002353",
@@ -11508,7 +11537,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-14；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 396
+      "fundamental_rank": 397
     },
     {
       "code": "600118",
@@ -11537,7 +11566,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 397
+      "fundamental_rank": 398
     },
     {
       "code": "001248",
@@ -11566,7 +11595,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 398
+      "fundamental_rank": 399
     },
     {
       "code": "688249",
@@ -11595,7 +11624,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 399
+      "fundamental_rank": 400
     },
     {
       "code": "688031",
@@ -11624,7 +11653,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 400
+      "fundamental_rank": 401
     },
     {
       "code": "600488",
@@ -11653,7 +11682,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 401
+      "fundamental_rank": 402
     },
     {
       "code": "301282",
@@ -11682,7 +11711,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 402
+      "fundamental_rank": 403
     },
     {
       "code": "002837",
@@ -11711,7 +11740,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 403
+      "fundamental_rank": 404
     },
     {
       "code": "605577",
@@ -11740,7 +11769,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 404
+      "fundamental_rank": 405
     },
     {
       "code": "002708",
@@ -11769,7 +11798,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 405
+      "fundamental_rank": 406
     },
     {
       "code": "300058",
@@ -11798,7 +11827,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 406
+      "fundamental_rank": 407
     },
     {
       "code": "688549",
@@ -11827,7 +11856,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-08；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 407
+      "fundamental_rank": 408
     },
     {
       "code": "002531",
@@ -11856,7 +11885,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 408
+      "fundamental_rank": 409
     },
     {
       "code": "300085",
@@ -11885,7 +11914,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 409
+      "fundamental_rank": 410
     },
     {
       "code": "688662",
@@ -11914,7 +11943,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-19；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 410
+      "fundamental_rank": 411
     },
     {
       "code": "301251",
@@ -11943,7 +11972,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-18；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 411
+      "fundamental_rank": 412
     },
     {
       "code": "600498",
@@ -11972,7 +12001,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 412
+      "fundamental_rank": 413
     },
     {
       "code": "300835",
@@ -12001,7 +12030,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 413
+      "fundamental_rank": 414
     },
     {
       "code": "000547",
@@ -12030,7 +12059,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 414
+      "fundamental_rank": 415
     },
     {
       "code": "002580",
@@ -12059,7 +12088,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 415
+      "fundamental_rank": 416
     },
     {
       "code": "603678",
@@ -12088,7 +12117,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 416
+      "fundamental_rank": 417
     },
     {
       "code": "002141",
@@ -12117,7 +12146,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 417
+      "fundamental_rank": 418
     },
     {
       "code": "002106",
@@ -12146,7 +12175,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 418
+      "fundamental_rank": 419
     },
     {
       "code": "300655",
@@ -12175,7 +12204,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 419
+      "fundamental_rank": 420
     },
     {
       "code": "601668",
@@ -12204,7 +12233,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 420
+      "fundamental_rank": 421
     },
     {
       "code": "002565",
@@ -12233,7 +12262,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 421
+      "fundamental_rank": 422
     },
     {
       "code": "300207",
@@ -12262,7 +12291,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 422
+      "fundamental_rank": 423
     },
     {
       "code": "002261",
@@ -12291,7 +12320,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-10；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 423
+      "fundamental_rank": 424
     },
     {
       "code": "601212",
@@ -12320,7 +12349,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 424
+      "fundamental_rank": 425
     },
     {
       "code": "000063",
@@ -12349,7 +12378,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 425
+      "fundamental_rank": 426
     },
     {
       "code": "001979",
@@ -12378,7 +12407,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 426
+      "fundamental_rank": 427
     },
     {
       "code": "603601",
@@ -12407,7 +12436,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 427
+      "fundamental_rank": 428
     },
     {
       "code": "600048",
@@ -12436,7 +12465,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 428
+      "fundamental_rank": 429
     },
     {
       "code": "688783",
@@ -12465,7 +12494,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 429
+      "fundamental_rank": 430
     },
     {
       "code": "600744",
@@ -12494,7 +12523,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 430
+      "fundamental_rank": 431
     },
     {
       "code": "000670",
@@ -12523,7 +12552,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 431
+      "fundamental_rank": 432
     },
     {
       "code": "300788",
@@ -12552,7 +12581,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 432
+      "fundamental_rank": 433
     },
     {
       "code": "688403",
@@ -12581,7 +12610,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-13；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 433
+      "fundamental_rank": 434
     },
     {
       "code": "001896",
@@ -12610,7 +12639,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 434
+      "fundamental_rank": 435
     },
     {
       "code": "300433",
@@ -12639,7 +12668,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 435
+      "fundamental_rank": 436
     },
     {
       "code": "603688",
@@ -12668,7 +12697,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 436
+      "fundamental_rank": 437
     },
     {
       "code": "688143",
@@ -12697,7 +12726,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 437
+      "fundamental_rank": 438
     },
     {
       "code": "002536",
@@ -12726,7 +12755,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 438
+      "fundamental_rank": 439
     },
     {
       "code": "600707",
@@ -12755,7 +12784,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 439
+      "fundamental_rank": 440
     },
     {
       "code": "603306",
@@ -12784,7 +12813,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 440
+      "fundamental_rank": 441
     },
     {
       "code": "000962",
@@ -12813,7 +12842,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 441
+      "fundamental_rank": 442
     },
     {
       "code": "603667",
@@ -12842,7 +12871,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 442
+      "fundamental_rank": 443
     },
     {
       "code": "600418",
@@ -12871,7 +12900,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 443
+      "fundamental_rank": 444
     },
     {
       "code": "002617",
@@ -12900,7 +12929,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 444
+      "fundamental_rank": 445
     },
     {
       "code": "688260",
@@ -12929,7 +12958,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-14；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 445
+      "fundamental_rank": 446
     },
     {
       "code": "000628",
@@ -12958,7 +12987,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-24；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 446
+      "fundamental_rank": 447
     },
     {
       "code": "301188",
@@ -12987,7 +13016,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 447
+      "fundamental_rank": 448
     },
     {
       "code": "301013",
@@ -13016,7 +13045,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 448
+      "fundamental_rank": 449
     },
     {
       "code": "300413",
@@ -13045,7 +13074,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 449
+      "fundamental_rank": 450
     },
     {
       "code": "002081",
@@ -13074,7 +13103,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 450
+      "fundamental_rank": 451
     },
     {
       "code": "002068",
@@ -13103,7 +13132,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 451
+      "fundamental_rank": 452
     },
     {
       "code": "300322",
@@ -13132,7 +13161,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-22；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 452
+      "fundamental_rank": 453
     },
     {
       "code": "300347",
@@ -13161,7 +13190,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 453
+      "fundamental_rank": 454
     },
     {
       "code": "601118",
@@ -13190,7 +13219,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 454
+      "fundamental_rank": 455
     },
     {
       "code": "688333",
@@ -13219,7 +13248,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 455
+      "fundamental_rank": 456
     },
     {
       "code": "300115",
@@ -13248,7 +13277,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 456
+      "fundamental_rank": 457
     },
     {
       "code": "001267",
@@ -13277,7 +13306,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 457
+      "fundamental_rank": 458
     },
     {
       "code": "300939",
@@ -13306,7 +13335,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 458
+      "fundamental_rank": 459
     },
     {
       "code": "601127",
@@ -13335,7 +13364,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 459
+      "fundamental_rank": 460
     },
     {
       "code": "002796",
@@ -13364,7 +13393,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-15；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 460
+      "fundamental_rank": 461
     },
     {
       "code": "600343",
@@ -13393,7 +13422,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 461
+      "fundamental_rank": 462
     },
     {
       "code": "600330",
@@ -13422,7 +13451,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 462
+      "fundamental_rank": 463
     },
     {
       "code": "688503",
@@ -13451,7 +13480,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 463
+      "fundamental_rank": 464
     },
     {
       "code": "300903",
@@ -13480,7 +13509,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 464
+      "fundamental_rank": 465
     },
     {
       "code": "301018",
@@ -13509,7 +13538,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 465
+      "fundamental_rank": 466
     },
     {
       "code": "600246",
@@ -13538,7 +13567,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 466
+      "fundamental_rank": 467
     },
     {
       "code": "603936",
@@ -13567,7 +13596,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 467
+      "fundamental_rank": 468
     },
     {
       "code": "688126",
@@ -13596,7 +13625,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 468
+      "fundamental_rank": 469
     },
     {
       "code": "688141",
@@ -13625,7 +13654,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 469
+      "fundamental_rank": 470
     },
     {
       "code": "688172",
@@ -13654,7 +13683,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 470
+      "fundamental_rank": 471
     },
     {
       "code": "002131",
@@ -13683,7 +13712,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 471
+      "fundamental_rank": 472
     },
     {
       "code": "600967",
@@ -13712,7 +13741,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 472
+      "fundamental_rank": 473
     },
     {
       "code": "688485",
@@ -13741,7 +13770,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 473
+      "fundamental_rank": 474
     },
     {
       "code": "688777",
@@ -13770,7 +13799,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 474
+      "fundamental_rank": 475
     },
     {
       "code": "688234",
@@ -13799,7 +13828,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-20；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 475
+      "fundamental_rank": 476
     },
     {
       "code": "301392",
@@ -13828,7 +13857,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 476
+      "fundamental_rank": 477
     },
     {
       "code": "300782",
@@ -13857,7 +13886,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 477
+      "fundamental_rank": 478
     },
     {
       "code": "002300",
@@ -13886,7 +13915,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 478
+      "fundamental_rank": 479
     },
     {
       "code": "000510",
@@ -13915,7 +13944,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 479
+      "fundamental_rank": 480
     },
     {
       "code": "002046",
@@ -13944,7 +13973,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 480
+      "fundamental_rank": 481
     },
     {
       "code": "000981",
@@ -13973,7 +14002,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 481
+      "fundamental_rank": 482
     },
     {
       "code": "688596",
@@ -14002,7 +14031,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 482
+      "fundamental_rank": 483
     },
     {
       "code": "002714",
@@ -14031,7 +14060,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 483
+      "fundamental_rank": 484
     },
     {
       "code": "688020",
@@ -14060,7 +14089,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 484
+      "fundamental_rank": 485
     },
     {
       "code": "002792",
@@ -14089,7 +14118,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 485
+      "fundamental_rank": 486
     },
     {
       "code": "688343",
@@ -14118,7 +14147,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-27；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 486
+      "fundamental_rank": 487
     },
     {
       "code": "002361",
@@ -14147,7 +14176,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-24；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 487
+      "fundamental_rank": 488
     },
     {
       "code": "600115",
@@ -14176,7 +14205,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 488
+      "fundamental_rank": 489
     },
     {
       "code": "600703",
@@ -14205,7 +14234,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 489
+      "fundamental_rank": 490
     },
     {
       "code": "000002",
@@ -14234,7 +14263,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 490
+      "fundamental_rank": 491
     },
     {
       "code": "600879",
@@ -14263,7 +14292,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-26；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 491
+      "fundamental_rank": 492
     },
     {
       "code": "603011",
@@ -14292,7 +14321,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 492
+      "fundamental_rank": 493
     },
     {
       "code": "300131",
@@ -14321,7 +14350,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-29；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 493
+      "fundamental_rank": 494
     },
     {
       "code": "300088",
@@ -14350,7 +14379,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "盈利增长承压；估值异常或偏高；经营现金流覆盖偏低",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 494
+      "fundamental_rank": 495
     },
     {
       "code": "601012",
@@ -14379,7 +14408,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-31；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 495
+      "fundamental_rank": 496
     },
     {
       "code": "300731",
@@ -14408,7 +14437,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-28；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 496
+      "fundamental_rank": 497
     },
     {
       "code": "600121",
@@ -14437,7 +14466,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-25；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 497
+      "fundamental_rank": 498
     },
     {
       "code": "601606",
@@ -14466,7 +14495,7 @@
       "evidence": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
       "risk": "每股收益非正；盈利增长承压；估值异常或偏高",
       "data_source": "东方财富财务指标 API",
-      "fundamental_rank": 498
+      "fundamental_rank": 499
     }
   ]
 }
