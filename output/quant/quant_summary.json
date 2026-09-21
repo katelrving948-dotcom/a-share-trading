@@ -1,29 +1,29 @@
 {
   "metadata": {
-    "generated_at": "2026-09-18 21:11:27",
-    "signal_date": "2026-09-18",
+    "generated_at": "2026-09-21 23:22:49",
+    "signal_date": "2026-09-21",
     "provider": "akshare",
     "stock_count": 499,
-    "trading_days": 971,
+    "trading_days": 970,
     "universe_limit": 500,
     "current_trading_day_confirmed": true
   },
   "best_params": {
     "momentum_window": 60,
-    "trend_window": 120,
+    "trend_window": 20,
     "volatility_window": 20,
     "volume_window": 20,
     "rsi_window": 14,
     "bollinger_window": 20,
     "atr_window": 14,
     "factor_weights": {
-      "momentum": 0.15,
+      "momentum": 0.25,
       "trend": 0.25,
-      "low_volatility": 0.2,
-      "volume_ratio": 0.1,
+      "low_volatility": 0.1,
+      "volume_ratio": 0.15,
       "rsi": 0.1,
-      "bollinger": 0.05,
-      "low_atr": 0.15
+      "bollinger": 0.1,
+      "low_atr": 0.05
     },
     "selection_weights": {
       "fundamental": 0.3,
@@ -33,18 +33,18 @@
     }
   },
   "oos_metrics": {
-    "total_return": 3.2724,
-    "annual_return": 2.1699,
-    "max_drawdown": -21.705,
-    "sharpe_ratio": 0.2087,
+    "total_return": 72.1704,
+    "annual_return": 43.65,
+    "max_drawdown": -23.4263,
+    "sharpe_ratio": 1.4132,
     "trading_days": 378
   },
   "folds": [
     {
-      "train_start": "2022-09-19",
-      "train_end": "2024-10-22",
-      "validation_start": "2024-10-23",
-      "validation_end": "2025-04-28",
+      "train_start": "2022-09-21",
+      "train_end": "2024-10-24",
+      "validation_start": "2024-10-25",
+      "validation_end": "2025-04-30",
       "best_params": {
         "momentum_window": 60,
         "trend_window": 20,
@@ -64,27 +64,27 @@
         }
       },
       "train_metrics": {
-        "sharpe_ratio": -0.379,
-        "annual_return": -7.8403,
-        "max_drawdown": -31.3014
+        "sharpe_ratio": -0.1646,
+        "annual_return": -4.1859,
+        "max_drawdown": -31.0484
       },
       "validation_metrics": {
-        "total_return": -12.6194,
-        "annual_return": -23.6463,
-        "max_drawdown": -20.463,
-        "sharpe_ratio": -1.2958,
+        "total_return": -13.1234,
+        "annual_return": -24.5245,
+        "max_drawdown": -18.9133,
+        "sharpe_ratio": -1.4233,
         "trading_days": 126,
         "top_n": 20,
-        "average_daily_turnover": 0.904,
-        "total_trading_cost": 20.452
+        "average_daily_turnover": 0.9175,
+        "total_trading_cost": 20.758
       },
       "trial_count": 45
     },
     {
-      "train_start": "2023-03-29",
-      "train_end": "2025-04-28",
-      "validation_start": "2025-04-29",
-      "validation_end": "2025-11-04",
+      "train_start": "2023-03-31",
+      "train_end": "2025-04-30",
+      "validation_start": "2025-05-06",
+      "validation_end": "2025-11-06",
       "best_params": {
         "momentum_window": 60,
         "trend_window": 20,
@@ -104,59 +104,59 @@
         }
       },
       "train_metrics": {
-        "sharpe_ratio": -0.4716,
-        "annual_return": -12.6867,
-        "max_drawdown": -41.5484
+        "sharpe_ratio": -0.3373,
+        "annual_return": -10.0036,
+        "max_drawdown": -39.4481
       },
       "validation_metrics": {
-        "total_return": 1.362,
-        "annual_return": 2.7425,
-        "max_drawdown": -14.5949,
-        "sharpe_ratio": 0.2345,
+        "total_return": 12.2808,
+        "annual_return": 26.0699,
+        "max_drawdown": -12.5242,
+        "sharpe_ratio": 1.0337,
         "trading_days": 126,
         "top_n": 20,
-        "average_daily_turnover": 1.0222,
-        "total_trading_cost": 23.134
+        "average_daily_turnover": 1.0238,
+        "total_trading_cost": 23.17
       },
       "trial_count": 45
     },
     {
-      "train_start": "2023-10-09",
-      "train_end": "2025-11-04",
-      "validation_start": "2025-11-05",
-      "validation_end": "2026-05-15",
+      "train_start": "2023-10-11",
+      "train_end": "2025-11-06",
+      "validation_start": "2025-11-07",
+      "validation_end": "2026-05-19",
       "best_params": {
         "momentum_window": 60,
-        "trend_window": 120,
+        "trend_window": 20,
         "volatility_window": 20,
         "volume_window": 20,
         "rsi_window": 14,
         "bollinger_window": 20,
         "atr_window": 14,
         "factor_weights": {
-          "momentum": 0.15,
+          "momentum": 0.25,
           "trend": 0.25,
-          "low_volatility": 0.2,
-          "volume_ratio": 0.1,
+          "low_volatility": 0.1,
+          "volume_ratio": 0.15,
           "rsi": 0.1,
-          "bollinger": 0.05,
-          "low_atr": 0.15
+          "bollinger": 0.1,
+          "low_atr": 0.05
         }
       },
       "train_metrics": {
-        "sharpe_ratio": 0.3874,
-        "annual_return": 5.7783,
-        "max_drawdown": -16.4288
+        "sharpe_ratio": 0.6063,
+        "annual_return": 15.7422,
+        "max_drawdown": -40.6551
       },
       "validation_metrics": {
-        "total_return": 16.5988,
-        "annual_return": 35.9528,
-        "max_drawdown": -14.4988,
-        "sharpe_ratio": 1.4809,
+        "total_return": 76.5021,
+        "annual_return": 211.5298,
+        "max_drawdown": -13.038,
+        "sharpe_ratio": 3.2328,
         "trading_days": 126,
         "top_n": 20,
-        "average_daily_turnover": 0.8675,
-        "total_trading_cost": 19.624
+        "average_daily_turnover": 1.0865,
+        "total_trading_cost": 24.592
       },
       "trial_count": 45
     }
@@ -168,189 +168,232 @@
   },
   "latest_validation": {
     "status": "validated",
-    "signal_date": "2026-09-17",
-    "validation_date": "2026-09-18",
+    "signal_date": "2026-09-18",
+    "validation_date": "2026-09-21",
     "signal_count": 20,
     "validated_count": 15,
-    "positive_count": 6,
-    "hit_rate": 40.0,
-    "average_return": 1.025,
-    "median_return": -0.478,
-    "benchmark_return": 2.323,
-    "excess_return": -1.298,
+    "positive_count": 13,
+    "hit_rate": 86.67,
+    "average_return": 2.635,
+    "median_return": 1.486,
+    "benchmark_return": 1.572,
+    "excess_return": 1.063,
     "details": [
       {
-        "code": "001216",
-        "return_pct": 9.321
+        "code": "600593",
+        "return_pct": 9.915
       },
       {
-        "code": "300661",
-        "return_pct": 7.373
-      },
-      {
-        "code": "003006",
-        "return_pct": 5.392
+        "code": "300676",
+        "return_pct": 6.351
       },
       {
         "code": "300725",
-        "return_pct": 1.904
-      },
-      {
-        "code": "603888",
-        "return_pct": 1.871
-      },
-      {
-        "code": "600919",
-        "return_pct": 0.913
+        "return_pct": 6.349
       },
       {
         "code": "603259",
-        "return_pct": -0.295
-      },
-      {
-        "code": "600900",
-        "return_pct": -0.478
-      },
-      {
-        "code": "601398",
-        "return_pct": -0.531
-      },
-      {
-        "code": "601939",
-        "return_pct": -0.58
-      },
-      {
-        "code": "601288",
-        "return_pct": -0.816
-      },
-      {
-        "code": "601328",
-        "return_pct": -0.988
+        "return_pct": 4.771
       },
       {
         "code": "300759",
-        "return_pct": -1.007
+        "return_pct": 4.111
       },
       {
-        "code": "600256",
-        "return_pct": -1.422
+        "code": "002849",
+        "return_pct": 1.793
       },
       {
-        "code": "300741",
-        "return_pct": -5.281
+        "code": "603888",
+        "return_pct": 1.586
+      },
+      {
+        "code": "000100",
+        "return_pct": 1.486
+      },
+      {
+        "code": "601988",
+        "return_pct": 0.927
+      },
+      {
+        "code": "600621",
+        "return_pct": 0.875
+      },
+      {
+        "code": "601328",
+        "return_pct": 0.798
+      },
+      {
+        "code": "600036",
+        "return_pct": 0.798
+      },
+      {
+        "code": "000001",
+        "return_pct": 0.197
+      },
+      {
+        "code": "003006",
+        "return_pct": -0.169
+      },
+      {
+        "code": "600919",
+        "return_pct": -0.266
       }
     ],
     "message": "已按T日收盘信号核验下一交易日收盘表现"
   },
   "optimization_log_entry": {
-    "generated_at": "2026-09-18 21:11:27",
+    "generated_at": "2026-09-21 23:22:49",
     "validation": {
       "status": "validated",
-      "signal_date": "2026-09-17",
-      "validation_date": "2026-09-18",
+      "signal_date": "2026-09-18",
+      "validation_date": "2026-09-21",
       "signal_count": 20,
       "validated_count": 15,
-      "positive_count": 6,
-      "hit_rate": 40.0,
-      "average_return": 1.025,
-      "median_return": -0.478,
-      "benchmark_return": 2.323,
-      "excess_return": -1.298,
+      "positive_count": 13,
+      "hit_rate": 86.67,
+      "average_return": 2.635,
+      "median_return": 1.486,
+      "benchmark_return": 1.572,
+      "excess_return": 1.063,
       "details": [
         {
-          "code": "001216",
-          "return_pct": 9.321
+          "code": "600593",
+          "return_pct": 9.915
         },
         {
-          "code": "300661",
-          "return_pct": 7.373
-        },
-        {
-          "code": "003006",
-          "return_pct": 5.392
+          "code": "300676",
+          "return_pct": 6.351
         },
         {
           "code": "300725",
-          "return_pct": 1.904
-        },
-        {
-          "code": "603888",
-          "return_pct": 1.871
-        },
-        {
-          "code": "600919",
-          "return_pct": 0.913
+          "return_pct": 6.349
         },
         {
           "code": "603259",
-          "return_pct": -0.295
-        },
-        {
-          "code": "600900",
-          "return_pct": -0.478
-        },
-        {
-          "code": "601398",
-          "return_pct": -0.531
-        },
-        {
-          "code": "601939",
-          "return_pct": -0.58
-        },
-        {
-          "code": "601288",
-          "return_pct": -0.816
-        },
-        {
-          "code": "601328",
-          "return_pct": -0.988
+          "return_pct": 4.771
         },
         {
           "code": "300759",
-          "return_pct": -1.007
+          "return_pct": 4.111
         },
         {
-          "code": "600256",
-          "return_pct": -1.422
+          "code": "002849",
+          "return_pct": 1.793
         },
         {
-          "code": "300741",
-          "return_pct": -5.281
+          "code": "603888",
+          "return_pct": 1.586
+        },
+        {
+          "code": "000100",
+          "return_pct": 1.486
+        },
+        {
+          "code": "601988",
+          "return_pct": 0.927
+        },
+        {
+          "code": "600621",
+          "return_pct": 0.875
+        },
+        {
+          "code": "601328",
+          "return_pct": 0.798
+        },
+        {
+          "code": "600036",
+          "return_pct": 0.798
+        },
+        {
+          "code": "000001",
+          "return_pct": 0.197
+        },
+        {
+          "code": "003006",
+          "return_pct": -0.169
+        },
+        {
+          "code": "600919",
+          "return_pct": -0.266
         }
       ],
       "message": "已按T日收盘信号核验下一交易日收盘表现"
     },
-    "parameter_changes": [],
+    "parameter_changes": [
+      {
+        "part": "factor_weights.bollinger",
+        "label": "布林位置权重",
+        "meaning": "布林位置映射分在技术研究分中的占比",
+        "before": 0.05,
+        "after": 0.1
+      },
+      {
+        "part": "factor_weights.low_atr",
+        "label": "低ATR因子权重",
+        "meaning": "低ATR映射分在技术研究分中的占比",
+        "before": 0.15,
+        "after": 0.05
+      },
+      {
+        "part": "factor_weights.low_volatility",
+        "label": "低波动因子权重",
+        "meaning": "低波动映射分在技术研究分中的占比",
+        "before": 0.2,
+        "after": 0.1
+      },
+      {
+        "part": "factor_weights.momentum",
+        "label": "动量因子权重",
+        "meaning": "动量映射分在技术研究分中的占比",
+        "before": 0.15,
+        "after": 0.25
+      },
+      {
+        "part": "factor_weights.volume_ratio",
+        "label": "量比因子权重",
+        "meaning": "量比映射分在技术研究分中的占比",
+        "before": 0.1,
+        "after": 0.15
+      },
+      {
+        "part": "trend_window",
+        "label": "趋势均线窗口",
+        "meaning": "用多少个交易日的均线判断价格趋势",
+        "before": 120,
+        "after": 20
+      }
+    ],
     "metric_changes": [
       {
         "metric": "annual_return",
         "label": "样本外年化收益",
         "meaning": "按样本外日收益折算的年化收益率",
-        "before": 17.7347,
-        "after": 2.1699,
-        "delta": -15.5648
+        "before": 2.1699,
+        "after": 43.65,
+        "delta": 41.4801
       },
       {
         "metric": "max_drawdown",
         "label": "样本外最大回撤",
         "meaning": "样本外净值从高点到低点的最大跌幅",
-        "before": -19.3074,
-        "after": -21.705,
-        "delta": -2.3976
+        "before": -21.705,
+        "after": -23.4263,
+        "delta": -1.7213
       },
       {
         "metric": "sharpe_ratio",
         "label": "样本外夏普比率",
         "meaning": "样本外收益相对波动风险的比值",
-        "before": 0.8883,
-        "after": 0.2087,
-        "delta": -0.6796
+        "before": 0.2087,
+        "after": 1.4132,
+        "delta": 1.2045
       }
     ],
     "actions": [
       "重新运行45组参数的滚动训练与样本外回测",
-      "完成2026-09-17信号在2026-09-18的次日验证",
-      "参数保持不变，避免根据单日结果追涨杀跌式调参",
+      "完成2026-09-18信号在2026-09-21的次日验证",
+      "调整6项参数",
       "后台研究试验：使用逐日留存的午间候选快照及下一交易日收益优化选股权重；结果不写入实际选股"
     ],
     "selection_optimization": {
@@ -361,14 +404,14 @@
         "board": 0.05,
         "morning_fund": 0.15
       },
-      "validated_days": 21,
+      "validated_days": 22,
       "minimum_days": 20,
       "grid_size": 56,
       "metrics": {
-        "sharpe_ratio": 2.194,
-        "average_excess_return": 0.1243,
-        "positive_day_rate": 66.67,
-        "evaluated_days": 21
+        "sharpe_ratio": 1.3269,
+        "average_excess_return": 0.0758,
+        "positive_day_rate": 63.64,
+        "evaluated_days": 22
       },
       "message": "使用逐日留存的午间候选快照及下一交易日收益优化选股权重"
     },
@@ -382,14 +425,14 @@
       "board": 0.05,
       "morning_fund": 0.15
     },
-    "validated_days": 21,
+    "validated_days": 22,
     "minimum_days": 20,
     "grid_size": 56,
     "metrics": {
-      "sharpe_ratio": 2.194,
-      "average_excess_return": 0.1243,
-      "positive_day_rate": 66.67,
-      "evaluated_days": 21
+      "sharpe_ratio": 1.3269,
+      "average_excess_return": 0.0758,
+      "positive_day_rate": 63.64,
+      "evaluated_days": 22
     },
     "message": "使用逐日留存的午间候选快照及下一交易日收益优化选股权重"
   }
