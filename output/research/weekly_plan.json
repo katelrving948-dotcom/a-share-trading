@@ -2,7 +2,7 @@
   "plan_id": "2026-W39",
   "week_start": "2026-09-21",
   "week_end": "2026-09-25",
-  "generated_at": "2026-09-21 12:02:29",
+  "generated_at": "2026-09-22 12:02:19",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：标普500、纳斯达克100、纳斯达克中国金龙",
+      "summary": "相对偏强市场：道琼斯、标普500、纳斯达克100",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -39,7 +39,7 @@
     },
     {
       "name": "利空情景",
-      "summary": "相对偏弱市场：道琼斯、NYMEX原油、COMEX黄金",
+      "summary": "相对偏弱市场：COMEX黄金",
       "triggers": [
         "外部风险扩大",
         "A股相关板块破位或候选股相对强度转负"
@@ -60,12 +60,12 @@
       "name": "生益科技",
       "industry": "元件",
       "role": "主选",
-      "status": "等待回调",
-      "market_cap": 3531.53,
+      "status": "等待企稳",
+      "market_cap": 3514.53,
       "entry_gate": {
         "passed": false,
-        "state": "waiting_pullback",
-        "reason": "等待回调",
+        "state": "waiting_confirmation",
+        "reason": "等待企稳",
         "reference_price": null
       },
       "holding_plan": {
@@ -76,61 +76,61 @@
         "label": "5-20个交易日",
         "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
       },
-      "weekly_score": 79.59,
+      "weekly_score": 79.6,
       "score_components": {
         "fundamental": 72.5,
         "trend": 100.0,
-        "board": 86.0,
+        "board": 87.0,
         "external_event": 50.0,
-        "valuation_crowding": 53.89
+        "valuation_crowding": 50.94
       },
       "primary_board": {
         "type": "概念",
-        "code": "BK1059",
-        "name": "百元股",
-        "change_pct": 0.49,
-        "main_net_inflow": 40.94,
-        "recent_main_net_inflow": 110.47,
-        "positive_days": 2,
+        "code": "BK1713",
+        "name": "科技风格",
+        "change_pct": 0.71,
+        "main_net_inflow": 70.09,
+        "recent_main_net_inflow": 320.21,
+        "positive_days": 3,
         "history_days": 5,
-        "flow_score": 86,
+        "flow_score": 87,
         "external_score": 50,
         "external_confidence": "低",
         "external_signal_count": 0,
         "external_reasons": [],
         "leaders": [
           {
-            "code": "300502",
-            "name": "新易盛",
+            "code": "603986",
+            "name": "兆易创新",
             "role": "龙头",
             "board_rank": 1,
-            "leadership_score": 91,
-            "price": 460.47,
-            "change_pct": 3.48,
-            "market_cap": 6422.35,
-            "amount": 11316566712.22,
-            "main_net": 10.23,
-            "main_net_pct": 9.04
+            "leadership_score": 89,
+            "price": 406.26,
+            "change_pct": 3.71,
+            "market_cap": 2859.95,
+            "amount": 14692010437.0,
+            "main_net": 23.27,
+            "main_net_pct": 15.84
           },
           {
-            "code": "300308",
-            "name": "中际旭创",
+            "code": "688041",
+            "name": "海光信息",
             "role": "次龙头",
             "board_rank": 2,
-            "leadership_score": 90,
-            "price": 941.36,
-            "change_pct": 1.61,
-            "market_cap": 11088.37,
-            "amount": 14188540461.66,
-            "main_net": 11.99,
-            "main_net_pct": 8.45
+            "leadership_score": 87,
+            "price": 257.61,
+            "change_pct": 4.53,
+            "market_cap": 5987.73,
+            "amount": 8994156767.0,
+            "main_net": 5.1,
+            "main_net_pct": 5.67
           }
         ],
-        "rotation_score": 86,
+        "rotation_score": 87,
         "rise_count": null,
         "fall_count": null,
         "effect": "资金流入且上涨扩散，板块效应较强",
-        "rank": 5
+        "rank": 7
       },
       "fundamental_score": 72.5,
       "fundamental_evidence": {
@@ -166,7 +166,7 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-09-18",
+        "as_of": "2026-09-21",
         "qualified": true,
         "trend_qualified": true,
         "pullback_plan": {
@@ -179,22 +179,22 @@
           "stop_price": 136.48,
           "max_entry_price": 153.44,
           "valid_sessions": 5,
-          "state": "waiting_pullback",
-          "touched_on": null,
+          "state": "waiting_confirmation",
+          "touched_on": "2026-09-21",
           "confirmed_on": null,
-          "elapsed_sessions": 0,
-          "as_of": "2026-09-18"
+          "elapsed_sessions": 1,
+          "as_of": "2026-09-21"
         },
         "trend_score": 100.0,
-        "close": 143.93,
-        "ma20": 143.7,
-        "ma60": 138.74,
-        "atr": 9.734,
-        "atr_pct": 6.76,
-        "return_20_pct": 8.38,
-        "benchmark_return_20_pct": -2.41,
-        "relative_strength_pct": 10.8,
-        "extension_pct": 0.16,
+        "close": 146.27,
+        "ma20": 144.7,
+        "ma60": 138.33,
+        "atr": 9.496,
+        "atr_pct": 6.49,
+        "return_20_pct": 15.81,
+        "benchmark_return_20_pct": -0.52,
+        "relative_strength_pct": 16.33,
+        "extension_pct": 1.08,
         "overextended": false,
         "checks": {
           "above_ma20": true,
@@ -239,7 +239,7 @@
         "executable": false,
         "reasons": [
           "100股最小买入量超过当前仓位或风险预算",
-          "等待回调"
+          "等待企稳"
         ],
         "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
       },
