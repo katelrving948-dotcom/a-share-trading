@@ -1396,6 +1396,32 @@ class DataFeed:
             "volume": round(total_volume, 2),
         }
 
+    def get_index_morning(self, code: str) -> dict:
+        """Dated minute history for an SSE index or Eastmoney industry index."""
+        response = self._request(
+            "https://push2his.eastmoney.com/api/qt/stock/trends2/get",
+            {"secid": f"1.{code}", "fields1": "f1,f2,f3,f4,f5,f6,f7,f8",
+             "fields2": "f51,f52,f53,f54,f55,f56,f57,f58", "ndays": 1,
+             "iscr": 0}, timeout=(3, 8), retries=1,
+        )
+        if response is None:
+            return {"available": False}
+        try:
+            entries = (response.json().get("data") or {}).get("trends") or []
+            rows, dates = [], set()
+            for entry in entries:
+                parts = entry.split(",")
+                stamp = datetime.strptime(parts[0], "%Y-%m-%d %H:%M")
+                dates.add(stamp.strftime("%Y%m%d"))
+                rows.append({"time": stamp.strftime("%H%M"), "price": float(parts[2]),
+                             "volume": float(parts[5]), "avg_price": float(parts[7])})
+            if len(dates) != 1:
+                return {"available": False}
+            return {"available": True, "trade_date": dates.pop(),
+                    "source": "东方财富指数分时", "morning_session": self._summarize_morning_session(rows)}
+        except (ValueError, TypeError, IndexError, AttributeError):
+            return {"available": False}
+
     def get_intraday_minute(self, code: str) -> dict:
         """获取今日分时分钟数据（腾讯财经），返回分时趋势摘要。"""
         code = str(code).zfill(6)

@@ -981,21 +981,40 @@ def build_market_research(
 
 
 def build_account_holding_actions(account: dict) -> list[dict]:
+    from noon_holdings import build_noon_action
+
     if not account.get("holdings_tracking_enabled") or not account.get("holdings"):
         return []
     holding_feed = DataFeed()
-    try:
-        benchmark = holding_feed.get_kline("000300", count=120)
-    except Exception:
-        benchmark = pd.DataFrame()
+    now = datetime.now(SHANGHAI)
+
+    def safe(call, fallback):
+        try:
+            return call()
+        except Exception:
+            return fallback
+
+    benchmark = safe(lambda: holding_feed.get_kline("000300", count=120), pd.DataFrame())
+    market = safe(lambda: holding_feed.get_index_morning("000300"), {})
+    codes = [str(h.get("code") or "") for h in account["holdings"]]
+    industries = safe(lambda: holding_feed.get_stock_industries(codes), {})
+    boards = safe(lambda: holding_feed.get_sector_fund_flow(200), pd.DataFrame())
+    sector_quotes = {}
+    if not boards.empty:
+        for name in set(industries.values()):
+            matches = boards[boards["name"] == name]
+            if len(matches) == 1:
+                code = str(matches.iloc[0]["code"])
+                sector_quotes[name] = safe(lambda: holding_feed.get_index_morning(code), {})
 
     def analyze_holding(holding: dict) -> dict:
-        try:
-            kline = holding_feed.get_kline(str(holding.get("code") or ""), count=120)
-        except Exception:
-            kline = pd.DataFrame()
-        trend = analyze_weekly_trend(kline, benchmark)
-        return build_holding_action(holding, trend, account)
+        code = str(holding.get("code") or "")
+        kline = safe(lambda: holding_feed.get_kline(code, count=120), pd.DataFrame())
+        trend = analyze_weekly_trend(kline, benchmark, now=now.replace(hour=12, minute=0))
+        quote = safe(lambda: holding_feed.get_intraday_minute(code), {})
+        industry = industries.get(code, "")
+        return build_noon_action(holding, trend, account, quote, market,
+                                 sector_quotes.get(industry, {}), now, industry)
 
     with ThreadPoolExecutor(max_workers=min(4, len(account["holdings"]))) as executor:
         return list(executor.map(analyze_holding, account["holdings"]))

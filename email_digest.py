@@ -194,7 +194,7 @@ def build_email(payload: dict) -> EmailMessage:
         )
     holding_plain = [
         f"{item.get('code')} {item.get('name')} | 持有{item.get('quantity', 0)}股/可卖{item.get('available_quantity', 0)}股 | "
-        f"成本{_number(item.get('cost_price'), 4)}/参考收盘{_number(item.get('reference_price'), 2)} | "
+        f"行情截至{item.get('quote_as_of') or '上午数据待复核'} | 成本{_number(item.get('cost_price'), 4)}/午间参考价{_number(item.get('reference_price'), 2)} | "
         f"浮动{_number(item.get('pnl_pct'), 2, '%')} | 建议：{item.get('action')}"
         + (f" {item.get('sell_quantity')}股" if item.get("sell_quantity") else "")
         + f"；{item.get('reason')}；结构止损{_number(item.get('stop_price'), 2)}"
@@ -304,7 +304,7 @@ def build_email(payload: dict) -> EmailMessage:
     holding_rows = "".join(
         '<tr>'
         f'<td style="padding:8px;border-bottom:1px solid #dbe5ef"><strong>{html.escape(str(item.get("code") or ""))} {html.escape(str(item.get("name") or ""))}</strong><br>持有{item.get("quantity", 0)}股 / 可卖{item.get("available_quantity", 0)}股</td>'
-        f'<td style="padding:8px;border-bottom:1px solid #dbe5ef">成本 {_number(item.get("cost_price"), 4)}<br>参考收盘 {_number(item.get("reference_price"), 2)} / {_number(item.get("pnl_pct"), 2, "%")}</td>'
+        f'<td style="padding:8px;border-bottom:1px solid #dbe5ef">行情截至 {html.escape(str(item.get("quote_as_of") or "上午数据待复核"))}<br>成本 {_number(item.get("cost_price"), 4)}<br>午间参考价 {_number(item.get("reference_price"), 2)} / {_number(item.get("pnl_pct"), 2, "%")}</td>'
         f'<td style="padding:8px;border-bottom:1px solid #dbe5ef"><strong>{html.escape(str(item.get("action") or "等待数据"))}</strong>'
         + (f' {item.get("sell_quantity")}股' if item.get("sell_quantity") else '')
         + f'<br>{html.escape(str(item.get("reason") or ""))}<br>结构止损 {_number(item.get("stop_price"), 2)}</td>'
