@@ -44,9 +44,9 @@ ACCOUNT_SCHEMA = {
 
 
 def complete_missing_codes(draft: dict) -> dict:
-    """Fill only missing codes using unique exact names from the market directory."""
-    missing = [row for row in draft.get("holdings", []) if not str(row.get("code") or "").strip()]
-    if not missing:
+    """Validate every extracted identity before the frontend merges holdings."""
+    holdings = draft.get("holdings", [])
+    if not holdings:
         return draft
     try:
         from data_feed import DataFeed
@@ -60,18 +60,27 @@ def complete_missing_codes(draft: dict) -> dict:
                 names.setdefault(name, set()).add(code)
     except Exception:
         names = None
-    for row in missing:
+    for row in holdings:
         name = "".join(str(row.get("name") or "").split())
         matches = names.get(name, set()) if names else set()
+        original = str(row.get("code") or "").strip()
+        row["code"] = None
         if len(matches) == 1:
             row["code"] = next(iter(matches))
-            note = "已按股票名称自动匹配代码，请核对后保存"
+            if original and original != row["code"]:
+                note = f"识别代码 {original} 与名称不符，已按名称匹配为 {row['code']}，请核对"
+            elif original:
+                note = "代码与股票名称匹配，请核对后保存"
+            else:
+                note = "已按股票名称自动匹配代码，请核对后保存"
         elif len(matches) > 1:
             note = "名称对应多个代码，请在交易软件核对并手动填写"
         elif not names:
             note = "股票代码查询暂不可用，请手动填写或重新识别截图"
         else:
             note = "未找到完全一致的股票名称，请核对名称并手动填写代码"
+        if original and not row["code"]:
+            note += f"；原识别代码 {original} 未通过核验，已清空"
         row["code_match_note"] = note
     return draft
 
@@ -96,7 +105,7 @@ def extract_account_screenshot(image_data_url: str) -> dict:
                     "type": "text",
                     "text": (
                         "读取这张中国券商持仓截图，仅抄录清晰可见的数据。不要推测被遮挡账号，"
-                        "不要计算或补全看不清的值。股票代码保留六位。界面若提示清算维护或数据不准确，"
+                        "不要计算或补全看不清的值。逐行读取所有持仓，每一行单独输出，不能遗漏或合并。股票代码仅在图片明确显示时抄录六位；没有显示必须返回 null，禁止猜测或填入示例代码。界面若提示清算维护或数据不准确，"
                         "写入 screen_warning。每只股票给出识别置信度和需要人工复核的字段。"
                         "严格按照指定 JSON 结构输出；无法识别的可空字段使用 null。"
                     ),
