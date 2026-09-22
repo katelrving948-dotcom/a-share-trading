@@ -9,6 +9,25 @@ from account_vision import complete_missing_codes, extract_account_screenshot
 
 
 class AccountVisionTest(unittest.TestCase):
+    def test_public_preview_cannot_clear_private_account_fields(self):
+        html = (Path(__file__).resolve().parents[1] / "templates/index.html").read_text(encoding="utf-8")
+        function = re.search(r"async function loadPush\(.*?(?=\ndocument.getElementById\('pushReload'\))", html, re.S).group()
+        script = """
+const assert=require('node:assert/strict');
+const fields={accountEquity:{value:'51857.79'},lastWeekPnl:{value:'100'},currentWeekPnl:{value:'200'}};
+const document={getElementById:id=>fields[id]||(fields[id]={})};
+const api={get:async()=>({account:{},rules:{}})};
+const metric=()=>'',num=()=>'',esc=x=>x;
+""" + function + """
+(async()=>{await loadPush();
+assert.equal(fields.accountEquity.value,'51857.79');
+assert.equal(fields.lastWeekPnl.value,'100');
+assert.equal(fields.currentWeekPnl.value,'200');
+})().catch(e=>{console.error(e);process.exitCode=1});
+"""
+        result = subprocess.run(["node", "-"], input=script, encoding="utf-8", capture_output=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     @patch("data_feed.DataFeed")
     def test_two_incorrect_identical_codes_are_corrected_independently(self, feed):
         feed.return_value.get_stock_list.return_value.to_dict.return_value = [
