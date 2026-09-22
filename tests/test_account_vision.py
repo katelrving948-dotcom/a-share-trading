@@ -2,10 +2,38 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from account_vision import extract_account_screenshot
+from account_vision import complete_missing_codes, extract_account_screenshot
 
 
 class AccountVisionTest(unittest.TestCase):
+    @patch("data_feed.DataFeed")
+    def test_missing_codes_match_unique_exact_names_only(self, feed):
+        feed.return_value.get_stock_list.return_value.to_dict.return_value = [
+            {"name": "生益科技", "code": "600183"},
+            {"name": "千金药业", "code": "600479"},
+            {"name": "重名", "code": "000001"},
+            {"name": "重名", "code": "000002"},
+        ]
+        rows = [{"name": name, "code": None} for name in
+                [" 生益科技 ", "千金药业", "生益", "重名"]]
+        rows.append({"name": "生益科技", "code": "123456"})
+        draft = complete_missing_codes({"holdings": rows, "confirmed": False})
+        self.assertEqual([row["code"] for row in rows],
+                         ["600183", "600479", None, None, "123456"])
+        self.assertIn("多个", rows[3]["code_match_note"])
+        self.assertIn("未找到", rows[2]["code_match_note"])
+        self.assertFalse(draft["confirmed"])
+
+    @patch("data_feed.DataFeed")
+    def test_lookup_failure_preserves_draft(self, feed):
+        feed.return_value.get_stock_list.side_effect = RuntimeError("offline")
+        row = {"name": "生益科技", "code": None, "quantity": 100}
+        draft = {"holdings": [row]}
+        self.assertIs(complete_missing_codes(draft), draft)
+        self.assertIsNone(row["code"])
+        self.assertEqual(row["quantity"], 100)
+        self.assertIn("暂不可用", row["code_match_note"])
+
     @patch("account_vision.urlopen")
     @patch.dict("account_vision.os.environ", {
         "DASHSCOPE_API_KEY": "test-key",

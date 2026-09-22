@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from urllib.request import Request, urlopen
 
 
@@ -40,6 +41,39 @@ ACCOUNT_SCHEMA = {
     },
     "required": ["equity", "available_cash", "as_of", "screen_warning", "holdings"],
 }
+
+
+def complete_missing_codes(draft: dict) -> dict:
+    """Fill only missing codes using unique exact names from the market directory."""
+    missing = [row for row in draft.get("holdings", []) if not str(row.get("code") or "").strip()]
+    if not missing:
+        return draft
+    try:
+        from data_feed import DataFeed
+
+        records = DataFeed().get_stock_list().to_dict("records")
+        names = {}
+        for record in records:
+            name = "".join(str(record.get("name") or "").split())
+            code = str(record.get("code") or "").strip()
+            if name and re.fullmatch(r"[0-9]{6}", code):
+                names.setdefault(name, set()).add(code)
+    except Exception:
+        names = None
+    for row in missing:
+        name = "".join(str(row.get("name") or "").split())
+        matches = names.get(name, set()) if names else set()
+        if len(matches) == 1:
+            row["code"] = next(iter(matches))
+            note = "已按股票名称自动匹配代码，请核对后保存"
+        elif len(matches) > 1:
+            note = "名称对应多个代码，请在交易软件核对并手动填写"
+        elif not names:
+            note = "股票代码查询暂不可用，请手动填写或重新识别截图"
+        else:
+            note = "未找到完全一致的股票名称，请核对名称并手动填写代码"
+        row["code_match_note"] = note
+    return draft
 
 
 def extract_account_screenshot(image_data_url: str) -> dict:
@@ -102,5 +136,5 @@ def extract_account_screenshot(image_data_url: str) -> dict:
         draft = json.loads(content)
         draft["source"] = "screenshot_bailian_draft"
         draft["confirmed"] = False
-        return draft
+        return complete_missing_codes(draft)
     raise RuntimeError("截图识别未返回可用字段，请改用手动填写")
