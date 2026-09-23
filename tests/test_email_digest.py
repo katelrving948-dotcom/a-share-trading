@@ -47,6 +47,27 @@ def payload(observations=None):
 
 
 class EmailDigestTest(unittest.TestCase):
+    @patch.dict("os.environ", {"EMAIL_PREVIEW_ONLY": "true", "REQUIRE_BOARD_DATA": "true"}, clear=True)
+    @patch("email_digest.Path.write_text")
+    @patch("email_digest.freeze_weekly_plan")
+    @patch("email_digest.save_selection_snapshot")
+    @patch("email_digest.send_email")
+    @patch("email_digest.build_push_payload")
+    def test_preview_never_sends_and_missing_boards_block_resend(self, build, send, save, freeze, write):
+        from email_digest import main
+        data = payload()
+        data["technical_summary"]["factor_count"] = 1
+        data["market"]["sector_flow"] = [{"name": "电子"}]
+        build.return_value = data
+        main()
+        send.assert_not_called()
+        save.assert_not_called()
+        freeze.assert_not_called()
+        data["rotation_boards"] = []
+        with self.assertRaisesRegex(RuntimeError, "板块数据"):
+            main()
+        send.assert_not_called()
+
     def test_missing_board_data_is_not_reported_as_zero_or_no_candidates(self):
         from research_core import _capital_strength
         data = payload()

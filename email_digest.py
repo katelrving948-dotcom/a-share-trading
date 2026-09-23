@@ -6,6 +6,7 @@ import html
 import json
 import os
 import smtplib
+from pathlib import Path
 from email.message import EmailMessage
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -168,6 +169,7 @@ def build_email(payload: dict) -> EmailMessage:
             f"{leader.get('name')}({leader.get('leadership_role')})"
             for leader in (board.get("leaders") or [])
         )
+        + f"；来源：{board.get('source') or '东方财富'}；日期：{board.get('trade_date') or '接口未提供'}"
         for board in boards[:8]
     ]
     hot_core_plain = [
@@ -276,7 +278,7 @@ def build_email(payload: dict) -> EmailMessage:
     board_rows = "".join(
         '<tr>'
         f'<td style="padding:8px;border-bottom:1px solid #e4e9f0">{board.get("rank")}</td>'
-        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0"><strong>{html.escape(str(board.get("name") or "--"))}</strong><br><span style="font-size:11px;color:#64748b">{html.escape(str(board.get("type") or ""))}</span></td>'
+        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0"><strong>{html.escape(str(board.get("name") or "--"))}</strong><br><span style="font-size:11px;color:#64748b">{html.escape(str(board.get("type") or ""))}<br>{html.escape(str(board.get("source") or "东方财富"))}<br>{html.escape(str(board.get("trade_date") or ""))}</span></td>'
         f'<td style="padding:8px;border-bottom:1px solid #e4e9f0;text-align:center">{_number(board.get("main_net_inflow"), 2)}亿<br>强度{_number(board.get("rotation_score"), 0)}</td>'
         f'<td style="padding:8px;border-bottom:1px solid #e4e9f0">{html.escape(str(board.get("effect") or "--"))}</td>'
         f'<td style="padding:8px;border-bottom:1px solid #e4e9f0">{html.escape("、".join(f"{leader.get("name")}({leader.get("leadership_role")})" for leader in (board.get("leaders") or [])) or "--")}</td>'
@@ -482,9 +484,31 @@ def main() -> None:
     factor_count = int(payload.get("technical_summary", {}).get("factor_count") or 0)
     if factor_count <= 0:
         raise RuntimeError("技术面快照缺失，停止发送，避免把数据缺失误报为无交集")
+    message = build_email(payload)
+    boards = payload.get("rotation_boards") or []
+    quality = {
+        "generated_at": payload.get("generated_at"),
+        "sector_count": len((payload.get("market") or {}).get("sector_flow") or []),
+        "board_count": len(boards),
+        "hot_core_count": len(payload.get("hot_core_candidates") or []),
+        "boards": [{key: board.get(key) for key in
+                    ("code", "name", "source", "trade_date", "main_net_inflow")} for board in boards],
+        "rendered_board_names": all(html.escape(str(board.get("name"))) in
+                                    message.get_body(preferencelist=("html",)).get_content() for board in boards[:8]),
+    }
+    quality_path = Path(__file__).parent / "output/research/email_quality.json"
+    quality_path.parent.mkdir(parents=True, exist_ok=True)
+    quality_path.write_text(json.dumps(quality, ensure_ascii=False, indent=2), encoding="utf-8")
+    print("[EmailQuality] " + json.dumps(quality, ensure_ascii=False))
+    if os.getenv("REQUIRE_BOARD_DATA", "").lower() == "true" and (
+            not boards or not quality["sector_count"] or not quality["rendered_board_names"]):
+        raise RuntimeError("板块数据或邮件渲染校验未通过，停止本次补发")
+    if os.getenv("EMAIL_PREVIEW_ONLY", "").lower() == "true":
+        print("邮件预览验证完成，未发送")
+        return
     save_selection_snapshot(payload)
     freeze_weekly_plan(payload)
-    send_email(build_email(payload))
+    send_email(message)
     print(f"已发送周度趋势计划：{(payload.get('weekly_plan') or {}).get('active_count', 0)} 只固定候选。")
 
 

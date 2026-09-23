@@ -20,6 +20,7 @@ from typing import Optional, List
 from zoneinfo import ZoneInfo
 
 from config import REQUEST_TIMEOUT, REQUEST_RETRIES, REQUEST_INTERVAL
+from sina_board_feed import SinaIndustryFeed
 
 
 EASTMONEY_LIVE = "https://push2.eastmoney.com"
@@ -128,6 +129,7 @@ class DataFeed:
             "external_market": {"source": "尚未请求", "ok": False},
         }
         self._load_local_snapshot()
+        self._sina_industries = SinaIndustryFeed(self._request)
 
     def _rate_limit(self):
         elapsed = time.time() - self._last_request_time
@@ -903,6 +905,17 @@ class DataFeed:
     def get_sector_fund_flow(self, top_n: int = 20,
                              ascending: bool = False) -> pd.DataFrame:
         """获取行业板块资金流向排行；ascending=True 时返回净流出侧。"""
+        def fallback():
+            frame = self._sina_industries.load()
+            self._set_source_state("sector_flow", "新浪行业资金", not frame.empty,
+                                   detail=f"{len(frame)}个当日行业板块；主力资金口径；分类与东方财富不同")
+            if frame.empty:
+                return frame
+            return frame.sort_values("main_net_inflow", ascending=ascending).head(top_n).reset_index(drop=True)
+
+        # Keep one classification throughout a report once fallback has been selected.
+        if self._sina_industries.rows:
+            return fallback()
         params = {
             "pn": 1, "pz": top_n, "po": 0 if ascending else 1, "np": 1,
             "ut": "bd1d9ddb04089700cf9c27f6f7426281",
@@ -912,7 +925,7 @@ class DataFeed:
         }
         resp, _ = self._request_eastmoney("/api/qt/clist/get", params)
         if not resp:
-            return pd.DataFrame()
+            return fallback()
         try:
             items = (resp.json().get("data") or {}).get("diff", [])
             rows = []
@@ -930,9 +943,9 @@ class DataFeed:
                     "rise_count": _safe_float(i.get("f204")),
                     "fall_count": _safe_float(i.get("f205")),
                 })
-            return pd.DataFrame(rows)
+            return pd.DataFrame(rows) if rows else fallback()
         except (json.JSONDecodeError, KeyError, TypeError):
-            return pd.DataFrame()
+            return fallback()
 
     def get_concept_fund_flow(self, top_n: int = 20,
                               ascending: bool = False) -> pd.DataFrame:
@@ -967,6 +980,8 @@ class DataFeed:
 
     def get_board_constituents(self, board_code: str, limit: int = 1000) -> set:
         """获取行业或概念板块成分股代码，用于将资金热点映射至候选股。"""
+        if board_code.startswith("sina:"):
+            return self._sina_industries.constituents(board_code)
         params = {
             "pn": 1, "pz": limit, "po": 1, "np": 1,
             "ut": "bd1d9ddb04089700cf9c27f6f7426281",
@@ -988,6 +1003,8 @@ class DataFeed:
     def get_stock_industries(self, codes: list) -> dict:
         """Batch-resolve candidate industries even when the market snapshot falls back to Sina."""
         normalized = [str(code).zfill(6) for code in dict.fromkeys(codes) if code]
+        if self._sina_industries.rows:
+            return self._sina_industries.industries(normalized)
         result = {}
         for offset in range(0, len(normalized), 100):
             batch = normalized[offset:offset + 100]
@@ -1058,6 +1075,8 @@ class DataFeed:
 
     def get_board_flow_history(self, board_code: str, days: int = 5) -> dict:
         """获取板块近期主力资金轨迹，数值单位标准化为亿元。"""
+        if board_code.startswith("sina:"):
+            return self._sina_industries.flow_history(board_code, days)
         unavailable = {
             "recent_main_net_inflow": None,
             "positive_days": None,
@@ -1178,6 +1197,8 @@ class DataFeed:
                 "positive_days": history["positive_days"],
                 "history_days": history["days"],
                 "flow_score": round(max(0.0, min(100.0, score))),
+                "source": row.get("source") or "东方财富",
+                "trade_date": row.get("trade_date") or "",
             }
             board.update({
                 f"external_{key}": value
@@ -1418,6 +1439,8 @@ class DataFeed:
 
     def get_index_morning(self, code: str) -> dict:
         """Dated minute history for an SSE index or Eastmoney industry index."""
+        if code.startswith("sina:"):
+            return {"available": False, "error": "新浪备用源未提供已验证的行业上午分时"}
         response = self._request(
             "https://push2his.eastmoney.com/api/qt/stock/trends2/get",
             {"secid": f"{'90' if code.startswith('BK') else '1'}.{code}", "fields1": "f1,f2,f3,f4,f5,f6,f7,f8",
@@ -2042,8 +2065,10 @@ class DataFeed:
                     "change_pct": round(float(row.get("change_pct") or 0), 2),
                     "main_net_inflow": round(float(row.get("main_net_inflow") or 0), 2),
                     "main_net_pct": round(float(row.get("main_net_pct") or 0), 2),
-                    "rise_count": int(float(row.get("rise_count") or 0)),
-                    "fall_count": int(float(row.get("fall_count") or 0)),
+                    "rise_count": row.get("rise_count"),
+                    "fall_count": row.get("fall_count"),
+                    "source": row.get("source") or "东方财富",
+                    "trade_date": row.get("trade_date") or "",
                 })
 
         sector_outflow = self.get_sector_fund_flow(10, ascending=True)
@@ -2054,8 +2079,8 @@ class DataFeed:
                     "change_pct": round(float(row.get("change_pct") or 0), 2),
                     "main_net_inflow": round(float(row.get("main_net_inflow") or 0), 2),
                     "main_net_pct": round(float(row.get("main_net_pct") or 0), 2),
-                    "rise_count": int(float(row.get("rise_count") or 0)),
-                    "fall_count": int(float(row.get("fall_count") or 0)),
+                    "rise_count": row.get("rise_count"),
+                    "fall_count": row.get("fall_count"),
                 })
 
         concept_outflow = self.get_concept_fund_flow(10, ascending=True)

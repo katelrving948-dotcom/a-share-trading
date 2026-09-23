@@ -8,6 +8,16 @@ on:
         required: false
         type: boolean
         default: false
+      preview_only:
+        description: Validate generated email without sending
+        required: false
+        type: boolean
+        default: false
+      require_board_data:
+        description: Stop this run if board data is unavailable
+        required: false
+        type: boolean
+        default: false
   schedule:
     # GitHub Actions uses UTC: 04:00 UTC = 12:00 Asia/Shanghai on weekdays.
     - cron: "0 4 * * 1-5"
@@ -37,6 +47,8 @@ jobs:
       ACCOUNT_STATE_JSON: ${{ secrets.ACCOUNT_STATE_JSON }}
       SITE_URL: https://a-share-trading.onrender.com
       PYTHONUNBUFFERED: "1"
+      EMAIL_PREVIEW_ONLY: ${{ inputs.preview_only || 'false' }}
+      REQUIRE_BOARD_DATA: ${{ inputs.require_board_data || 'false' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -54,15 +66,15 @@ jobs:
           key: daily-stock-email-${{ steps.beijing_date.outputs.date }}
 
       - uses: actions/setup-python@v5
-        if: inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true'
+        if: inputs.force_send == true || inputs.preview_only == true || steps.sent_cache.outputs.cache-hit != 'true'
         with:
           python-version: "3.13"
           cache: pip
       - name: Install dependencies
-        if: inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true'
+        if: inputs.force_send == true || inputs.preview_only == true || steps.sent_cache.outputs.cache-hit != 'true'
         run: pip install -r requirements.txt
       - name: Restore latest technical factor snapshot
-        if: inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true'
+        if: inputs.force_send == true || inputs.preview_only == true || steps.sent_cache.outputs.cache-hit != 'true'
         uses: actions/cache/restore@v4
         with:
           path: output/quant
@@ -70,17 +82,17 @@ jobs:
           restore-keys: |
             quant-report-${{ runner.os }}-
       - name: Download latest technical artifact when cache is empty
-        if: (inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true') && hashFiles('output/quant/quant_summary.json') == ''
+        if: (inputs.force_send == true || inputs.preview_only == true || steps.sent_cache.outputs.cache-hit != 'true') && hashFiles('output/quant/quant_summary.json') == ''
         shell: bash
         run: |
           run_id=$(gh run list --workflow quant-factor-research.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')
           test -n "$run_id"
           gh run download "$run_id" --pattern 'quant-factor-report-*' --dir output/quant
       - name: Generate and send email
-        if: inputs.force_send == true || steps.sent_cache.outputs.cache-hit != 'true'
+        if: inputs.force_send == true || inputs.preview_only == true || steps.sent_cache.outputs.cache-hit != 'true'
         run: python email_digest.py
       - name: Publish latest website snapshot
-        if: always() && hashFiles('output/research/fundamental_latest.json') != ''
+        if: inputs.preview_only != true && always() && hashFiles('output/research/fundamental_latest.json') != ''
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -93,14 +105,20 @@ jobs:
           git pull --rebase origin main
           git push origin HEAD:main
       - name: Record successful send
-        if: success() && steps.sent_cache.outputs.cache-hit != 'true'
+        if: inputs.preview_only != true && success() && steps.sent_cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           mkdir -p .email-sent-marker
           echo "${{ steps.beijing_date.outputs.date }}" > .email-sent-marker/date
       - name: Save daily send marker
-        if: success() && steps.sent_cache.outputs.cache-hit != 'true'
+        if: inputs.preview_only != true && success() && steps.sent_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: .email-sent-marker
           key: daily-stock-email-${{ steps.beijing_date.outputs.date }}
+      - name: Save email data quality evidence
+        if: always() && hashFiles('output/research/email_quality.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: email-data-quality-${{ github.run_id }}
+          path: output/research/email_quality.json

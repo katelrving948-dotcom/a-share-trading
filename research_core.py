@@ -791,7 +791,7 @@ def build_market_research(
         flow = float(board.get("main_net_inflow") or 0)
         change = float(board.get("change_pct") or 0)
         board["effect"] = (
-            "资金流入且上涨扩散，板块效应较强" if flow > 0 and change > 0
+            "资金流入且板块上涨" if flow > 0 and change > 0
             else "资金流入但价格未确认" if flow > 0
             else "资金流出，板块效应偏弱"
         )
@@ -1003,8 +1003,8 @@ def build_account_holding_actions(account: dict) -> list[dict]:
     benchmark = safe(lambda: holding_feed.get_kline("000300", count=120), pd.DataFrame())
     market = safe(lambda: holding_feed.get_index_morning("000300"), {})
     codes = [str(h.get("code") or "") for h in account["holdings"]]
-    industries = safe(lambda: holding_feed.get_stock_industries(codes), {})
     boards = safe(lambda: holding_feed.get_sector_fund_flow(200), pd.DataFrame())
+    industries = safe(lambda: holding_feed.get_stock_industries(codes), {})
     sector_quotes = {}
     if not boards.empty:
         for name in set(industries.values()):
