@@ -2,12 +2,12 @@
   "plan_id": "2026-W39",
   "week_start": "2026-09-21",
   "week_end": "2026-09-25",
-  "generated_at": "2026-09-22 12:02:19",
+  "generated_at": "2026-09-23 12:02:02",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
   "account": {
-    "equity": 45682.77,
+    "equity": 51857.79,
     "last_week_return_pct": 0.0,
     "current_week_return_pct": 0.0,
     "holdings_tracking_enabled": false,
@@ -15,7 +15,7 @@
       "name": "普通",
       "max_total_pct": 0.6,
       "max_stock_pct": 0.2,
-      "risk_per_trade": 274.1
+      "risk_per_trade": 300.0
     },
     "can_open_new": true,
     "block_reasons": []
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：道琼斯、标普500、纳斯达克100",
+      "summary": "相对偏强市场：纳斯达克100、纳斯达克中国金龙、COMEX黄金",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -39,7 +39,7 @@
     },
     {
       "name": "利空情景",
-      "summary": "相对偏弱市场：COMEX黄金",
+      "summary": "相对偏弱市场：道琼斯、恒生指数、NYMEX原油",
       "triggers": [
         "外部风险扩大",
         "A股相关板块破位或候选股相对强度转负"
@@ -60,8 +60,8 @@
       "name": "生益科技",
       "industry": "元件",
       "role": "主选",
-      "status": "等待企稳",
-      "market_cap": 3514.53,
+      "status": "撤销",
+      "market_cap": 3489.75,
       "entry_gate": {
         "passed": false,
         "state": "waiting_confirmation",
@@ -76,62 +76,15 @@
         "label": "5-20个交易日",
         "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
       },
-      "weekly_score": 79.6,
+      "weekly_score": 60.5,
       "score_components": {
         "fundamental": 72.5,
-        "trend": 100.0,
-        "board": 87.0,
+        "trend": 80.0,
+        "board": 0.0,
         "external_event": 50.0,
-        "valuation_crowding": 50.94
+        "valuation_crowding": 50.05
       },
-      "primary_board": {
-        "type": "概念",
-        "code": "BK1713",
-        "name": "科技风格",
-        "change_pct": 0.71,
-        "main_net_inflow": 70.09,
-        "recent_main_net_inflow": 320.21,
-        "positive_days": 3,
-        "history_days": 5,
-        "flow_score": 87,
-        "external_score": 50,
-        "external_confidence": "低",
-        "external_signal_count": 0,
-        "external_reasons": [],
-        "leaders": [
-          {
-            "code": "603986",
-            "name": "兆易创新",
-            "role": "龙头",
-            "board_rank": 1,
-            "leadership_score": 89,
-            "price": 406.26,
-            "change_pct": 3.71,
-            "market_cap": 2859.95,
-            "amount": 14692010437.0,
-            "main_net": 23.27,
-            "main_net_pct": 15.84
-          },
-          {
-            "code": "688041",
-            "name": "海光信息",
-            "role": "次龙头",
-            "board_rank": 2,
-            "leadership_score": 87,
-            "price": 257.61,
-            "change_pct": 4.53,
-            "market_cap": 5987.73,
-            "amount": 8994156767.0,
-            "main_net": 5.1,
-            "main_net_pct": 5.67
-          }
-        ],
-        "rotation_score": 87,
-        "rise_count": null,
-        "fall_count": null,
-        "effect": "资金流入且上涨扩散，板块效应较强",
-        "rank": 7
-      },
+      "primary_board": null,
       "fundamental_score": 72.5,
       "fundamental_evidence": {
         "report_date": "2026-06-30",
@@ -166,7 +119,7 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-09-21",
+        "as_of": "2026-09-22",
         "qualified": true,
         "trend_qualified": true,
         "pullback_plan": {
@@ -180,24 +133,24 @@
           "max_entry_price": 153.44,
           "valid_sessions": 5,
           "state": "waiting_confirmation",
-          "touched_on": "2026-09-21",
+          "touched_on": "2026-09-22",
           "confirmed_on": null,
-          "elapsed_sessions": 1,
-          "as_of": "2026-09-21"
+          "elapsed_sessions": 2,
+          "as_of": "2026-09-22"
         },
-        "trend_score": 100.0,
-        "close": 146.27,
-        "ma20": 144.7,
-        "ma60": 138.33,
-        "atr": 9.496,
-        "atr_pct": 6.49,
-        "return_20_pct": 15.81,
-        "benchmark_return_20_pct": -0.52,
-        "relative_strength_pct": 16.33,
-        "extension_pct": 1.08,
+        "trend_score": 80.0,
+        "close": 143.45,
+        "ma20": 145.43,
+        "ma60": 137.83,
+        "atr": 9.288,
+        "atr_pct": 6.47,
+        "return_20_pct": 11.2,
+        "benchmark_return_20_pct": -0.16,
+        "relative_strength_pct": 11.36,
+        "extension_pct": -1.36,
         "overextended": false,
         "checks": {
-          "above_ma20": true,
+          "above_ma20": false,
           "ma20_above_ma60": true,
           "ma20_rising": true,
           "relative_strength_positive": true
@@ -232,18 +185,20 @@
         "estimated_value": 0.0,
         "position_pct": 0.0,
         "planned_loss": 0.0,
-        "risk_budget": 274.09662,
+        "risk_budget": 300.0,
         "reference_price": 153.44,
         "minimum_quantity": 100,
         "per_share_risk": 16.96,
         "executable": false,
         "reasons": [
           "100股最小买入量超过当前仓位或风险预算",
-          "等待企稳"
+          "等待企稳",
+          "板块周度确认不足55分"
         ],
         "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
       },
       "invalidation": [
+        "板块周度确认不足55分",
         "跌破结构止损",
         "板块趋势或相对强度转弱",
         "重大公告或国际事件破坏核心逻辑"
@@ -251,7 +206,7 @@
       "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作"
     }
   ],
-  "active_count": 1,
+  "active_count": 0,
   "strategy_version": "fundamental-trend-pullback-v1",
   "execution_note": "基本面原始及行业分均≥60、上升趋势、回调企稳必须同时满足，再复核实时价格和账户风险；股数是目标上限，不是追加量。持仓期限从实际买入日起计，破位提前退出。"
 }
