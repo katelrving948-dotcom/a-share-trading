@@ -125,6 +125,8 @@ def build_email(payload: dict) -> EmailMessage:
     capital = payload.get("capital_strength") or {}
     boards = payload.get("rotation_boards") or []
     hot_core = payload.get("hot_core_candidates") or []
+    hot_core_empty = ("板块数据缺失，暂无法生成龙头观察名单。" if not boards
+                      else "本次未形成满足条件的板块龙头/次龙头。")
     weekly = payload.get("weekly_plan") or {}
     account = payload.get("account") or weekly.get("account") or {}
     holding_actions = weekly.get("holding_actions") or []
@@ -231,11 +233,11 @@ def build_email(payload: dict) -> EmailMessage:
         + ("\n".join(external_plain + event_plain) if external_plain or event_plain else "外盘/事件数据暂不可用")
         + "\n说明：外盘和事件只形成情景推演，必须由A股资金与板块扩散确认。\n\n"
         "每日资金强度与板块效应\n"
-        f"资金强度：{capital.get('label', '--')}；强板块{capital.get('strong_board_count', 0)}个；"
+        f"资金强度：{capital.get('label', '--')}；强板块{_number(capital.get('strong_board_count'), 0)}个；"
         f"前三板块主力净流入合计{_number(capital.get('top_three_main_net_inflow'), 2)}亿。\n"
         + ("\n".join(board_plain) if board_plain else "暂无有效板块资金数据")
         + "\n\n热门核心观察池（强势板块龙头/次龙头）\n"
-        + ("\n".join(hot_core_plain) if hot_core_plain else "本次未形成满足条件的板块龙头/次龙头")
+        + ("\n".join(hot_core_plain) if hot_core_plain else hot_core_empty)
         + "\n\n"
         "中长期实际选股观察池（量化仅研究）\n"
         + ("\n".join(plain_rows) if plain_rows else empty_text)
@@ -291,7 +293,7 @@ def build_email(payload: dict) -> EmailMessage:
         f'<span style="font-size:12px;color:#475569">{html.escape(_plan_text(item))}</span>'
         '</div>'
         for index, item in enumerate(hot_core, start=1)
-    ) or '<div style="padding:11px 12px">本次未形成强势板块龙头观察名单。</div>'
+    ) or f'<div style="padding:11px 12px">{hot_core_empty}</div>'
     weekly_rows = "".join(
         '<tr>'
         f'<td style="padding:8px;border-bottom:1px solid #dbe5ef"><strong>{html.escape(str(item.get("role") or ""))}</strong><br>{html.escape(str(item.get("code") or ""))} {html.escape(str(item.get("name") or ""))}</td>'
@@ -375,7 +377,7 @@ def build_email(payload: dict) -> EmailMessage:
             </table>
             {event_rows}
             <h2 style="font-size:18px;margin-top:24px">每日资金强度、板块效应与龙头</h2>
-            <p style="color:#5e6b7d">资金强度：<strong>{html.escape(str(capital.get('label') or '--'))}</strong> · 强板块 {capital.get('strong_board_count', 0)} 个 · 前三主力净流入合计 {_number(capital.get('top_three_main_net_inflow'), 2)} 亿</p>
+            <p style="color:#5e6b7d">资金强度：<strong>{html.escape(str(capital.get('label') or '--'))}</strong> · 强板块 {_number(capital.get('strong_board_count'), 0)} 个 · 前三主力净流入合计 {_number(capital.get('top_three_main_net_inflow'), 2)} 亿</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px">
               <thead><tr style="background:#edf2f8"><th width="6%" style="padding:8px">#</th><th width="18%" style="padding:8px;text-align:left">板块</th><th width="18%" style="padding:8px">资金/强度</th><th width="28%" style="padding:8px;text-align:left">板块效应</th><th width="30%" style="padding:8px;text-align:left">龙头/次龙头</th></tr></thead>
               <tbody>{board_rows}</tbody>

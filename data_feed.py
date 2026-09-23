@@ -155,7 +155,11 @@ class DataFeed:
                 resp.encoding = "utf-8"
                 if resp.status_code == 200:
                     return resp
-            except requests.RequestException:
+                if "/api/qt/clist/get" in url or "/api/qt/stock/trends2/get" in url:
+                    print(f"[DataFeed] {url}: HTTP {resp.status_code}")
+            except requests.RequestException as exc:
+                if "/api/qt/clist/get" in url or "/api/qt/stock/trends2/get" in url:
+                    print(f"[DataFeed] {url}: {type(exc).__name__}")
                 if attempt < retries - 1:
                     time.sleep(1)
         return None
@@ -170,11 +174,27 @@ class DataFeed:
         )
         for base in bases:
             resp = self._request(
-                base + path, params, timeout=(3, 10), retries=1
+                base + path, params, timeout=(3, 10),
+                retries=2 if str(params.get("fs", "")).startswith("m:90+") else 1
             )
             if resp is not None:
+                # A successful HTTP response may still contain an empty/error payload.
+                # Continue to the alternate host instead of silently losing boards.
+                try:
+                    payload = resp.json()
+                    data = payload.get("data")
+                    valid = bool(data) and payload.get("rc", 0) == 0
+                    if path.endswith("/clist/get") or path.endswith("/ulist.np/get"):
+                        valid = valid and bool(data.get("diff"))
+                except (ValueError, TypeError, AttributeError):
+                    valid = False
+                if not valid:
+                    print(f"[DataFeed] {path} returned empty/invalid data from {base}; trying alternate host")
+                    continue
                 source = "东方财富延时行情" if base == EASTMONEY_DELAY else "东方财富实时行情"
                 return resp, source
+            if resp is None:
+                print(f"[DataFeed] {path} request failed at {base} (network/HTTP); trying alternate host")
             if base == EASTMONEY_LIVE:
                 self._eastmoney_live_unavailable_until = time.time() + 300
         return None, ""
@@ -1400,7 +1420,7 @@ class DataFeed:
         """Dated minute history for an SSE index or Eastmoney industry index."""
         response = self._request(
             "https://push2his.eastmoney.com/api/qt/stock/trends2/get",
-            {"secid": f"1.{code}", "fields1": "f1,f2,f3,f4,f5,f6,f7,f8",
+            {"secid": f"{'90' if code.startswith('BK') else '1'}.{code}", "fields1": "f1,f2,f3,f4,f5,f6,f7,f8",
              "fields2": "f51,f52,f53,f54,f55,f56,f57,f58", "ndays": 1,
              "iscr": 0}, timeout=(3, 8), retries=1,
         )

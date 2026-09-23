@@ -47,6 +47,18 @@ def payload(observations=None):
 
 
 class EmailDigestTest(unittest.TestCase):
+    def test_missing_board_data_is_not_reported_as_zero_or_no_candidates(self):
+        from research_core import _capital_strength
+        data = payload()
+        data.update(capital_strength=_capital_strength({}, []), rotation_boards=[], hot_core_candidates=[])
+        message = build_email(data)
+        for kind in ("plain", "html"):
+            body = message.get_body(preferencelist=(kind,)).get_content()
+            self.assertIn("板块资金数据缺失，无法判断", body)
+            self.assertIn("板块数据缺失，暂无法生成龙头观察名单", body)
+            self.assertNotIn("合计 0.00", body)
+            self.assertNotIn("弱或分化", body)
+
     def test_weekly_plan_and_account_gate_are_prominent(self):
         data = payload()
         data["account"] = {

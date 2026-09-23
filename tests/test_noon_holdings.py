@@ -60,7 +60,11 @@ class NoonHoldingsTest(unittest.TestCase):
                 action = self.action(**kwargs)
                 self.assertFalse(action["morning_ready"])
                 self.assertEqual(action["sell_quantity"], 0)
-                self.assertIsNone(action["reference_price"])
+                if "market" in kwargs or "sector" in kwargs:
+                    self.assertEqual(action["reference_price"], 11)
+                    self.assertEqual(action["pnl_pct"], 10)
+                else:
+                    self.assertIsNone(action["reference_price"])
 
     def test_sector_weakness_changes_holding_advice(self):
         action = self.action(sector=quote(10.1))
@@ -79,6 +83,22 @@ class NoonHoldingsTest(unittest.TestCase):
         self.assertEqual(result["trade_date"], "20260922")
         self.assertEqual(result["morning_session"]["close"], 11)
         self.assertEqual(result["morning_session"]["last_time"], "1130")
+
+    @patch.object(DataFeed, "_request")
+    def test_board_minutes_use_board_market_id(self, request):
+        request.return_value = None
+        DataFeed().get_index_morning("BK1036")
+        self.assertEqual(request.call_args.args[1]["secid"], "90.BK1036")
+
+    @patch.object(DataFeed, "_request")
+    def test_empty_http_success_tries_alternate_host(self, request):
+        empty, good = Mock(), Mock()
+        empty.json.return_value = {"rc": 0, "data": None}
+        good.json.return_value = {"rc": 0, "data": {"diff": [{"f12": "BK1036"}]}}
+        request.side_effect = [empty, good]
+        response, source = DataFeed()._request_eastmoney("/api/qt/clist/get", {})
+        self.assertIs(response, good)
+        self.assertEqual(request.call_count, 2)
 
 
 if __name__ == "__main__":

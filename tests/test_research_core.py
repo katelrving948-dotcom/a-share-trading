@@ -9,6 +9,14 @@ from selection_model import ACTIVE_SELECTION_WEIGHTS, score_selection_components
 
 
 class ResearchCoreTest(unittest.TestCase):
+    def test_missing_sector_funds_are_unknown_not_zero(self):
+        from research_core import _capital_strength
+        result = _capital_strength({}, [])
+        self.assertFalse(result["available"])
+        self.assertIsNone(result["top_three_main_net_inflow"])
+        self.assertIsNone(result["strong_board_count"])
+        self.assertIn("无法判断", result["label"])
+
     def test_small_cap_scan_prefers_strength_without_bypassing_fundamentals(self):
         rows = [
             {"code": "large", "market_cap": 800, "fundamental_score": 90},

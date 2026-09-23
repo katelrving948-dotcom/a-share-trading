@@ -607,6 +607,11 @@ def build_trade_decision(item: dict) -> dict:
 
 def _capital_strength(market: dict, boards: list[dict]) -> dict:
     sector_rows = market.get("sector_flow") or []
+    if not sector_rows:
+        return {"available": False, "label": "板块资金数据缺失，无法判断",
+                "positive_sector_count": None, "observed_sector_count": 0,
+                "top_three_main_net_inflow": None, "top_ten_average_change_pct": None,
+                "strong_board_count": None}
     positive = [row for row in sector_rows if float(row.get("main_net_inflow") or 0) > 0]
     top_three = sum(float(row.get("main_net_inflow") or 0) for row in sector_rows[:3])
     average_change = sum(float(row.get("change_pct") or 0) for row in sector_rows[:10]) / max(1, len(sector_rows[:10]))
@@ -618,6 +623,7 @@ def _capital_strength(market: dict, boards: list[dict]) -> dict:
         label = "弱或分化"
     return {
         "label": label,
+        "available": True,
         "positive_sector_count": len(positive),
         "observed_sector_count": len(sector_rows),
         "top_three_main_net_inflow": round(top_three, 2),
