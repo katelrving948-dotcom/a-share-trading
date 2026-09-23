@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
+import pandas as pd
 
 from data_feed import DataFeed
 from sina_board_feed import SinaIndustryFeed
@@ -38,6 +39,15 @@ class SinaBoardFeedTest(unittest.TestCase):
     def test_stale_history_is_not_current_data(self):
         source = self.source("2020-06-30")
         self.assertTrue(source.load().empty)
+
+    def test_live_members_produce_named_leaders_for_email(self):
+        feed = DataFeed()
+        feed._stock_list_cache = pd.DataFrame([
+            {"code": "600183", "name": "样本", "is_st": False, "board": "主板",
+             "price": 10, "market_cap": 100, "amount": 100000, "change_pct": 1,
+             "main_net_pct": 2, "main_net": 1000}])
+        leaders = feed._rank_board_leaders({"600183"})
+        self.assertEqual(leaders[0]["leadership_role"], "龙头")
 
     def test_nonfinite_values_are_rejected(self):
         source = self.source()

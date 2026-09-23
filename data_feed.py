@@ -1062,6 +1062,7 @@ class DataFeed:
                 "code": str(row.get("code", "")).zfill(6),
                 "name": str(row.get("name", "")),
                 "role": "龙头" if rank == 1 else "次龙头",
+                "leadership_role": "龙头" if rank == 1 else "次龙头",
                 "board_rank": rank,
                 "leadership_score": int(row.get("leadership_score") or 0),
                 "price": round(float(row.get("price") or 0), 2),
