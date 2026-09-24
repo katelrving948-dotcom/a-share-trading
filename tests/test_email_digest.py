@@ -47,7 +47,7 @@ def payload(observations=None):
 
 
 class EmailDigestTest(unittest.TestCase):
-    @patch.dict("os.environ", {"EMAIL_PREVIEW_ONLY": "true", "REQUIRE_BOARD_DATA": "true"}, clear=True)
+    @patch.dict("os.environ", {"EMAIL_PREVIEW_ONLY": "true"}, clear=True)
     @patch("email_digest.Path.write_text")
     @patch("email_digest.freeze_weekly_plan")
     @patch("email_digest.save_selection_snapshot")
@@ -67,6 +67,16 @@ class EmailDigestTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "板块数据"):
             main()
         send.assert_not_called()
+
+    def test_derived_board_values_are_labeled_with_morning_time(self):
+        data = payload()
+        data["rotation_boards"][0].update(main_net_estimated=True, as_of="2026-09-24 11:30",
+                                          source="新浪分时约值")
+        message = build_email(data)
+        for kind in ("plain", "html"):
+            body = message.get_body(preferencelist=(kind,)).get_content()
+            self.assertIn("约12.00亿", body)
+            self.assertIn("2026-09-24 11:30", body)
 
     def test_missing_board_data_is_not_reported_as_zero_or_no_candidates(self):
         from research_core import _capital_strength

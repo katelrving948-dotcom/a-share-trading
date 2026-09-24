@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 import pandas as pd
@@ -9,15 +9,26 @@ from sina_board_feed import SinaIndustryFeed
 
 
 TODAY = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d")
+YESTERDAY = (datetime.fromisoformat(TODAY) - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
 class SinaBoardFeedTest(unittest.TestCase):
-    def source(self, date=TODAY):
+    def setUp(self):
+        clock_patch = patch("sina_board_feed.datetime", wraps=datetime)
+        self.clock = clock_patch.start()
+        self.clock.now.return_value = datetime.fromisoformat(TODAY).replace(hour=12)
+        self.addCleanup(clock_patch.stop)
+
+    def source(self, date=YESTERDAY, minute_date=TODAY, minute_time="11:30:00"):
         source = SinaIndustryFeed(Mock())
         source._read = Mock(side_effect=[
             [{"category": "hangye_ZC39", "name": "电子制造"}],
             [{"opendate": date, "r0_net": "200000000", "netamount": "900000000",
               "r0_ratio": "0.05", "avg_changeratio": "0.012", "avg_price": "10"}],
+            ["121", [{"opendate": minute_date, "ticktime": minute_time,
+                      "netamount": "900000000", "ratioamount": "0.225", "r0_ratio": "0.05",
+                      "avg_changeratio": "0.012", "avg_price": "10"},
+                     {"opendate": minute_date, "ticktime": "13:01:00", "avg_price": "999"}]],
         ])
         return source
 
@@ -34,7 +45,23 @@ class SinaBoardFeedTest(unittest.TestCase):
         self.assertEqual(source._read.call_args_list[0].args[1]["fenlei"], 2)
         self.assertEqual(source.flow_history(row["code"], 5)["days"], 1)
         source.load()
-        self.assertEqual(source._read.call_count, 2)
+        self.assertEqual(source._read.call_count, 3)
+        self.assertEqual(row["as_of"], TODAY + " 11:30")
+        self.assertTrue(row["main_net_estimated"])
+
+    def test_midday_accepts_yesterday_history_only_with_today_1130(self):
+        self.assertEqual(len(self.source(date=YESTERDAY).load()), 1)
+        self.assertTrue(self.source(minute_date=YESTERDAY).load().empty)
+        self.assertTrue(self.source(minute_time="11:29:00").load().empty)
+
+    def test_early_run_and_same_day_close_do_not_leak_into_noon_report(self):
+        self.clock.now.return_value = datetime.fromisoformat(TODAY).replace(hour=10)
+        self.assertTrue(self.source().load().empty)
+        source = self.source()
+        source.date = TODAY
+        source.history["test"] = [{"opendate": TODAY, "r0_net": "9900000000"},
+                                  {"opendate": YESTERDAY, "r0_net": "100000000"}]
+        self.assertEqual(source.flow_history("test", 5)["recent_main_net_inflow"], 1)
 
     def test_stale_history_is_not_current_data(self):
         source = self.source("2020-06-30")
@@ -52,8 +79,10 @@ class SinaBoardFeedTest(unittest.TestCase):
     def test_nonfinite_values_are_rejected(self):
         source = self.source()
         source._read.side_effect = [[{"category": "hangye_ZC39", "name": "电子"}],
-                                    [{"opendate": TODAY, "r0_net": "NaN", "r0_ratio": "0.1",
-                                      "avg_changeratio": "0.1", "avg_price": "10"}]]
+                                    [{"opendate": YESTERDAY}],
+                                    ["121", [{"opendate": TODAY, "ticktime": "11:30:00",
+                                              "netamount": "NaN", "ratioamount": "0.1", "r0_ratio": "0.1",
+                                              "avg_changeratio": "0.1", "avg_price": "10"}]]]
         self.assertTrue(source.load().empty)
 
     def test_constituents_pagination_and_partial_failure(self):

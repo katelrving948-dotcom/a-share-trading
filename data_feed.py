@@ -1200,6 +1200,8 @@ class DataFeed:
                 "flow_score": round(max(0.0, min(100.0, score))),
                 "source": row.get("source") or "东方财富",
                 "trade_date": row.get("trade_date") or "",
+                "as_of": row.get("as_of") or "",
+                "main_net_estimated": bool(row.get("main_net_estimated", False)),
             }
             board.update({
                 f"external_{key}": value
@@ -2070,6 +2072,8 @@ class DataFeed:
                     "fall_count": row.get("fall_count"),
                     "source": row.get("source") or "东方财富",
                     "trade_date": row.get("trade_date") or "",
+                    "as_of": row.get("as_of") or "",
+                    "main_net_estimated": bool(row.get("main_net_estimated", False)),
                 })
 
         sector_outflow = self.get_sector_fund_flow(10, ascending=True)

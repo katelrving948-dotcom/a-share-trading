@@ -17,7 +17,7 @@ on:
         description: Stop this run if board data is unavailable
         required: false
         type: boolean
-        default: false
+        default: true
   schedule:
     # GitHub Actions uses UTC: 04:00 UTC = 12:00 Asia/Shanghai on weekdays.
     - cron: "0 4 * * 1-5"
@@ -48,7 +48,7 @@ jobs:
       SITE_URL: https://a-share-trading.onrender.com
       PYTHONUNBUFFERED: "1"
       EMAIL_PREVIEW_ONLY: ${{ inputs.preview_only || 'false' }}
-      REQUIRE_BOARD_DATA: ${{ inputs.require_board_data || 'false' }}
+      REQUIRE_BOARD_DATA: ${{ (github.event_name == 'schedule' || inputs.require_board_data) && 'true' || 'false' }}
 
     steps:
       - uses: actions/checkout@v4

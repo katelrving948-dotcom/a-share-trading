@@ -9,7 +9,7 @@ import pandas as pd
 
 
 BASE = "https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/"
-SOURCE = "新浪证监会行业资金（主力口径，分类与东方财富不同）"
+SOURCE = "新浪证监会行业11:30分时（主力净额按源内占比换算，约值）"
 
 
 class SinaIndustryFeed:
@@ -32,7 +32,10 @@ class SinaIndustryFeed:
             return None
 
     def load(self):
-        today = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d")
+        now = datetime.now(ZoneInfo("Asia/Shanghai"))
+        today = now.strftime("%Y-%m-%d")
+        if now.hour * 100 + now.minute < 1130:
+            return pd.DataFrame()
         if self.date == today and self.rows and time.monotonic() - self.loaded_at < 120:
             return pd.DataFrame(self.rows)
         self.rows, self.history, self.members = [], {}, {}
@@ -48,15 +51,37 @@ class SinaIndustryFeed:
             if not category.startswith("hangye_Z") or not item.get("name"):
                 return None
             history = self._read("MoneyFlow.ssl_bkzj_zjlrqs",
-                                 {"bankuai": category, "page": 1, "num": 5,
+                                 {"bankuai": category, "page": 1, "num": 6,
                                   "sort": "opendate", "asc": 0})
-            if (not isinstance(history, list) or not history or not isinstance(history[0], dict)
-                    or history[0].get("opendate") != today):
+            if not isinstance(history, list) or not history or not isinstance(history[0], dict):
                 return None
             try:
-                latest = history[0]
-                flow, ratio, change, price = [float(latest[key]) for key in
-                                              ("r0_net", "r0_ratio", "avg_changeratio", "avg_price")]
+                # Daily history updates after close. Use it only to discard retired
+                # classifications and for prior-session history, never as a noon quote.
+                age = (datetime.fromisoformat(today) - datetime.fromisoformat(history[0]["opendate"])).days
+                if not 0 <= age <= 14:
+                    return None
+                minutes = self._read("MoneyFlow.ssx_bkzj_fszs",
+                                     {"bankuai": category, "page": 1, "num": 250, "sort": "time"})
+                if not isinstance(minutes, list) or len(minutes) != 2 or not isinstance(minutes[1], list):
+                    return None
+                matching = [row for row in minutes[1] if isinstance(row, dict)
+                            and row.get("opendate") == today and row.get("ticktime") == "11:30:00"]
+                if len(matching) != 1:
+                    return None
+                latest = matching[0]
+                net, net_ratio, ratio, change, price = [float(latest[key]) for key in
+                    ("netamount", "ratioamount", "r0_ratio", "avg_changeratio", "avg_price")]
+                # Both ratios use turnover as denominator. Sina rounds those ratios,
+                # so explicitly label this result as derived rather than a raw quote.
+                if not all(math.isfinite(v) for v in (net, net_ratio, ratio, change, price)):
+                    return None
+                if abs(net_ratio) < 0.00001 or abs(net_ratio) > 1 or abs(ratio) > 1:
+                    return None
+                turnover = net / net_ratio
+                if turnover <= 0:
+                    return None
+                flow = turnover * ratio
                 if not all(math.isfinite(v) for v in (flow, ratio, change, price)) or price <= 0:
                     return None
             except (KeyError, ValueError, TypeError):
@@ -66,7 +91,8 @@ class SinaIndustryFeed:
             return {"code": code, "name": item["name"], "price": price,
                     "change_pct": round(change * 100, 2), "main_net_inflow": round(flow / 1e8, 2),
                     "main_net_pct": round(ratio * 100, 2), "rise_count": None, "fall_count": None,
-                    "source": SOURCE, "trade_date": today}
+                    "source": SOURCE, "trade_date": today, "as_of": today + " 11:30",
+                    "main_net_estimated": True}
 
         with ThreadPoolExecutor(max_workers=4) as executor:
             self.rows = [row for row in executor.map(dated_row, listing) if row]
@@ -112,10 +138,10 @@ class SinaIndustryFeed:
         return result
 
     def flow_history(self, code, days):
-        rows = self.history.get(code, [])[:days]
+        rows = self.history.get(code, [])
         try:
             today = datetime.fromisoformat(self.date)
-            rows = [row for row in rows if 0 <= (today - datetime.fromisoformat(row["opendate"])).days <= 14]
+            rows = [row for row in rows if 0 < (today - datetime.fromisoformat(row["opendate"])).days <= 14][:days]
             flows = [float(row["r0_net"]) / 1e8 for row in rows]
             if not all(math.isfinite(value) for value in flows):
                 flows = []

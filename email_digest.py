@@ -163,13 +163,13 @@ def build_email(payload: dict) -> EmailMessage:
     ]
     board_plain = [
         f"{board.get('rank')}. {board.get('name')}({board.get('type')}) "
-        f"资金{_number(board.get('main_net_inflow'), 2)}亿/强度{_number(board.get('rotation_score'), 0)}；"
+        f"资金{'约' if board.get('main_net_estimated') else ''}{_number(board.get('main_net_inflow'), 2)}亿/强度{_number(board.get('rotation_score'), 0)}；"
         f"{board.get('effect')}；龙头："
         + "、".join(
             f"{leader.get('name')}({leader.get('leadership_role')})"
             for leader in (board.get("leaders") or [])
         )
-        + f"；来源：{board.get('source') or '东方财富'}；日期：{board.get('trade_date') or '接口未提供'}"
+        + f"；来源：{board.get('source') or '东方财富'}；截至：{board.get('as_of') or board.get('trade_date') or '接口未提供'}"
         for board in boards[:8]
     ]
     hot_core_plain = [
@@ -236,7 +236,7 @@ def build_email(payload: dict) -> EmailMessage:
         + "\n说明：外盘和事件只形成情景推演，必须由A股资金与板块扩散确认。\n\n"
         "每日资金强度与板块效应\n"
         f"资金强度：{capital.get('label', '--')}；强板块{_number(capital.get('strong_board_count'), 0)}个；"
-        f"前三板块主力净流入合计{_number(capital.get('top_three_main_net_inflow'), 2)}亿。\n"
+        f"前三板块主力净流入合计{'约' if capital.get('estimated') else ''}{_number(capital.get('top_three_main_net_inflow'), 2)}亿。\n"
         + ("\n".join(board_plain) if board_plain else "暂无有效板块资金数据")
         + "\n\n热门核心观察池（强势板块龙头/次龙头）\n"
         + ("\n".join(hot_core_plain) if hot_core_plain else hot_core_empty)
@@ -278,8 +278,8 @@ def build_email(payload: dict) -> EmailMessage:
     board_rows = "".join(
         '<tr>'
         f'<td style="padding:8px;border-bottom:1px solid #e4e9f0">{board.get("rank")}</td>'
-        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0"><strong>{html.escape(str(board.get("name") or "--"))}</strong><br><span style="font-size:11px;color:#64748b">{html.escape(str(board.get("type") or ""))}<br>{html.escape(str(board.get("source") or "东方财富"))}<br>{html.escape(str(board.get("trade_date") or ""))}</span></td>'
-        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0;text-align:center">{_number(board.get("main_net_inflow"), 2)}亿<br>强度{_number(board.get("rotation_score"), 0)}</td>'
+        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0"><strong>{html.escape(str(board.get("name") or "--"))}</strong><br><span style="font-size:11px;color:#64748b">{html.escape(str(board.get("type") or ""))}<br>{html.escape(str(board.get("source") or "东方财富"))}<br>{html.escape(str(board.get("as_of") or board.get("trade_date") or ""))}</span></td>'
+        f'<td style="padding:8px;border-bottom:1px solid #e4e9f0;text-align:center">{"约" if board.get("main_net_estimated") else ""}{_number(board.get("main_net_inflow"), 2)}亿<br>强度{_number(board.get("rotation_score"), 0)}</td>'
         f'<td style="padding:8px;border-bottom:1px solid #e4e9f0">{html.escape(str(board.get("effect") or "--"))}</td>'
         f'<td style="padding:8px;border-bottom:1px solid #e4e9f0">{html.escape("、".join(f"{leader.get("name")}({leader.get("leadership_role")})" for leader in (board.get("leaders") or [])) or "--")}</td>'
         '</tr>'
@@ -379,7 +379,7 @@ def build_email(payload: dict) -> EmailMessage:
             </table>
             {event_rows}
             <h2 style="font-size:18px;margin-top:24px">每日资金强度、板块效应与龙头</h2>
-            <p style="color:#5e6b7d">资金强度：<strong>{html.escape(str(capital.get('label') or '--'))}</strong> · 强板块 {_number(capital.get('strong_board_count'), 0)} 个 · 前三主力净流入合计 {_number(capital.get('top_three_main_net_inflow'), 2)} 亿</p>
+            <p style="color:#5e6b7d">资金强度：<strong>{html.escape(str(capital.get('label') or '--'))}</strong> · 强板块 {_number(capital.get('strong_board_count'), 0)} 个 · 前三主力净流入合计 {'约' if capital.get('estimated') else ''}{_number(capital.get('top_three_main_net_inflow'), 2)} 亿</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px">
               <thead><tr style="background:#edf2f8"><th width="6%" style="padding:8px">#</th><th width="18%" style="padding:8px;text-align:left">板块</th><th width="18%" style="padding:8px">资金/强度</th><th width="28%" style="padding:8px;text-align:left">板块效应</th><th width="30%" style="padding:8px;text-align:left">龙头/次龙头</th></tr></thead>
               <tbody>{board_rows}</tbody>
@@ -492,7 +492,7 @@ def main() -> None:
         "board_count": len(boards),
         "hot_core_count": len(payload.get("hot_core_candidates") or []),
         "boards": [{key: board.get(key) for key in
-                    ("code", "name", "source", "trade_date", "main_net_inflow")} for board in boards],
+                    ("code", "name", "source", "trade_date", "as_of", "main_net_inflow", "main_net_estimated")} for board in boards],
         "rendered_board_names": all(html.escape(str(board.get("name"))) in
                                     message.get_body(preferencelist=("html",)).get_content() for board in boards[:8]),
     }
@@ -500,7 +500,7 @@ def main() -> None:
     quality_path.parent.mkdir(parents=True, exist_ok=True)
     quality_path.write_text(json.dumps(quality, ensure_ascii=False, indent=2), encoding="utf-8")
     print("[EmailQuality] " + json.dumps(quality, ensure_ascii=False))
-    if os.getenv("REQUIRE_BOARD_DATA", "").lower() == "true" and (
+    if os.getenv("REQUIRE_BOARD_DATA", "true").lower() == "true" and (
             not boards or not quality["sector_count"] or not quality["rendered_board_names"]):
         raise RuntimeError("板块数据或邮件渲染校验未通过，停止本次补发")
     if os.getenv("EMAIL_PREVIEW_ONLY", "").lower() == "true":

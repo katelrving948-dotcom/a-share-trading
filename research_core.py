@@ -629,6 +629,7 @@ def _capital_strength(market: dict, boards: list[dict]) -> dict:
         "top_three_main_net_inflow": round(top_three, 2),
         "top_ten_average_change_pct": round(average_change, 2),
         "strong_board_count": sum(float(board.get("rotation_score") or 0) >= 60 for board in boards),
+        "estimated": any(row.get("main_net_estimated") for row in sector_rows[:3]),
         "method": "综合当日主力净流入、上涨扩散度、近5日持续性和板块涨跌表现；单位沿用数据源亿元。",
     }
 
