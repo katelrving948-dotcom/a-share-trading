@@ -101,11 +101,11 @@ class SinaBoardFeedTest(unittest.TestCase):
 
     def test_constituents_pagination_and_partial_failure(self):
         source = SinaIndustryFeed(Mock())
-        page = [{"code": f"{i:06d}"} for i in range(100)]
-        source._read = Mock(side_effect=["101", page, [{"code": "600183"}]])
+        page = [{"symbol": f"sz{i:06d}"} for i in range(100)]
+        source._read = Mock(side_effect=["101", page, [{"symbol": "sh600183"}]])
         self.assertEqual(len(source.constituents("sina:hangye_ZC39")), 101)
         self.assertEqual(source._read.call_args.args[1]["page"], 2)
-        self.assertEqual(source._read.call_args.args[1]["node"], "hangye_ZC39")
+        self.assertEqual(source._read.call_args.args[1]["bankuai"], "hangye_ZC39")
         source.members = {}
         source._read.side_effect = ["101", page, None]
         self.assertEqual(source.constituents("sina:hangye_ZC39"), set())

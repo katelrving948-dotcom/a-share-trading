@@ -24,6 +24,10 @@ class SinaIndustryFeed:
     def _read(self, method, params):
         response = self.request(BASE + method, params, timeout=(3, 10), retries=1,
                                 headers={"Referer": "https://finance.sina.com.cn/"})
+        if response is None and method in ("MoneyFlow.ssc_bkzj_ssggzj", "MoneyFlow.ssl_bkzj_ssggzj"):
+            response = self.request(BASE.replace("vip.stock.", "money.") + method, params,
+                                    timeout=(3, 10), retries=1,
+                                    headers={"Referer": "https://money.finance.sina.com.cn/"})
         if response is None:
             return None
         try:
@@ -106,7 +110,7 @@ class SinaIndustryFeed:
         if code in self.members:
             return self.members[code]
         category = code.removeprefix("sina:")
-        count = self._read("Market_Center.getHQNodeStockCount", {"node": category})
+        count = self._read("MoneyFlow.ssc_bkzj_ssggzj", {"bankuai": category})
         try:
             count = int(count)
         except (ValueError, TypeError):
@@ -115,12 +119,14 @@ class SinaIndustryFeed:
             return set()
         members = set()
         for page in range(1, math.ceil(count / 100) + 1):
-            rows = self._read("Market_Center.getHQNodeData",
-                              {"node": category, "page": page, "num": 100, "sort": "symbol", "asc": 1})
+            rows = self._read("MoneyFlow.ssl_bkzj_ssggzj",
+                              {"bankuai": category, "page": page, "num": 100, "sort": "symbol", "asc": 1})
             if not isinstance(rows, list):
                 return set()
-            members.update(str(row["code"]) for row in rows
-                           if str(row.get("code", "")).isdigit() and len(str(row["code"])) == 6)
+            for row in rows:
+                symbol = str(row.get("symbol") or "")
+                if symbol[:2] in ("sh", "sz", "bj") and len(symbol) == 8 and symbol[2:].isdigit():
+                    members.add(symbol[2:])
         if len(members) < count * 0.95:
             return set()
         self.members[code] = members
