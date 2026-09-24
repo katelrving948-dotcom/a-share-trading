@@ -24,7 +24,7 @@ class NoonHoldingsTest(unittest.TestCase):
         clock.now.return_value = datetime(2026, 9, 22, 12)
         feed.get_kline.return_value = pd.DataFrame()
         feed.get_stock_industries.return_value = {"600183": "电子"}
-        feed.get_sector_fund_flow.return_value = pd.DataFrame([{"name": "电子", "code": "BK001"}])
+        feed.get_industry_index_codes.return_value = {"电子": "BK001"}
         feed.get_index_morning.return_value = quote()
         feed.get_intraday_minute.return_value = quote(8.9)
         trend.return_value = {"available": True, "qualified": True, "close": 10, "stop_price": 9}
@@ -72,8 +72,10 @@ class NoonHoldingsTest(unittest.TestCase):
         self.assertIn("行业板块", action["reason"])
         self.assertEqual(action["sell_quantity"], 0)
 
+    @patch("data_feed.datetime", wraps=datetime)
     @patch.object(DataFeed, "_request")
-    def test_index_parser_excludes_afternoon_and_preserves_date(self, request):
+    def test_index_parser_excludes_afternoon_and_preserves_date(self, request, clock):
+        clock.now.return_value = datetime(2026, 9, 22, 12)
         entries = [f"2026-09-22 10:{i:02d},10,10,10,10,100,100000,10" for i in range(30)]
         entries += ["2026-09-22 11:30,10,11,11,10,100,100000,10",
                     "2026-09-22 13:00,11,99,99,11,100,100000,11"]
@@ -83,6 +85,34 @@ class NoonHoldingsTest(unittest.TestCase):
         self.assertEqual(result["trade_date"], "20260922")
         self.assertEqual(result["morning_session"]["close"], 11)
         self.assertEqual(result["morning_session"]["last_time"], "1130")
+
+    @patch.object(DataFeed, "_request_eastmoney")
+    def test_catalog_paginates_beyond_fund_rank_and_rejects_ambiguity(self, request):
+        first, second = Mock(), Mock()
+        first.json.return_value = {"data": {"total": 101, "diff": [
+            {"f12": f"BK{i:04}", "f14": f"行业{i}"} for i in range(100)]}}
+        second.json.return_value = {"data": {"total": 101, "diff": [{"f12": "BK1040", "f14": "中药Ⅱ"}]}}
+        request.side_effect = [(first, ""), (second, "")]
+        self.assertEqual(DataFeed().get_industry_index_codes(["中药Ⅱ"]), {"中药Ⅱ": "BK1040"})
+        self.assertEqual(request.call_args.args[1]["pn"], 2)
+        first.json.return_value["data"]["diff"][0] = {"f12": "BK0001", "f14": "中药Ⅱ"}
+        request.side_effect = [(first, ""), (second, "")]
+        self.assertEqual(DataFeed().get_industry_index_codes(["中药Ⅱ"]), {})
+
+    @patch("data_feed.datetime", wraps=datetime)
+    @patch.object(DataFeed, "_request")
+    def test_index_falls_back_on_stale_or_empty_morning(self, request, clock):
+        clock.now.return_value = datetime(2026, 9, 22, 12)
+        rows = [f"2026-09-22 10:{i:02d},10,10,10,10,100,100000,10" for i in range(30)]
+        rows += ["2026-09-22 11:30,10,11,11,10,100,100000,10"]
+        good = Mock(); good.json.return_value = {"data": {"trends": rows}}
+        stale = Mock(); stale.json.return_value = {"data": {"trends": [r.replace("2026-09-22", "2026-09-21") for r in rows]}}
+        for bad in (None, stale):
+            request.reset_mock(); request.side_effect = [bad, good]
+            result = DataFeed().get_index_morning("000300")
+            self.assertTrue(result["available"])
+            self.assertIn("push2delay", request.call_args.args[0])
+            self.assertEqual(result["morning_session"]["close"], 11)
 
     @patch.object(DataFeed, "_request")
     def test_board_minutes_use_board_market_id(self, request):

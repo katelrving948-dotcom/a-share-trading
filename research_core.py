@@ -992,7 +992,7 @@ def build_account_holding_actions(account: dict) -> list[dict]:
 
     if not account.get("holdings_tracking_enabled") or not account.get("holdings"):
         return []
-    holding_feed = DataFeed(morning_sectors=True)
+    holding_feed = DataFeed()
     now = datetime.now(SHANGHAI)
 
     def safe(call, fallback):
@@ -1004,15 +1004,12 @@ def build_account_holding_actions(account: dict) -> list[dict]:
     benchmark = safe(lambda: holding_feed.get_kline("000300", count=120), pd.DataFrame())
     market = safe(lambda: holding_feed.get_index_morning("000300"), {})
     codes = [str(h.get("code") or "") for h in account["holdings"]]
-    boards = safe(lambda: holding_feed.get_sector_fund_flow(200), pd.DataFrame())
+    # Holdings require an index with comparable minute VWAP, not the money-flow
+    # provider's different industry classification or only top-ranked sectors.
     industries = safe(lambda: holding_feed.get_stock_industries(codes), {})
-    sector_quotes = {}
-    if not boards.empty:
-        for name in set(industries.values()):
-            matches = boards[boards["name"] == name]
-            if len(matches) == 1:
-                code = str(matches.iloc[0]["code"])
-                sector_quotes[name] = safe(lambda: holding_feed.get_index_morning(code), {})
+    index_codes = safe(lambda: holding_feed.get_industry_index_codes(list(industries.values())), {})
+    sector_quotes = {name: safe(lambda code=code: holding_feed.get_index_morning(code), {})
+                     for name, code in index_codes.items()}
 
     def analyze_holding(holding: dict) -> dict:
         code = str(holding.get("code") or "")

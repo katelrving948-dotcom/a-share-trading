@@ -1442,33 +1442,70 @@ class DataFeed:
             "volume": round(total_volume, 2),
         }
 
+    def get_industry_index_codes(self, names: list) -> dict:
+        """Resolve exact Eastmoney industries from the catalog, not a fund ranking."""
+        wanted = {name for name in names if name}
+        found = {name: set() for name in wanted}
+        if not wanted:
+            return {}
+        page, total = 1, None
+        while total is None or (page - 1) * 100 < total:
+            response, _ = self._request_eastmoney("/api/qt/clist/get", {
+                "pn": page, "pz": 100, "po": 0, "np": 1, "fltt": 2,
+                "invt": 2, "fid": "f12", "fs": "m:90+t:2", "fields": "f12,f14"},
+                prefer_delay=True)
+            if response is None:
+                return {}
+            try:
+                data = response.json()["data"]
+                total = int(data["total"])
+                rows = data["diff"]
+                if not 0 < total <= 2000 or not isinstance(rows, list) or not rows:
+                    return {}
+                for row in rows:
+                    name, code = row.get("f14"), str(row.get("f12") or "")
+                    if name in wanted and code.startswith("BK"):
+                        found[name].add(code)
+            except (KeyError, ValueError, TypeError):
+                return {}
+            page += 1
+        return {name: next(iter(codes)) for name, codes in found.items() if len(codes) == 1}
+
     def get_index_morning(self, code: str) -> dict:
-        """Dated minute history for an SSE index or Eastmoney industry index."""
+        """Read dated index minutes; empty, stale or incomplete data triggers fallback."""
         if code.startswith("sina:"):
-            return {"available": False, "error": "新浪备用源未提供已验证的行业上午分时"}
-        response = self._request(
-            "https://push2his.eastmoney.com/api/qt/stock/trends2/get",
-            {"secid": f"{'90' if code.startswith('BK') else '1'}.{code}", "fields1": "f1,f2,f3,f4,f5,f6,f7,f8",
-             "fields2": "f51,f52,f53,f54,f55,f56,f57,f58", "ndays": 1,
-             "iscr": 0}, timeout=(3, 8), retries=1,
-        )
-        if response is None:
-            return {"available": False}
-        try:
-            entries = (response.json().get("data") or {}).get("trends") or []
-            rows, dates = [], set()
-            for entry in entries:
-                parts = entry.split(",")
-                stamp = datetime.strptime(parts[0], "%Y-%m-%d %H:%M")
-                dates.add(stamp.strftime("%Y%m%d"))
-                rows.append({"time": stamp.strftime("%H%M"), "price": float(parts[2]),
-                             "volume": float(parts[5]), "avg_price": float(parts[7])})
-            if len(dates) != 1:
-                return {"available": False}
-            return {"available": True, "trade_date": dates.pop(),
-                    "source": "东方财富指数分时", "morning_session": self._summarize_morning_session(rows)}
-        except (ValueError, TypeError, IndexError, AttributeError):
-            return {"available": False}
+            return {"available": False, "error": "资金行业分类不是可交易指数，未提供同口径VWAP"}
+        params = {"secid": f"{'90' if code.startswith('BK') else '1'}.{code}",
+                  "fields1": "f1,f2,f3,f4,f5,f6,f7,f8",
+                  "fields2": "f51,f52,f53,f54,f55,f56,f57,f58", "ndays": 1, "iscr": 0}
+        today = datetime.now(SHANGHAI).strftime("%Y%m%d")
+        for base in ("https://push2his.eastmoney.com", EASTMONEY_DELAY):
+            response = self._request(base + "/api/qt/stock/trends2/get", params,
+                                     timeout=(3, 8), retries=1)
+            if response is None:
+                continue
+            try:
+                entries = (response.json().get("data") or {}).get("trends") or []
+                rows, dates = [], set()
+                for entry in entries:
+                    parts = entry.split(",")
+                    stamp = datetime.strptime(parts[0], "%Y-%m-%d %H:%M")
+                    dates.add(stamp.strftime("%Y%m%d"))
+                    rows.append({"time": stamp.strftime("%H%M"), "price": float(parts[2]),
+                                 "volume": float(parts[5]), "avg_price": float(parts[7])})
+                if dates != {today}:
+                    continue
+                rows.sort(key=lambda row: row["time"])
+                morning = self._summarize_morning_session(rows)
+                values = [morning.get(key) for key in ("open", "close", "vwap", "volume")]
+                if (not morning.get("completed") or morning.get("last_time") != "1130"
+                        or not all(isinstance(v, (int, float)) and math.isfinite(v) and v > 0 for v in values)):
+                    continue
+                return {"available": True, "trade_date": today, "source": "东方财富指数分时",
+                        "morning_session": morning}
+            except (ValueError, TypeError, IndexError, AttributeError):
+                continue
+        return {"available": False, "error": "指数主备接口均未返回当日完整上午分时"}
 
     def get_intraday_minute(self, code: str) -> dict:
         """获取今日分时分钟数据（腾讯财经），返回分时趋势摘要。"""

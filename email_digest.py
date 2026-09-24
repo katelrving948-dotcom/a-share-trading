@@ -486,7 +486,10 @@ def main() -> None:
         raise RuntimeError("技术面快照缺失，停止发送，避免把数据缺失误报为无交集")
     message = build_email(payload)
     boards = payload.get("rotation_boards") or []
+    holdings = (payload.get("weekly_plan") or {}).get("holding_actions") or payload.get("holding_actions") or []
     quality = {
+        "holding_count": len(holdings),
+        "holding_ready_count": sum(bool(row.get("morning_ready")) for row in holdings),
         "generated_at": payload.get("generated_at"),
         "sector_count": len((payload.get("market") or {}).get("sector_flow") or []),
         "board_count": len(boards),
@@ -502,8 +505,9 @@ def main() -> None:
     print("[EmailQuality] " + json.dumps(quality, ensure_ascii=False))
     if os.getenv("REQUIRE_BOARD_DATA", "true").lower() == "true" and (
             not boards or not quality["sector_count"] or not quality["rendered_board_names"]
-            or any(board.get("member_count") == 0 for board in boards)):
-        raise RuntimeError("板块数据或邮件渲染校验未通过，停止本次补发")
+            or any(board.get("member_count") == 0 for board in boards)
+            or quality["holding_ready_count"] != quality["holding_count"]):
+        raise RuntimeError("板块数据、持仓上午行情或邮件渲染校验未通过，停止本次发送")
     if os.getenv("EMAIL_PREVIEW_ONLY", "").lower() == "true":
         print("邮件预览验证完成，未发送")
         return

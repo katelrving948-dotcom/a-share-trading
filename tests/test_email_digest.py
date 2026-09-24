@@ -63,6 +63,10 @@ class EmailDigestTest(unittest.TestCase):
         send.assert_not_called()
         save.assert_not_called()
         freeze.assert_not_called()
+        data["holding_actions"] = [{"morning_ready": False}]
+        with self.assertRaisesRegex(RuntimeError, "持仓上午行情"):
+            main()
+        data["holding_actions"] = []
         data["rotation_boards"][0]["member_count"] = 0
         with self.assertRaisesRegex(RuntimeError, "板块数据"):
             main()
