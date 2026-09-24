@@ -2,7 +2,7 @@
   "plan_id": "2026-W39",
   "week_start": "2026-09-21",
   "week_end": "2026-09-25",
-  "generated_at": "2026-09-23 21:39:14",
+  "generated_at": "2026-09-24 12:03:11",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：NYMEX原油",
+      "summary": "相对偏强市场：COMEX铜",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -61,7 +61,7 @@
       "industry": "行业待刷新",
       "role": "主选",
       "status": "撤销",
-      "market_cap": 3487.08,
+      "market_cap": 3341.34,
       "entry_gate": {
         "passed": false,
         "state": "waiting_confirmation",
