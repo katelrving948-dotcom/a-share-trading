@@ -76,6 +76,20 @@ class SinaBoardFeedTest(unittest.TestCase):
         leaders = feed._rank_board_leaders({"600183"})
         self.assertEqual(leaders[0]["leadership_role"], "龙头")
 
+    @patch.object(DataFeed, "get_concept_fund_flow")
+    @patch.object(DataFeed, "_request_eastmoney")
+    def test_noon_source_does_not_mix_partial_eastmoney_chain(self, eastmoney, concepts):
+        feed = DataFeed(morning_sectors=True)
+        feed._sina_industries = self.source()
+        feed._sina_industries.members["sina:hangye_ZC39"] = {"600183"}
+        feed._sina_industries.constituents = Mock(return_value={"600183"})
+        feed._rank_board_leaders = Mock(return_value=[{"code": "600183"}])
+        result = feed.get_rotation_matches(["600183"])
+        self.assertEqual(result["boards"][0]["member_count"], 1)
+        self.assertEqual(result["boards"][0]["as_of"], TODAY + " 11:30")
+        eastmoney.assert_not_called()
+        concepts.assert_not_called()
+
     def test_nonfinite_values_are_rejected(self):
         source = self.source()
         source._read.side_effect = [[{"category": "hangye_ZC39", "name": "电子"}],

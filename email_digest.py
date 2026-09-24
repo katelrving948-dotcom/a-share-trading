@@ -492,7 +492,7 @@ def main() -> None:
         "board_count": len(boards),
         "hot_core_count": len(payload.get("hot_core_candidates") or []),
         "boards": [{key: board.get(key) for key in
-                    ("code", "name", "source", "trade_date", "as_of", "main_net_inflow", "main_net_estimated")} for board in boards],
+                    ("code", "name", "source", "trade_date", "as_of", "main_net_inflow", "main_net_estimated", "member_count")} | {"leader_count": len(board.get("leaders") or [])} for board in boards],
         "rendered_board_names": all(html.escape(str(board.get("name"))) in
                                     message.get_body(preferencelist=("html",)).get_content() for board in boards[:8]),
     }
@@ -501,7 +501,8 @@ def main() -> None:
     quality_path.write_text(json.dumps(quality, ensure_ascii=False, indent=2), encoding="utf-8")
     print("[EmailQuality] " + json.dumps(quality, ensure_ascii=False))
     if os.getenv("REQUIRE_BOARD_DATA", "true").lower() == "true" and (
-            not boards or not quality["sector_count"] or not quality["rendered_board_names"]):
+            not boards or not quality["sector_count"] or not quality["rendered_board_names"]
+            or any(board.get("member_count") == 0 for board in boards)):
         raise RuntimeError("板块数据或邮件渲染校验未通过，停止本次补发")
     if os.getenv("EMAIL_PREVIEW_ONLY", "").lower() == "true":
         print("邮件预览验证完成，未发送")

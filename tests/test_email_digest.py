@@ -63,6 +63,9 @@ class EmailDigestTest(unittest.TestCase):
         send.assert_not_called()
         save.assert_not_called()
         freeze.assert_not_called()
+        data["rotation_boards"][0]["member_count"] = 0
+        with self.assertRaisesRegex(RuntimeError, "板块数据"):
+            main()
         data["rotation_boards"] = []
         with self.assertRaisesRegex(RuntimeError, "板块数据"):
             main()

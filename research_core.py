@@ -738,7 +738,7 @@ def build_market_research(
     now: datetime | None = None,
 ) -> dict:
     """Build the external-market → sector → stock → entry research chain."""
-    feed = feed or DataFeed()
+    feed = feed or DataFeed(morning_sectors=True)
     now = now or datetime.now(SHANGHAI)
     previous_by_code = {row["code"]: row for row in (existing_plan or {}).get("selections", [])}
     frozen_codes = set(previous_by_code)
@@ -992,7 +992,7 @@ def build_account_holding_actions(account: dict) -> list[dict]:
 
     if not account.get("holdings_tracking_enabled") or not account.get("holdings"):
         return []
-    holding_feed = DataFeed()
+    holding_feed = DataFeed(morning_sectors=True)
     now = datetime.now(SHANGHAI)
 
     def safe(call, fallback):

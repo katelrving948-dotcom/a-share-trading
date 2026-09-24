@@ -102,7 +102,8 @@ def _safe_float(val, default=0.0):
 class DataFeed:
     """A股行情接口，带多源回退和最近成功快照缓存。"""
 
-    def __init__(self):
+    def __init__(self, morning_sectors: bool = False):
+        self.morning_sectors = morning_sectors
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -914,7 +915,7 @@ class DataFeed:
             return frame.sort_values("main_net_inflow", ascending=ascending).head(top_n).reset_index(drop=True)
 
         # Keep one classification throughout a report once fallback has been selected.
-        if self._sina_industries.rows:
+        if self.morning_sectors or self._sina_industries.rows:
             return fallback()
         params = {
             "pn": 1, "pz": top_n, "po": 0 if ascending else 1, "np": 1,
@@ -1126,7 +1127,7 @@ class DataFeed:
         broad_limit = max(top_n, 120) if (external_context or {}).get("available") else top_n
         sources = (
             ("行业", self.get_sector_fund_flow(broad_limit)),
-            ("概念", self.get_concept_fund_flow(broad_limit)),
+            ("概念", pd.DataFrame() if self.morning_sectors else self.get_concept_fund_flow(broad_limit)),
         )
         external_specs = []
         for board_type, frame in sources:
@@ -1210,6 +1211,7 @@ class DataFeed:
                 ).items()
             })
             members = self.get_board_constituents(board["code"])
+            board["member_count"] = len(members)
             board["leaders"] = self._rank_board_leaders(members, limit=2)
             return board, members
 
