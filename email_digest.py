@@ -489,6 +489,8 @@ def main() -> None:
     holdings = (payload.get("weekly_plan") or {}).get("holding_actions") or payload.get("holding_actions") or []
     quality = {
         "holding_count": len(holdings),
+        "holding_context_ready": {label: sum(bool((row.get("morning_evidence") or {}).get(label, {}).get("valid"))
+                                             for row in holdings) for label in ("个股", "沪深300", "行业板块")},
         "holding_ready_count": sum(bool(row.get("morning_ready")) for row in holdings),
         "generated_at": payload.get("generated_at"),
         "sector_count": len((payload.get("market") or {}).get("sector_flow") or []),

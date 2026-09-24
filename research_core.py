@@ -1004,10 +1004,11 @@ def build_account_holding_actions(account: dict) -> list[dict]:
     benchmark = safe(lambda: holding_feed.get_kline("000300", count=120), pd.DataFrame())
     market = safe(lambda: holding_feed.get_index_morning("000300"), {})
     codes = [str(h.get("code") or "") for h in account["holdings"]]
-    # Holdings require an index with comparable minute VWAP, not the money-flow
-    # provider's different industry classification or only top-ranked sectors.
-    industries = safe(lambda: holding_feed.get_stock_industries(codes), {})
-    index_codes = safe(lambda: holding_feed.get_industry_index_codes(list(industries.values())), {})
+    # Use explicit company-to-index IDs; fund rankings and Sina classifications
+    # cannot supply the comparable index VWAP needed by the holding risk gate.
+    industry_indices = safe(lambda: holding_feed.get_stock_industry_indices(codes), {})
+    industries = {code: row["name"] for code, row in industry_indices.items()}
+    index_codes = {row["name"]: row["index_code"] for row in industry_indices.values()}
     sector_quotes = {name: safe(lambda code=code: holding_feed.get_index_morning(code), {})
                      for name, code in index_codes.items()}
 

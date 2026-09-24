@@ -23,8 +23,7 @@ class NoonHoldingsTest(unittest.TestCase):
         feed = factory.return_value
         clock.now.return_value = datetime(2026, 9, 22, 12)
         feed.get_kline.return_value = pd.DataFrame()
-        feed.get_stock_industries.return_value = {"600183": "电子"}
-        feed.get_industry_index_codes.return_value = {"电子": "BK001"}
+        feed.get_stock_industry_indices.return_value = {"600183": {"name": "电子", "index_code": "BK001"}}
         feed.get_index_morning.return_value = quote()
         feed.get_intraday_minute.return_value = quote(8.9)
         trend.return_value = {"available": True, "qualified": True, "close": 10, "stop_price": 9}
@@ -86,18 +85,18 @@ class NoonHoldingsTest(unittest.TestCase):
         self.assertEqual(result["morning_session"]["close"], 11)
         self.assertEqual(result["morning_session"]["last_time"], "1130")
 
-    @patch.object(DataFeed, "_request_eastmoney")
-    def test_catalog_paginates_beyond_fund_rank_and_rejects_ambiguity(self, request):
-        first, second = Mock(), Mock()
-        first.json.return_value = {"data": {"total": 101, "diff": [
-            {"f12": f"BK{i:04}", "f14": f"行业{i}"} for i in range(100)]}}
-        second.json.return_value = {"data": {"total": 101, "diff": [{"f12": "BK1040", "f14": "中药Ⅱ"}]}}
-        request.side_effect = [(first, ""), (second, "")]
-        self.assertEqual(DataFeed().get_industry_index_codes(["中药Ⅱ"]), {"中药Ⅱ": "BK1040"})
-        self.assertEqual(request.call_args.args[1]["pn"], 2)
-        first.json.return_value["data"]["diff"][0] = {"f12": "BK0001", "f14": "中药Ⅱ"}
-        request.side_effect = [(first, ""), (second, "")]
-        self.assertEqual(DataFeed().get_industry_index_codes(["中药Ⅱ"]), {})
+    @patch.object(DataFeed, "_request")
+    def test_company_service_resolves_exact_index_and_rejects_ambiguous_rows(self, request):
+        row = {"SECURITY_CODE": "600479", "BOARD_CODE_BK_2LEVEL": "BK1040", "BOARD_NAME_2LEVEL": "中药Ⅱ"}
+        response = Mock()
+        response.json.return_value = {"success": True, "result": {"data": [row]}}
+        request.return_value = response
+        self.assertEqual(DataFeed().get_stock_industry_indices(["600479"]),
+                         {"600479": {"name": "中药Ⅱ", "index_code": "BK1040"}})
+        self.assertIn("datacenter.eastmoney.com", request.call_args.args[0])
+        self.assertEqual(DataFeed().get_stock_industry_indices(["600183"]), {})
+        response.json.return_value["result"]["data"] = [row, row]
+        self.assertEqual(DataFeed().get_stock_industry_indices(["600479"]), {})
 
     @patch("data_feed.datetime", wraps=datetime)
     @patch.object(DataFeed, "_request")

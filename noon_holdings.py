@@ -18,7 +18,7 @@ def build_noon_action(holding, trend, account, stock, market, sector, now, secto
                 or now.hour * 100 + now.minute < 1130 or now.weekday() >= 5)
         if not valid_sources[label]:
             issues.append(f"{label}上午行情缺失、未结束或日期不符")
-        evidence[label] = {**session, "trade_date": date}
+        evidence[label] = {**session, "trade_date": date, "valid": valid_sources[label]}
     previous = build_holding_action(holding, trend, account)
     result = {**previous, "analysis_window": "前日趋势 + 当日09:30-11:30",
               "generated_at": now.isoformat(), "morning_evidence": evidence,

@@ -1442,34 +1442,39 @@ class DataFeed:
             "volume": round(total_volume, 2),
         }
 
-    def get_industry_index_codes(self, names: list) -> dict:
-        """Resolve exact Eastmoney industries from the catalog, not a fund ranking."""
-        wanted = {name for name in names if name}
-        found = {name: set() for name in wanted}
-        if not wanted:
-            return {}
-        page, total = 1, None
-        while total is None or (page - 1) * 100 < total:
-            response, _ = self._request_eastmoney("/api/qt/clist/get", {
-                "pn": page, "pz": 100, "po": 0, "np": 1, "fltt": 2,
-                "invt": 2, "fid": "f12", "fs": "m:90+t:2", "fields": "f12,f14"},
-                prefer_delay=True)
+    def get_stock_industry_indices(self, codes: list) -> dict:
+        """Read company-to-industry index IDs directly from the company data service."""
+        wanted = list(dict.fromkeys(str(code) for code in codes
+                                   if str(code).isdigit() and len(str(code)) == 6))
+        result = {}
+        for offset in range(0, len(wanted), 100):
+            batch = wanted[offset:offset + 100]
+            quoted = ",".join(f'"{code}"' for code in batch)
+            response = self._request(
+                "https://datacenter.eastmoney.com/securities/api/data/v1/get",
+                {"reportName": "RPT_F10_ORG_BASICINFO",
+                 "columns": "SECUCODE,SECURITY_CODE,BOARD_CODE_BK_2LEVEL,BOARD_NAME_2LEVEL",
+                 "filter": f"(SECURITY_CODE in ({quoted}))", "pageSize": 100},
+                timeout=(3, 10), retries=2)
             if response is None:
-                return {}
+                continue
             try:
-                data = response.json()["data"]
-                total = int(data["total"])
-                rows = data["diff"]
-                if not 0 < total <= 2000 or not isinstance(rows, list) or not rows:
-                    return {}
-                for row in rows:
-                    name, code = row.get("f14"), str(row.get("f12") or "")
-                    if name in wanted and code.startswith("BK"):
-                        found[name].add(code)
-            except (KeyError, ValueError, TypeError):
-                return {}
-            page += 1
-        return {name: next(iter(codes)) for name, codes in found.items() if len(codes) == 1}
+                payload = response.json()
+                rows = (payload.get("result") or {}).get("data") or []
+                if not payload.get("success") or not isinstance(rows, list):
+                    continue
+                for code in batch:
+                    matches = [row for row in rows if row.get("SECURITY_CODE") == code]
+                    if len(matches) != 1:
+                        continue
+                    row = matches[0]
+                    index = str(row.get("BOARD_CODE_BK_2LEVEL") or "")
+                    name = str(row.get("BOARD_NAME_2LEVEL") or "").strip()
+                    if re.fullmatch(r"BK\d+", index) and name:
+                        result[code] = {"name": name, "index_code": index}
+            except (ValueError, TypeError, AttributeError):
+                continue
+        return result
 
     def get_index_morning(self, code: str) -> dict:
         """Read dated index minutes; empty, stale or incomplete data triggers fallback."""
