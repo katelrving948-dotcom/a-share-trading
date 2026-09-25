@@ -47,13 +47,14 @@ def payload(observations=None):
 
 
 class EmailDigestTest(unittest.TestCase):
+    @patch("email_digest.market_closed_reason", return_value="")
     @patch.dict("os.environ", {"EMAIL_PREVIEW_ONLY": "true"}, clear=True)
     @patch("email_digest.Path.write_text")
     @patch("email_digest.freeze_weekly_plan")
     @patch("email_digest.save_selection_snapshot")
     @patch("email_digest.send_email")
     @patch("email_digest.build_push_payload")
-    def test_preview_never_sends_and_missing_boards_block_resend(self, build, send, save, freeze, write):
+    def test_preview_never_sends_and_missing_boards_block_resend(self, build, send, save, freeze, write, closed):
         from email_digest import main
         data = payload()
         data["technical_summary"]["factor_count"] = 1
@@ -73,6 +74,15 @@ class EmailDigestTest(unittest.TestCase):
         data["rotation_boards"] = []
         with self.assertRaisesRegex(RuntimeError, "板块数据"):
             main()
+        send.assert_not_called()
+
+    @patch("email_digest.market_closed_reason", return_value="中秋节休市")
+    @patch("email_digest.build_push_payload")
+    @patch("email_digest.send_email")
+    def test_holiday_skips_all_generation_and_sending(self, send, build, closed):
+        from email_digest import main
+        main()
+        build.assert_not_called()
         send.assert_not_called()
 
     def test_derived_board_values_are_labeled_with_morning_time(self):

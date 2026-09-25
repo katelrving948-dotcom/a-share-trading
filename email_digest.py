@@ -7,6 +7,9 @@ import json
 import os
 import smtplib
 from pathlib import Path
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from trading_calendar import market_closed_reason
 from email.message import EmailMessage
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -479,6 +482,10 @@ def send_email(message: EmailMessage) -> None:
 
 
 def main() -> None:
+    closed = market_closed_reason(datetime.now(ZoneInfo("Asia/Shanghai")).date())
+    if closed:
+        print(f"{closed}，跳过午间邮件；未发送")
+        return
     universe_limit = int(os.getenv("EMAIL_UNIVERSE_LIMIT", "500"))
     payload = build_push_payload(refresh=True, universe_limit=universe_limit)
     factor_count = int(payload.get("technical_summary", {}).get("factor_count") or 0)
@@ -516,6 +523,9 @@ def main() -> None:
     save_selection_snapshot(payload)
     freeze_weekly_plan(payload)
     send_email(message)
+    if os.getenv("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+            handle.write("sent=true\n")
     print(f"已发送周度趋势计划：{(payload.get('weekly_plan') or {}).get('active_count', 0)} 只固定候选。")
 
 

@@ -1476,41 +1476,57 @@ class DataFeed:
                 continue
         return result
 
+    @classmethod
+    def _parse_index_morning(cls, entries: list, expected_date: str) -> dict:
+        """Parse one dated session; also used by read-only historical replay."""
+        try:
+            rows, dates = [], set()
+            for entry in entries:
+                parts = entry.split(",")
+                stamp = datetime.strptime(parts[0], "%Y-%m-%d %H:%M")
+                dates.add(stamp.strftime("%Y%m%d"))
+                rows.append({"time": stamp.strftime("%H%M"), "price": float(parts[2]),
+                             "volume": float(parts[5]), "avg_price": float(parts[7])})
+            if dates != {expected_date}:
+                return {"available": False, "error": "指数分时日期不符或为空"}
+            rows.sort(key=lambda row: row["time"])
+            morning = cls._summarize_morning_session(rows)
+            values = [morning.get(key) for key in ("open", "close", "vwap", "volume")]
+            if (not morning.get("completed") or morning.get("last_time") != "1130"
+                    or not all(isinstance(v, (int, float)) and math.isfinite(v) and v > 0 for v in values)):
+                return {"available": False, "error": "指数上午分时未完成或均价成交量无效"}
+            return {"available": True, "trade_date": expected_date,
+                    "source": "东方财富指数分时", "morning_session": morning}
+        except (ValueError, TypeError, IndexError, AttributeError):
+            return {"available": False, "error": "指数分时格式无效"}
+
     def get_index_morning(self, code: str) -> dict:
-        """Read dated index minutes; empty, stale or incomplete data triggers fallback."""
+        """Try both hosts, then retry only if neither yielded a valid session."""
         if code.startswith("sina:"):
             return {"available": False, "error": "资金行业分类不是可交易指数，未提供同口径VWAP"}
         params = {"secid": f"{'90' if code.startswith('BK') else '1'}.{code}",
                   "fields1": "f1,f2,f3,f4,f5,f6,f7,f8",
                   "fields2": "f51,f52,f53,f54,f55,f56,f57,f58", "ndays": 1, "iscr": 0}
         today = datetime.now(SHANGHAI).strftime("%Y%m%d")
-        for base in ("https://push2his.eastmoney.com", EASTMONEY_DELAY):
-            response = self._request(base + "/api/qt/stock/trends2/get", params,
-                                     timeout=(3, 8), retries=1)
-            if response is None:
-                continue
-            try:
-                entries = (response.json().get("data") or {}).get("trends") or []
-                rows, dates = [], set()
-                for entry in entries:
-                    parts = entry.split(",")
-                    stamp = datetime.strptime(parts[0], "%Y-%m-%d %H:%M")
-                    dates.add(stamp.strftime("%Y%m%d"))
-                    rows.append({"time": stamp.strftime("%H%M"), "price": float(parts[2]),
-                                 "volume": float(parts[5]), "avg_price": float(parts[7])})
-                if dates != {today}:
+        errors = []
+        for attempt in range(2):
+            for base in ("https://push2his.eastmoney.com", EASTMONEY_DELAY):
+                response = self._request(base + "/api/qt/stock/trends2/get", params,
+                                         timeout=(3, 8), retries=1)
+                if response is None:
+                    errors.append("指数接口请求失败")
                     continue
-                rows.sort(key=lambda row: row["time"])
-                morning = self._summarize_morning_session(rows)
-                values = [morning.get(key) for key in ("open", "close", "vwap", "volume")]
-                if (not morning.get("completed") or morning.get("last_time") != "1130"
-                        or not all(isinstance(v, (int, float)) and math.isfinite(v) and v > 0 for v in values)):
-                    continue
-                return {"available": True, "trade_date": today, "source": "东方财富指数分时",
-                        "morning_session": morning}
-            except (ValueError, TypeError, IndexError, AttributeError):
-                continue
-        return {"available": False, "error": "指数主备接口均未返回当日完整上午分时"}
+                try:
+                    entries = (response.json().get("data") or {}).get("trends") or []
+                    result = self._parse_index_morning(entries, today)
+                except (ValueError, AttributeError, TypeError):
+                    result = {"available": False, "error": "指数响应格式无效"}
+                if result["available"]:
+                    return result
+                errors.append(result["error"])
+            if attempt == 0:
+                time.sleep(0.5)
+        return {"available": False, "error": "；".join(dict.fromkeys(errors))}
 
     def get_intraday_minute(self, code: str) -> dict:
         """获取今日分时分钟数据（腾讯财经），返回分时趋势摘要。"""

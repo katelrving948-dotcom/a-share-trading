@@ -89,6 +89,7 @@ jobs:
           test -n "$run_id"
           gh run download "$run_id" --pattern 'quant-factor-report-*' --dir output/quant
       - name: Generate and send email
+        id: digest
         if: inputs.force_send == true || inputs.preview_only == true || steps.sent_cache.outputs.cache-hit != 'true'
         run: python email_digest.py
       - name: Publish latest website snapshot
@@ -105,13 +106,13 @@ jobs:
           git pull --rebase origin main
           git push origin HEAD:main
       - name: Record successful send
-        if: inputs.preview_only != true && success() && steps.sent_cache.outputs.cache-hit != 'true'
+        if: steps.digest.outputs.sent == 'true' && success() && steps.sent_cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           mkdir -p .email-sent-marker
           echo "${{ steps.beijing_date.outputs.date }}" > .email-sent-marker/date
       - name: Save daily send marker
-        if: inputs.preview_only != true && success() && steps.sent_cache.outputs.cache-hit != 'true'
+        if: steps.digest.outputs.sent == 'true' && success() && steps.sent_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: .email-sent-marker

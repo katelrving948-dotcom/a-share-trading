@@ -113,6 +113,31 @@ class NoonHoldingsTest(unittest.TestCase):
             self.assertIn("push2delay", request.call_args.args[0])
             self.assertEqual(result["morning_session"]["close"], 11)
 
+    @patch("data_feed.time.sleep")
+    @patch("data_feed.datetime", wraps=datetime)
+    @patch.object(DataFeed, "_request")
+    def test_transient_failure_retries_once_after_both_hosts_fail(self, request, clock, sleep):
+        clock.now.return_value = datetime(2026, 9, 22, 12)
+        rows = [f"2026-09-22 10:{i:02d},10,10,10,10,100,100000,10" for i in range(30)]
+        rows += ["2026-09-22 11:30,10,11,11,10,100,100000,10"]
+        good = Mock(); good.json.return_value = {"data": {"trends": rows}}
+        request.side_effect = [None, None, good]
+        self.assertTrue(DataFeed().get_index_morning("BK1040")["available"])
+        self.assertEqual(request.call_count, 3)
+        request.reset_mock(); request.side_effect = None; request.return_value = None
+        self.assertFalse(DataFeed().get_index_morning("BK1040")["available"])
+        self.assertEqual(request.call_count, 4)
+
+    def test_holiday_is_not_reported_as_missing_market_data(self):
+        from trading_calendar import market_closed_reason
+        self.assertEqual(market_closed_reason(datetime(2026, 9, 25).date()), "中秋节休市")
+        self.assertEqual(market_closed_reason(datetime(2026, 9, 28).date()), "")
+        action = self.action(now=datetime(2026, 9, 25, 12))
+        self.assertEqual(action["action"], "休市观察")
+        self.assertEqual(action["sell_quantity"], 0)
+        self.assertFalse(action["morning_ready"])
+        self.assertIn("中秋节休市", action["reason"])
+
     @patch.object(DataFeed, "_request")
     def test_board_minutes_use_board_market_id(self, request):
         request.return_value = None
