@@ -1,0 +1,38 @@
+name: Send requested historical holding review
+on:
+  workflow_dispatch:
+    inputs:
+      review_date:
+        description: Historical source date (YYYY-MM-DD)
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: holding-review-send
+  cancel-in-progress: false
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      REVIEW_DATE: ${{ inputs.review_date }}
+      ACCOUNT_STATE_JSON: ${{ secrets.ACCOUNT_STATE_JSON }}
+      MAIL_SMTP_HOST: ${{ vars.MAIL_SMTP_HOST || 'smtp.qq.com' }}
+      MAIL_SMTP_PORT: ${{ vars.MAIL_SMTP_PORT || '465' }}
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      MAIL_TO: ${{ secrets.MAIL_TO }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python send_holding_review.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: holding-review-${{ github.run_id }}
+          path: output/verification/holding-review-send.json

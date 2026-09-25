@@ -987,13 +987,13 @@ def build_market_research(
     }
 
 
-def build_account_holding_actions(account: dict) -> list[dict]:
+def build_account_holding_actions(account: dict, *, holding_feed=None, now=None) -> list[dict]:
     from noon_holdings import build_noon_action
 
     if not account.get("holdings_tracking_enabled") or not account.get("holdings"):
         return []
-    holding_feed = DataFeed()
-    now = datetime.now(SHANGHAI)
+    holding_feed = holding_feed or DataFeed()
+    now = now or datetime.now(SHANGHAI)
 
     def safe(call, fallback):
         try:
