@@ -47,6 +47,20 @@ def payload(observations=None):
 
 
 class EmailDigestTest(unittest.TestCase):
+    @patch.dict("os.environ", {"SITE_URL": "https://example.com/#push"})
+    def test_paper_link_and_timing_do_not_claim_todays_fills(self):
+        data = payload()
+        data.pop("technical_summary")
+        message = build_email(data)
+        for kind in ("plain", "html"):
+            body = message.get_body(preferencelist=(kind,)).get_content()
+            self.assertIn("https://example.com/#paper", body)
+            self.assertIn("5万元单股全仓模式、50万元分仓模式", body)
+            self.assertIn("13:05", body)
+            self.assertIn("不包含今日尚未发生的模拟成交", body)
+            self.assertNotIn("三核研究", body)
+            self.assertNotIn("量化", body)
+
     @patch("email_digest.market_closed_reason", return_value="")
     @patch.dict("os.environ", {"EMAIL_PREVIEW_ONLY": "true"}, clear=True)
     @patch("email_digest.Path.write_text")
@@ -57,7 +71,7 @@ class EmailDigestTest(unittest.TestCase):
     def test_preview_never_sends_and_missing_boards_block_resend(self, build, send, save, freeze, write, closed):
         from email_digest import main
         data = payload()
-        data["technical_summary"]["factor_count"] = 1
+        data.pop("technical_summary")  # Removed factor pipeline must not block daily mail.
         data["market"]["sector_flow"] = [{"name": "电子"}]
         build.return_value = data
         main()
@@ -152,14 +166,8 @@ class EmailDigestTest(unittest.TestCase):
         self.assertIn("000001 平安银行", plain)
         self.assertIn("基本面78", plain)
         self.assertIn("不自动委托；排名不等于买点", plain)
-        self.assertIn("量化因子仅独立研究，不参与选股", html)
         self.assertIn("外盘、美股与地缘事件影响", html)
         self.assertIn("每日资金强度、板块效应与龙头", html)
-        self.assertIn("量化次日验证与每日优化日志", html)
-        self.assertIn("动量计算窗口：20 → 60", plain)
-        self.assertIn("研究试验-基本面权重：40% → 45%", plain)
-        self.assertIn("样本外夏普比率：0.8 → 1.1", html)
-        self.assertIn("量化因子不参与实际选股", plain)
         self.assertIn("000002 板块核心", plain)
         self.assertIn("进场10.10-10.30", plain)
         self.assertIn("止损9.80-9.90", html)
@@ -168,7 +176,9 @@ class EmailDigestTest(unittest.TestCase):
         self.assertEqual(html.count('width="7%"'), 2)
         self.assertEqual(html.count('width="22%"'), 2)
         self.assertEqual(html.count('width="23%"'), 2)
-        self.assertEqual(html.count('width="16%"'), 6)
+        self.assertEqual(html.count('width="24%"'), 4)
+        self.assertNotIn("量化", html)
+        self.assertNotIn("量化", plain)
 
     def test_email_includes_confirmed_holding_action(self):
         data = payload()

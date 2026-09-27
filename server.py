@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Three-core HTTP service: push chain, fundamentals, and technical factors."""
+"""HTTP service: weekly plan, fundamentals, and forward paper trading."""
 
 from __future__ import annotations
 
@@ -18,11 +18,12 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from research_core import (
-    build_account_holding_actions, build_push_payload, load_fundamental, load_technical,
-    refresh_fundamental, sync_latest_quant_artifact,
+    build_account_holding_actions, build_push_payload, load_fundamental,
+    refresh_fundamental, sync_public_snapshots,
 )
 from account_vision import extract_account_screenshot
 from weekly_strategy import ACCOUNT_STATE_FILE, load_account_state, save_account_update
+from paper_trading import load_state as load_paper_state
 
 
 ROOT = Path(__file__).resolve().parent
@@ -77,6 +78,21 @@ def _dispatch_daily_email_workflow(force: bool = False) -> None:
     with urlopen(request, timeout=30) as response:
         if response.status != 204:
             raise RuntimeError(f"GitHub Actions 返回 HTTP {response.status}")
+
+
+def _dispatch_paper_workflow() -> None:
+    token = os.getenv("GITHUB_ACTIONS_TOKEN", "").strip()
+    if not token:
+        raise RuntimeError("GITHUB_ACTIONS_TOKEN 未配置，无法启动持久化模拟任务")
+    repository = os.getenv("GITHUB_ACTIONS_REPOSITORY", "katelrving948-dotcom/a-share-trading").strip()
+    request = Request(
+        f"https://api.github.com/repos/{repository}/actions/workflows/paper-trading.yml/dispatches",
+        data=json.dumps({"ref": os.getenv("GITHUB_ACTIONS_REF", "main")}).encode(),
+        headers={"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}",
+                 "Content-Type": "application/json", "User-Agent": "a-share-research-hub"}, method="POST")
+    with urlopen(request, timeout=30) as response:
+        if response.status != 204:
+            raise RuntimeError(f"模拟任务触发失败 HTTP {response.status}")
 
 
 def _sync_account_state_secret() -> dict:
@@ -232,8 +248,9 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self._json(payload)
             if path == "/api/fundamental/status":
                 return self._json(_snapshot(_fundamental_state))
-            if path == "/api/technical":
-                return self._json(load_technical())
+            if path == "/api/paper":
+                sync_public_snapshots()
+                return self._json(load_paper_state())
             if path == "/api/account":
                 if not self._authorized():
                     return self._json({"error": "未授权"}, 401)
@@ -284,10 +301,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                     limit = max(0, int(limit))
                 started = _start_fundamental_refresh(limit)
                 return self._json({"started": started, "status": _snapshot(_fundamental_state)}, 202 if started else 409)
-            if path == "/api/technical/sync":
+            if path == "/api/paper/run":
                 if not self._authorized():
                     return self._json({"error": "未授权"}, 401)
-                return self._json({"synced": sync_latest_quant_artifact(), "technical": load_technical()})
+                _dispatch_paper_workflow()
+                return self._json({"state": "dispatched", "message": "已请求模拟任务；请稍后刷新查看成交结果。"}, 202)
             if path == "/api/account":
                 if not self._authorized():
                     return self._json({"error": "未授权"}, 401)
@@ -367,7 +385,7 @@ def main() -> None:
     port = int(os.getenv("PORT", "5000"))
     server = ThreadingHTTPServer(("0.0.0.0", port), ApiHandler)
     print(f"A股周度趋势与风险系统：http://localhost:{port}")
-    print("模块：周度计划 / 基本面评分 / 技术面量化")
+    print("模块：周度计划 / 基本面评分 / 双模式模拟仓")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

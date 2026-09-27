@@ -22,7 +22,6 @@ from data_feed import DataFeed
 from config import LONG_TERM
 from pullback_strategy import entry_gate, holding_horizon
 from fundamental import FundamentalScorer
-from quant_factors import FACTOR_REGISTRY
 from selection_model import ACTIVE_SELECTION_WEIGHTS, DEFAULT_SELECTION_WEIGHTS, normalize_selection_weights, score_selection_components
 from weekly_strategy import (
     WEEKLY_PLAN_FILE,
@@ -125,15 +124,11 @@ def sync_public_snapshots(force: bool = False) -> None:
             pass
 
         try:
-            remote_summary_bytes = _download_public("quant/quant_summary.json")
-            remote_summary = json.loads(remote_summary_bytes.decode("utf-8"))
-            summary_path = QUANT_DIR / "quant_summary.json"
-            if _generated_at(remote_summary) > _generated_at(_read_json(summary_path)):
-                factors = _download_public("quant/quant_factors_latest.csv")
-                signals = _download_public("quant/quant_signals.csv")
-                _replace_bytes(QUANT_DIR / "quant_factors_latest.csv", factors)
-                _replace_bytes(QUANT_DIR / "quant_signals.csv", signals)
-                _replace_bytes(summary_path, remote_summary_bytes)
+            from paper_trading import STATE_FILE
+            content = _download_public("research/paper_trading.json")
+            remote = json.loads(content.decode("utf-8"))
+            if str(remote.get("updated_at") or "") > str(_read_json(STATE_FILE).get("updated_at") or ""):
+                _replace_bytes(STATE_FILE, content)
         except (OSError, ValueError, json.JSONDecodeError):
             pass
 
@@ -157,6 +152,8 @@ def load_fundamental() -> dict:
 
 
 def load_technical() -> dict:
+    # Legacy offline reports only; no longer called by website or scheduled research.
+    from quant_factors import FACTOR_REGISTRY
     sync_public_snapshots()
     summary_path = QUANT_DIR / "quant_summary.json"
     factors_path = QUANT_DIR / "quant_factors_latest.csv"
@@ -1025,9 +1022,9 @@ def build_account_holding_actions(account: dict, *, holding_feed=None, now=None)
         return list(executor.map(analyze_holding, account["holdings"]))
 
 
-def build_push_payload(refresh: bool = False, universe_limit: int | None = None) -> dict:
+def build_push_payload(refresh: bool = False, universe_limit: int | None = None, account_override: dict | None = None) -> dict:
     fundamental = refresh_fundamental(universe_limit) if refresh else load_fundamental()
-    technical = load_technical()
+    technical = {"rows": [], "summary": {}}
     model_gate = quant_model_gate(technical)
     display_limit = max(1, int(os.getenv("PUSH_DISPLAY_LIMIT", "20")))
     candidate_multiplier = max(1, int(os.getenv("PUSH_CANDIDATE_MULTIPLIER", "5")))
@@ -1046,7 +1043,7 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
     )
     now = datetime.now(SHANGHAI)
     selection_weights = normalize_selection_weights(ACTIVE_SELECTION_WEIGHTS)
-    account = load_account_state(now=now)
+    account = account_override if account_override is not None else load_account_state(now=now)
     holding_actions = build_account_holding_actions(account)
     weekly_plan = build_weekly_plan(
         observations,
@@ -1078,8 +1075,8 @@ def build_push_payload(refresh: bool = False, universe_limit: int | None = None)
             "quant_model_gate": model_gate,
             "selection_weights": selection_weights,
             "selection_weight_optimization": (technical.get("summary") or {}).get("selection_optimization", {}),
-            "selection_formula": "综合分 = 行业校准基本面×66.67% + 板块强度×16.67% + 上午个股资金×16.67%；技术量化权重为0，仅独立研究",
-            "meaning": "每日综合分保留为研究池；实际执行改用周度固定名单、周线趋势、账户仓位和事件风险闸门；量化优化仍不自动参与交易许可",
+            "selection_formula": "综合分 = 行业校准基本面×66.67% + 板块强度×16.67% + 上午个股资金×16.67%",
+            "meaning": "每日综合分保留为研究池；实际执行改用周度固定名单、周线趋势、账户仓位和事件风险闸门",
             "weekly_formula": "周度分 = 基本面40% + 中期趋势30% + 板块15% + 国际事件敏感度10% + 估值/拥挤度5%",
             "entry_policy": "基本面原始和行业分均≥60 + 上升趋势 + 日线回调企稳；突破不买，实时价格与账户风控另行复核",
             "market_cap_min_yi": LONG_TERM["market_cap_min"],

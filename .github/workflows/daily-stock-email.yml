@@ -42,7 +42,6 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       EMAIL_UNIVERSE_LIMIT: ${{ vars.EMAIL_UNIVERSE_LIMIT || '500' }}
       PUSH_FUNDAMENTAL_MIN: ${{ vars.PUSH_FUNDAMENTAL_MIN || '60' }}
-      PUSH_TECHNICAL_MIN: ${{ vars.PUSH_TECHNICAL_MIN || '60' }}
       PUSH_DISPLAY_LIMIT: ${{ vars.PUSH_DISPLAY_LIMIT || '20' }}
       ACCOUNT_STATE_JSON: ${{ secrets.ACCOUNT_STATE_JSON }}
       SITE_URL: https://a-share-trading.onrender.com
@@ -73,21 +72,6 @@ jobs:
       - name: Install dependencies
         if: inputs.force_send == true || inputs.preview_only == true || steps.sent_cache.outputs.cache-hit != 'true'
         run: pip install -r requirements.txt
-      - name: Restore latest technical factor snapshot
-        if: inputs.force_send == true || inputs.preview_only == true || steps.sent_cache.outputs.cache-hit != 'true'
-        uses: actions/cache/restore@v4
-        with:
-          path: output/quant
-          key: quant-report-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: |
-            quant-report-${{ runner.os }}-
-      - name: Download latest technical artifact when cache is empty
-        if: (inputs.force_send == true || inputs.preview_only == true || steps.sent_cache.outputs.cache-hit != 'true') && hashFiles('output/quant/quant_summary.json') == ''
-        shell: bash
-        run: |
-          run_id=$(gh run list --workflow quant-factor-research.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')
-          test -n "$run_id"
-          gh run download "$run_id" --pattern 'quant-factor-report-*' --dir output/quant
       - name: Generate and send email
         id: digest
         if: inputs.force_send == true || inputs.preview_only == true || steps.sent_cache.outputs.cache-hit != 'true'
