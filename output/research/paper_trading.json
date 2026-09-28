@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "updated_at": "2026-09-28T19:37:27.330224+08:00",
+  "status": "等待13:00–14:00模拟窗口",
+  "assumptions": "前向模拟，每交易日13:05尝试一次；不补造历史成交。佣金万三、最低5元；卖出税费万五；双向滑点0.1%。价格限制附近保守不成交；不模拟真实排队和冲击成本。",
+  "accounts": {
+    "aggressive": {
+      "name": "小资金全仓模式",
+      "initial": 50000,
+      "goal": "短期翻倍目标 · 高波动实验",
+      "cash": 50000,
+      "equity": 50000,
+      "holdings": [],
+      "trades": [],
+      "curve": [],
+      "decisions": [],
+      "max_drawdown_pct": 0,
+      "return_pct": 0,
+      "fees": 0,
+      "week_id": null,
+      "week_start_equity": 50000
+    },
+    "balanced": {
+      "name": "大资金分仓模式",
+      "initial": 500000,
+      "goal": "稳定盈利目标 · 控制回撤",
+      "cash": 500000,
+      "equity": 500000,
+      "holdings": [],
+      "trades": [],
+      "curve": [],
+      "decisions": [],
+      "max_drawdown_pct": 0,
+      "return_pct": 0,
+      "fees": 0,
+      "week_id": null,
+      "week_start_equity": 500000
+    }
+  }
+}
