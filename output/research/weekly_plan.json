@@ -2,7 +2,7 @@
   "plan_id": "2026-W40",
   "week_start": "2026-09-28",
   "week_end": "2026-10-02",
-  "generated_at": "2026-09-28 12:03:14",
+  "generated_at": "2026-09-29 12:03:24",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：道琼斯、标普500、纳斯达克100",
+      "summary": "暂未取得明确的外盘利好共振证据。",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -39,7 +39,7 @@
     },
     {
       "name": "利空情景",
-      "summary": "相对偏弱市场：纳斯达克中国金龙、COMEX黄金、COMEX铜",
+      "summary": "外部事件数据不足，按不确定情景控制仓位。",
       "triggers": [
         "外部风险扩大",
         "A股相关板块破位或候选股相对强度转负"
@@ -60,12 +60,12 @@
       "name": "药明康德",
       "industry": "研究和试验发展",
       "role": "主选",
-      "status": "等待回调",
-      "market_cap": 4915.33,
+      "status": "等待企稳",
+      "market_cap": 4879.82,
       "entry_gate": {
         "passed": false,
-        "state": "waiting_pullback",
-        "reason": "等待回调",
+        "state": "waiting_confirmation",
+        "reason": "等待企稳",
         "reference_price": null
       },
       "holding_plan": {
@@ -76,30 +76,30 @@
         "label": "5-20个交易日",
         "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
       },
-      "weekly_score": 82.7,
+      "weekly_score": 84.42,
       "score_components": {
         "fundamental": 89.5,
-        "trend": 91.98,
-        "board": 72.0,
+        "trend": 97.91,
+        "board": 71.0,
         "external_event": 50.0,
-        "valuation_crowding": 70.14
+        "valuation_crowding": 71.86
       },
       "primary_board": {
         "type": "行业",
         "code": "sina:hangye_ZM73",
         "name": "研究和试验发展",
-        "change_pct": -0.77,
-        "main_net_inflow": 2.53,
-        "recent_main_net_inflow": 57.67,
+        "change_pct": -0.51,
+        "main_net_inflow": 10.84,
+        "recent_main_net_inflow": 54.75,
         "positive_days": 4,
         "history_days": 5,
-        "flow_score": 72,
+        "flow_score": 71,
         "source": "新浪证监会行业11:30分时（主力净额按源内占比换算，约值）",
-        "trade_date": "2026-09-28",
-        "as_of": "2026-09-28 11:30",
+        "trade_date": "2026-09-29",
+        "as_of": "2026-09-29 11:30",
         "main_net_estimated": true,
         "external_score": 50,
-        "external_confidence": "低",
+        "external_confidence": "无",
         "external_signal_count": 0,
         "external_reasons": [],
         "member_count": 31,
@@ -110,34 +110,34 @@
             "role": "龙头",
             "leadership_role": "龙头",
             "board_rank": 1,
-            "leadership_score": 84,
-            "price": 161.96,
-            "change_pct": -0.27,
-            "market_cap": 4915.33,
-            "amount": 3743813238.0,
-            "main_net": -0.33,
-            "main_net_pct": -0.88
+            "leadership_score": 85,
+            "price": 160.79,
+            "change_pct": -0.62,
+            "market_cap": 4879.82,
+            "amount": 3714339482.0,
+            "main_net": 0.0,
+            "main_net_pct": 0.0
           },
           {
-            "code": "301080",
-            "name": "百普赛斯",
+            "code": "300759",
+            "name": "康龙化成",
             "role": "次龙头",
             "leadership_role": "次龙头",
             "board_rank": 2,
-            "leadership_score": 77,
-            "price": 121.02,
-            "change_pct": -0.32,
-            "market_cap": 202.93,
-            "amount": 1331937820.8,
-            "main_net": 0.13,
-            "main_net_pct": 0.96
+            "leadership_score": 80,
+            "price": 42.65,
+            "change_pct": -1.11,
+            "market_cap": 783.6,
+            "amount": 1257057471.0,
+            "main_net": 0.0,
+            "main_net_pct": 0.0
           }
         ],
-        "rotation_score": 72,
+        "rotation_score": 71,
         "rise_count": null,
         "fall_count": null,
         "effect": "资金流入但价格未确认",
-        "rank": 3
+        "rank": 7
       },
       "fundamental_score": 89.5,
       "fundamental_evidence": {
@@ -172,7 +172,7 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-09-24",
+        "as_of": "2026-09-28",
         "qualified": true,
         "trend_qualified": true,
         "pullback_plan": {
@@ -185,22 +185,22 @@
           "stop_price": 148.65,
           "max_entry_price": 163.29,
           "valid_sessions": 5,
-          "state": "waiting_pullback",
-          "touched_on": null,
+          "state": "waiting_confirmation",
+          "touched_on": "2026-09-28",
           "confirmed_on": null,
-          "elapsed_sessions": 0,
-          "as_of": "2026-09-24"
+          "elapsed_sessions": 1,
+          "as_of": "2026-09-28"
         },
-        "trend_score": 91.98,
-        "close": 162.4,
-        "ma20": 158.03,
-        "ma60": 145.47,
-        "atr": 5.251,
-        "atr_pct": 3.23,
-        "return_20_pct": 1.86,
-        "benchmark_return_20_pct": -4.13,
-        "relative_strength_pct": 5.99,
-        "extension_pct": 2.77,
+        "trend_score": 97.91,
+        "close": 161.8,
+        "ma20": 158.28,
+        "ma60": 146.11,
+        "atr": 5.466,
+        "atr_pct": 3.38,
+        "return_20_pct": 3.13,
+        "benchmark_return_20_pct": -5.82,
+        "relative_strength_pct": 8.95,
+        "extension_pct": 2.23,
         "overextended": false,
         "checks": {
           "above_ma20": true,
@@ -245,7 +245,7 @@
         "executable": false,
         "reasons": [
           "100股最小买入量超过当前仓位或风险预算",
-          "等待回调"
+          "等待企稳"
         ],
         "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
       },
