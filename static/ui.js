@@ -43,7 +43,7 @@ function renderOverview(payload) {
   const risk = document.getElementById('overviewRisk');
   risk.classList.toggle('ok', account.can_open_new === true);
   risk.textContent = account.can_open_new ? '账户级闸门通过 · 个股买点仍需复核' : '停止新增风险 · ' + ((account.block_reasons || []).join('；') || '等待账户与行情复核');
-  document.getElementById('overviewDate').textContent = payload.generated_at || weekly.generated_at || weekly.plan_id || '尚无有效快照';
+  document.getElementById('overviewDate').textContent = '计划 ' + (weekly.generated_at || weekly.plan_id || '待生成');
   document.getElementById('overviewMetrics').innerHTML = metric('本周候选', (weekly.active_count ?? 0) + '只', '最多2主选、1备选') + metric('账户仓位', confirmedAccount ? holdingPosition(confirmedAccount) : '待解锁') + metric('可用资金', confirmedAccount ? num(confirmedAccount.available_cash, 2) : '待解锁', '元') + metric('风险档位', account.risk_profile?.name || '待复核');
   document.getElementById('overviewPlan').textContent = weekly.frozen ? '周度名单已冻结，查看买点与失效条件' : '计划待确认，查看当前研究结果';
 }
