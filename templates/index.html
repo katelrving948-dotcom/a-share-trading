@@ -18,91 +18,122 @@ main{padding:28px;max-width:1500px;width:100%;min-width:0;margin:auto}.page{disp
 @media(max-width:850px){.field-grid,.holding-fields{grid-template-columns:1fr 1fr}}@media(max-width:520px){.field-grid,.holding-fields{grid-template-columns:1fr}}
 button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:3px}#page-paper button{min-height:44px}#paperChart svg{display:block;width:100%;height:auto}#paperStatus{margin-bottom:14px}
 </style>
+<link rel="stylesheet" href="/static/ui.css?v=mobile-20261003">
 </head>
-<body>
-<header><div class="brand">A股周度趋势与风险系统<small>WEEKLY PLAN × POSITION × RISK</small></div><div class="live" id="live">● 服务检测中</div></header>
-<div class="shell">
-<nav>
-  <button class="active" data-page="push">01 周度计划</button>
-  <button data-page="fundamental">02 基本面评分</button>
-  <button data-page="paper">03 模拟仓</button>
-  <div class="note">每周最多2只主选、1只备选；名单周内冻结，只允许撤销。账户、趋势、价格与事件闸门未同时通过时不交易。</div>
-</nav>
-<main>
-  <section class="page active" id="page-push">
-    <div class="hero"><h1>本周固定计划</h1><p>基本面合格、上升趋势、回调企稳后才考虑买入；覆盖20亿元以上股票，周度名单固定，买点每日复核。</p></div>
-    <div class="grid g4" id="pushMetrics"></div>
-    <div class="card"><h2>总体链路</h2><div class="chain"><span>周一触发</span><b>→</b><span>周度研究</span><b>→</b><span>账户风险闸门</span><b>→</b><span>固定名单</span><b>→</b><span>邮件与网站</span></div></div>
-    <div class="card">
-      <h2>任务控制与状态</h2>
-      <div class="toolbar"><input id="pushSecret" type="password" placeholder="推送测试密钥（可不填）"><button id="pushRun">触发测试推送</button><button class="secondary" id="pushReload">刷新状态/预览</button></div>
-      <div class="status" id="pushStatus">读取中…</div>
-    </div>
-    <div class="card">
-      <h2>私密账户与持仓</h2>
-      <div class="status" id="pushAccount">读取中…</div>
-      <div class="toolbar" style="margin-top:12px">
-        <input id="accountSecret" type="password" placeholder="持仓访问密码（CRON_SECRET）">
-        <button class="secondary" id="accountLoad">验证密码并读取持仓</button>
-      </div>
-      <p class="muted">输入密码后可直接读取、识别截图或保存持仓，不会触发测试推送；密码仅用于本次页面请求。</p>
-      <div class="field-grid">
+<body data-ui-version="mobile-20261003">
+<a class="skip-link" href="#mainContent">跳到内容</a>
+<header><div class="brand">A股周度趋势与风险系统<small>WEEKLY PLAN × POSITION × RISK</small></div><div class="live" id="live">服务检测中</div></header>
+<div class="shell"><nav aria-label="主导航"><button data-page="overview" class=active aria-current=page><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v11h-6v-7H9v7H3z"/></svg><span>概览</span></button><button data-page="plan" ><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 11h16m-11 4h6"/></svg><span>计划</span></button><button data-page="holdings" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9h9A9 9 0 1 1 12 3Z"/><path d="M16 3a7 7 0 0 1 5 5h-5z"/></svg><span>持仓</span></button><button data-page="research" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V12m6 9V7m6 14V3m5 18H2"/></svg><span>研究</span></button><button data-page="more" ><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span>更多</span></button><div class="note">每周最多2只主选、1只备选。账户、趋势、价格与事件闸门同时通过后才考虑交易。</div></nav><main id="mainContent">
+<section class="page active" id="page-overview" aria-label="概览">
+  <div class="page-heading"><h1>概览</h1><button class="secondary" id="overviewReload">刷新</button></div>
+  <p class="muted data-date">数据日期：<span id="overviewDate">读取中…</span></p>
+  <div class="risk-banner" id="overviewRisk" role="status">正在读取计划与风险状态…</div>
+  <div class="grid g4 overview-metrics" id="overviewMetrics"></div>
+  <div class="grid g2 overview-links">
+    <button class="entry-card" data-page="plan"><strong>本周计划 <span>→</span></strong><span id="overviewPlan">查看固定名单与买点条件</span><b>查看计划</b></button>
+    <button class="entry-card" data-page="holdings"><strong>持仓摘要 <span>→</span></strong><span id="overviewHoldings">解锁后查看持仓与午间建议</span><b>进入持仓</b></button>
+  </div>
+  <p class="muted boundary">研究结果不等于交易许可；行情与建议以标注时间为准。</p>
+</section>
+<section class="page" id="page-plan" aria-label="本周计划">
+  <div class="hero"><h1>本周固定计划</h1><p>基本面合格、上升趋势、回调企稳后才考虑买入。周度名单固定，买点每日复核。</p></div>
+  <div class="grid g4" id="pushMetrics"></div>
+      <div class="card"><h2>本周主选/备选 · 周内固定</h2><div class="status" id="weeklyScenario">读取中…</div><div class="scroll" style="margin-top:10px"><table><thead><tr><th>身份</th><th>股票</th><th>周度分</th><th>趋势/证据</th><th>回调买点/失效/持仓期</th><th>股数/仓位/风险</th><th>状态</th></tr></thead><tbody id="weeklyRows"></tbody></table></div></div>
+
+  <details class="card"><summary>账户风险与交易闸门</summary><div class="status" id="pushAccount">读取中…</div></details>
+</section>
+<section class="page" id="page-holdings" aria-label="我的持仓">
+  <div class="page-heading"><h1>我的持仓</h1><button data-page="import">导入截图</button></div>
+  <div id="holdingsAccess"></div>
+  <div class="card" id="accountAccess"><div class="account-access-summary"><span>账户已解锁</span><button class="secondary" id="accountReverify">重新验证</button></div><label class="field"><span>持仓访问密码</span><input id="accountSecret" type="password" autocomplete="off" placeholder="输入密码解锁或导入持仓"></label><button class="secondary" id="accountLoad">验证并读取持仓</button><small class="muted">密码仅用于本次页面请求。</small></div>
+  <div class="grid g2" id="holdingMetrics"></div>
+  <div class="tabbar" aria-label="持仓内容"><button class="active" data-holding-tab="list" aria-pressed="true">持仓列表</button><button data-holding-tab="advice" aria-pressed="false">午间建议</button></div>
+  <div id="holdings-list"><div id="holdingSummary" class="status">请输入密码读取已确认持仓。</div></div>
+  <div id="holdings-advice" hidden><div id="holdingAdvice" class="status">解锁后读取午间建议；当日上午行情不完整时等待复核。</div></div>
+  <button class="secondary" id="editHoldings">编辑账户与持仓</button>
+  <p class="muted">持仓与午间建议仅在验证密码后显示；上传结果需确认保存。</p>
+</section>
+<section class="page" id="page-import" aria-label="导入持仓截图">
+  <button class="text-button" data-page="holdings">← 返回持仓</button>
+  <div class="page-heading"><h1>导入持仓截图</h1></div>
+  <ol class="import-steps" aria-label="导入进度"><li data-step="upload" aria-current="step"><b>1</b>上传</li><li data-step="review"><b>2</b>核对</li><li data-step="saved"><b>3</b>保存</li></ol>
+  <div id="importAccess"></div>
+  <div id="import-upload">
+    <div class="card upload-card"><h2>选择持仓截图</h2><p class="muted">JPG / PNG / WebP · 最多5张，每张不超过7MB</p><label class="upload-picker" for="accountScreenshot">选择图片<input id="accountScreenshot" type="file" multiple accept="image/jpeg,image/png,image/webp"></label><div id="screenshotPreview"></div></div>
+    <p class="privacy-note">请先遮挡姓名、账号和验证码。图片将发送至通义千问识别，本站不保存原图。</p>
+    <div id="uploadStatus" class="status" role="status" aria-live="polite">选择图片后开始识别；结果为待确认草稿。</div>
+    <div class="action-bar"><button id="accountExtract" disabled>识别并继续</button><button class="secondary" id="manualEntry">手动录入</button></div>
+  </div>
+  <div id="import-review" hidden>
+    <div id="accountDraftStatus" class="status" role="status" aria-live="polite">请逐项核对账户金额与持仓字段，确认后再保存。</div>
+    <div class="card"><h2>账户信息</h2>      <div class="field-grid">
         <label class="field"><span>账户总资产（元）* 必须确认</span><input id="accountEquity" type="number" step="0.01" placeholder="例：45682.77"><small>对应券商截图的“普通资产/总资产”，用于计算仓位与风险上限。</small></label>
         <label class="field"><span>可用资金（元）* 必须确认</span><input id="availableCash" type="number" step="0.01" placeholder="例：35250.77"><small>当前可用于交易的现金，不等于账户总资产。</small></label>
         <label class="field"><span>上周累计盈亏（元）· 手动填写</span><input id="lastWeekPnl" type="number" step="0.01" placeholder="盈利填正数，亏损填负数"><small>用于判断本周是否进入恢复期；不是截图里的“当日盈亏”。</small></label>
         <label class="field"><span>本周累计盈亏（元）· 手动填写</span><input id="currentWeekPnl" type="number" step="0.01" placeholder="盈利填正数，亏损填负数"><small>本周截至当前的累计值；亏损达到总资产2%会停止新增风险。</small></label>
       </div>
       <div class="status" id="accountFieldGuide">核对规则：带“必须确认”的字段决定账户和持仓分析；市值、仓位、浮盈亏由系统复算。券商“当日参考盈亏/持仓盈亏”仅用于对照，不会自动当作上周或本周累计盈亏。</div>
-      <div class="toolbar">
-        <input id="accountScreenshot" type="file" multiple accept="image/jpeg,image/png,image/webp">
-        <button id="accountExtract">AI读取并合并截图</button>
-        <button class="secondary" id="holdingAdd">添加一只持仓</button>
-        <button id="accountSave">确认并保存持仓</button>
-      </div>
-      <p class="muted">可一次选择最多5张持仓截图，系统会逐张识别，截图缺少代码时按股票名称自动匹配，并按股票代码去重合并；截图会发送到阿里云百炼通义千问视觉模型，本网站不保存原图。结果只是草稿，必须核对代码、股数、可卖数和成本后再保存。姓名、账号和验证码请先遮挡。</p>
-      <div id="accountDraftStatus" class="status">输入本卡片内的持仓访问密码后，可直接读取、填写或上传截图。</div>
-      <div id="holdingEditor"></div>
-      <div id="accountReview" class="status">填写或识别后，这里会显示资金、持仓市值和仓位的自动核对结果。</div>
-      <h2 style="margin-top:18px">午间持仓建议</h2><div id="holdingAdvice" class="status">保存持仓后读取分析。</div>
-    </div>
-    <div class="card"><h2>本周主选/备选 · 周内固定</h2><div class="status" id="weeklyScenario">读取中…</div><div class="scroll" style="margin-top:10px"><table><thead><tr><th>身份</th><th>股票</th><th>周度分</th><th>趋势/证据</th><th>回调买点/失效/持仓期</th><th>股数/仓位/风险</th><th>状态</th></tr></thead><tbody id="weeklyRows"></tbody></table></div></div>
-    <div class="card"><h2>外盘、美股与事件影响</h2><div class="status" id="pushExternal">读取中…</div></div>
-    <div class="card"><h2>辅助研究 · 资金强度、板块效应与龙头</h2><div class="status" id="capitalStatus">读取中…</div><div class="scroll" style="margin-top:10px"><table><thead><tr><th>#</th><th>板块</th><th>主力净流入</th><th>强度</th><th>板块效应</th><th>龙头/次龙头</th></tr></thead><tbody id="pushSectorRows"></tbody></table></div></div>
-    <div class="card"><h2>热门核心观察池 · 强势板块龙头/次龙头</h2><div class="scroll"><table><thead><tr><th>#</th><th>股票</th><th>板块/角色</th><th>板块强度</th><th>基本面</th><th>结论</th><th>进场/止损/止盈</th></tr></thead><tbody id="pushHotRows"></tbody></table></div></div>
-    <div class="card"><h2>辅助研究池 · 不是本周买入名单</h2><p class="muted" id="pushRule"></p><div class="scroll"><table><thead><tr><th>#</th><th>股票</th><th>行业</th><th>基本面<br>原始→行业校准</th><th>板块</th><th>日度研究分</th><th>结论</th><th>旧午间价位</th></tr></thead><tbody id="pushRows"></tbody></table></div></div>
-  </section>
-
+</div>
+    <div class="page-heading"><h2>逐只核对持仓</h2><button class="secondary" id="holdingAdd">添加持仓</button></div>
+    <div id="holdingEditor"></div><div id="accountReview" class="status">填写或识别后显示自动核对结果。</div>
+    <div class="action-bar"><button class="secondary" id="backToUpload">继续上传</button><button id="accountSave">确认并保存持仓</button></div>
+  </div>
+  <div id="import-saved" hidden><div class="card"><h2>持仓已保存</h2><div id="saveStatus" class="status" role="status"></div><p class="muted">建议将按可用行情计算，请核对行情时间。</p><button data-page="holdings">查看我的持仓</button></div></div>
+</section>
+<section class="page" id="page-research" aria-label="研究">
+  <div class="hero"><h1>研究</h1><p>辅助研究用于查看证据，不决定本周买入名单。</p></div>
+  <div class="tabbar research-tabs" aria-label="研究分类"><button data-research="fundamental">基本面</button><button class="active" data-research="sectors" aria-pressed="true">板块资金</button><button data-research="hot">核心观察</button><button data-research="observations">研究池</button><button data-research="external">外盘事件</button></div>
+  <div id="research-sectors" class="research-panel">    <div class="card"><h2>辅助研究 · 资金强度、板块效应与龙头</h2><div class="status" id="capitalStatus">读取中…</div><div class="scroll" style="margin-top:10px"><table><thead><tr><th>#</th><th>板块</th><th>主力净流入</th><th>强度</th><th>板块效应</th><th>龙头/次龙头</th></tr></thead><tbody id="pushSectorRows"></tbody></table></div></div>
+</div>
+  <div id="research-hot" class="research-panel" hidden>    <div class="card"><h2>热门核心观察池 · 强势板块龙头/次龙头</h2><div class="scroll"><table><thead><tr><th>#</th><th>股票</th><th>板块/角色</th><th>板块强度</th><th>基本面</th><th>结论</th><th>进场/止损/止盈</th></tr></thead><tbody id="pushHotRows"></tbody></table></div></div>
+</div>
+  <div id="research-observations" class="research-panel" hidden>    <div class="card"><h2>辅助研究池 · 不是本周买入名单</h2><p class="muted" id="pushRule"></p><div class="scroll"><table><thead><tr><th>#</th><th>股票</th><th>行业</th><th>基本面<br>原始→行业校准</th><th>板块</th><th>日度研究分</th><th>结论</th><th>旧午间价位</th></tr></thead><tbody id="pushRows"></tbody></table></div></div>
+</div>
+  <div id="research-external" class="research-panel" hidden>    <div class="card"><h2>外盘、美股与事件影响</h2><div class="status" id="pushExternal">读取中…</div></div>
+</div>
+</section>
   <section class="page" id="page-fundamental">
-    <div class="hero"><h1>基本面评分</h1><p>只评价已披露财务质量、成长、估值与现金流，不混入技术信号、板块热点或交易计划。</p></div>
+    <button class="text-button" data-page="research">← 返回研究</button><div class="hero"><h1>基本面评分</h1><p>只评价已披露财务质量、成长、估值与现金流，不混入技术信号、板块热点或交易计划。</p></div>
     <div class="grid g4" id="fundMetrics"></div>
     <div class="card">
       <div class="toolbar"><button id="fundRun">刷新基本面评分</button><button class="secondary" id="fundReload">读取最新快照</button><input id="fundSearch" placeholder="代码或名称筛选"></div>
       <div class="status" id="fundStatus">读取中…</div>
     </div>
-    <div class="card"><h2>基本面评分细则与证据边界</h2><div class="status" id="fundRules">读取中…</div></div>
+    <details class="card"><summary>评分细则与证据边界</summary><div class="status" id="fundRules">读取中…</div></details>
     <div class="card"><h2>评分结果</h2><div class="scroll"><table><thead><tr><th>排名</th><th>股票</th><th>财报依据</th><th>总分与算式</th><th>质量35%</th><th>成长30%</th><th>估值20%</th><th>现金流15%</th><th>ROE</th><th>营收同比</th><th>净利同比</th><th>PE/PB</th><th>风险说明</th></tr></thead><tbody id="fundRows"></tbody></table></div></div>
   </section>
 
+
+<section class="page" id="page-more" aria-label="更多">
+  <div class="page-heading"><h1>更多</h1></div>
+  <div class="grid g2"><button class="entry-card" data-page="paper"><strong>双模式模拟仓 <span>→</span></strong><span>查看5万元与50万元模拟账户</span></button><button class="entry-card" data-page="controls"><strong>任务控制与状态 <span>→</span></strong><span>推送状态、刷新和手动任务</span></button></div>
+  <details class="card"><summary>系统规则与数据边界</summary><p>每周最多2只主选、1只备选；名单周内冻结，只允许撤销。账户、趋势、价格与事件闸门未同时通过时不交易。</p><div class="chain"><span>周度研究</span><b>→</b><span>账户风险闸门</span><b>→</b><span>固定名单</span><b>→</b><span>邮件与网站</span></div><p class="muted">研究结果不构成收益承诺。网站不自动下单，邮件任务发送成功也不等于收件箱已收到。</p></details>
+</section>
+<section class="page" id="page-controls" aria-label="任务控制"><button class="text-button" data-page="more">← 返回更多</button>    <div class="card">
+      <h2>任务控制与状态</h2>
+      <div class="toolbar"><input id="pushSecret" type="password" placeholder="推送测试密钥（可不填）"><button id="pushRun">触发测试推送</button><button class="secondary" id="pushReload">刷新状态/预览</button></div>
+      <div class="status" id="pushStatus">读取中…</div>
+    </div>
+</section>
   <section class="page" id="page-paper">
-    <div class="hero"><h1>双模式模拟仓</h1><p>同一套选股与开仓条件，两种资金管理方式。只记录启用后的模拟成交，目标不代表实际收益。</p></div>
+    <button class="text-button" data-page="more">← 返回更多</button><div class="hero"><h1>双模式模拟仓</h1><p>同一套选股与开仓条件，两种资金管理方式。只记录启用后的模拟成交，目标不代表实际收益。</p></div>
     <div class="toolbar"><button id="paperReload">刷新模拟仓</button><label for="paperSecret">管理密钥</label><input type="password" id="paperSecret" autocomplete="off" placeholder="仅手动触发时需要"><button class="secondary" id="paperRun">运行今日模拟</button></div>
     <div class="status" id="paperStatus" role="status" aria-live="polite">读取中…</div>
     <div class="grid g2" id="paperAccounts" style="margin-top:14px"></div>
     <div class="card"><h2>累计收益曲线 · 两账户从0%比较</h2><div id="paperChart"></div><p class="muted">实线：5万元全仓模式；虚线：50万元分仓模式。按每日模拟检查时点估值，并非收盘净值；缺行情时沿用上次估值并标记。</p><details><summary>查看净值明细</summary><div class="scroll"><table><thead><tr><th>账户</th><th>时间</th><th>总资产</th><th>累计收益</th><th>估值</th></tr></thead><tbody id="paperCurveRows"></tbody></table></div></details></div>
     <div class="card"><h2>模拟规则</h2><p id="paperRules" class="muted"></p><p class="muted">5万元：一只主选，预留费用后尽可能满仓；止盈后不补仓。50万元：单股最多20%、总仓最多60%、单笔初始风险最多0.6%；当前每周最多两只主选，不强行为分散凑股。两模式周亏损达到2%后暂停新开仓，仍处理退出。</p><p class="muted">退出复用结构止损和趋势失效规则；1.5R、2.5R各兑现原始股数约1/3，记录已成交阶段。剩余仓位按10日均线与近3日低点较低者上移止损。非实时盯盘，盘中触线后反弹可能不会成交。模拟账户公开展示，与真实持仓隔离。</p></div>
   </section>
+
 </main></div>
+<script src="/static/ui.js?v=mobile-20261003"></script>
 <script>
 const api={get:async p=>{const r=await fetch(p);const j=await r.json();if(!r.ok)throw Error(j.error||r.status);return j},getAuth:async(p,s)=>{const r=await fetch(p,{headers:{'Authorization':'Bearer '+s}});const j=await r.json();if(!r.ok)throw Error(j.error||r.status);return j},post:async(p,b,h={})=>{const r=await fetch(p,{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify(b||{})});const j=await r.json();if(!r.ok)throw Error(j.error||r.status);return j}};
 const esc=v=>String(v??'--').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=(v,d=1)=>v===null||v===undefined||v===''?'--':Number(v).toFixed(d);
 const metric=(label,value,sub='')=>`<div class="card metric"><strong>${esc(value)}</strong><span>${esc(label)}</span><div class="muted">${esc(sub)}</div></div>`;
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.page').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('page-'+b.dataset.page).classList.add('active');location.hash=b.dataset.page});
-const initial=location.hash.slice(1);if(initial&&document.querySelector(`[data-page="${initial}"]`))document.querySelector(`[data-page="${initial}"]`).click();
-
 let fundData=[],accountHoldings=[],accountSourceAsOf=null;
 function updateAccountReview(){let marketTotal=0;document.querySelectorAll('.holding-row').forEach((row,i)=>{const get=k=>Number(row.querySelector(`[data-field="${k}"]`)?.value||0),quantity=get('quantity'),cost=get('cost_price'),current=get('current_price'),marketValue=quantity*current,pnl=(current-cost)*quantity,pnlPct=cost>0?(current/cost-1)*100:null;marketTotal+=marketValue;const review=row.querySelector('.holding-review');if(review)review.textContent=`系统复算：估算市值 ${num(marketValue,2)} 元（持股×截图现价）；估算浮盈亏 ${pnl>=0?'+':''}${num(pnl,2)} 元${pnlPct===null?'':` / ${pnlPct>=0?'+':''}${num(pnlPct,2)}%`}。券商显示值可能因实时价小数位、费用或清算维护略有差异。`});const equity=Number(document.getElementById('accountEquity').value||0),cash=Number(document.getElementById('availableCash').value||0),implied=Math.max(0,equity-cash),diff=implied-marketTotal,pct=equity>0?marketTotal/equity*100:0;document.getElementById('accountReview').textContent=equity>0?`账户自动核对：总资产 ${num(equity,2)} 元；可用资金 ${num(cash,2)} 元；持仓估算市值合计 ${num(marketTotal,2)} 元；估算仓位 ${num(pct,2)}%。\n总资产－可用资金＝${num(implied,2)} 元，与持仓估算市值差额 ${diff>=0?'+':''}${num(diff,2)} 元。差额不为0时，请检查冻结资金、在途资金、截图现价或识别结果。`:'请先确认账户总资产和可用资金。'}
-function renderHoldingEditor(){const root=document.getElementById('holdingEditor');root.innerHTML=accountHoldings.length?accountHoldings.map((x,i)=>`<div class="holding-row" data-index="${i}"><div class="holding-head"><strong>持仓 ${i+1}</strong><button class="secondary holding-remove" data-index="${i}">删除</button></div><div class="holding-fields"><label class="field"><span>股票代码 *</span><input data-field="code" aria-describedby="code-note-${i}" maxlength="6" inputmode="numeric" placeholder="6位代码" value="${esc(x.code||'')}"><small id="code-note-${i}">${esc(x.code_match_note||'请核对代码与名称')}</small></label><label class="field"><span>股票名称 *</span><input data-field="name" placeholder="股票名称" value="${esc(x.name||'')}"><small>用于显示，请与代码对应</small></label><label class="field"><span>持股数量（股）*</span><input data-field="quantity" type="number" min="0" step="100" placeholder="总持股" value="${x.quantity??''}"><small>账户实际总持股</small></label><label class="field"><span>可卖数量（股）*</span><input data-field="available_quantity" type="number" min="0" step="100" placeholder="当日可卖" value="${x.available_quantity??''}"><small>卖出建议不得超过此数</small></label><label class="field"><span>成本价（元）*</span><input data-field="cost_price" type="number" min="0" step="0.0001" placeholder="持仓成本" value="${x.cost_price??''}"><small>用于计算浮盈亏和止盈R值</small></label><label class="field"><span>截图现价（元）*</span><input data-field="current_price" type="number" min="0" step="0.0001" placeholder="截图显示现价" value="${x.current_price??''}"><small>仅用于核对；午间分析使用当日11:30行情</small></label><label class="field"><span>自定义止损价（元）· 可选</span><input data-field="stop_price" type="number" min="0" step="0.01" placeholder="不填则用系统结构止损" value="${x.stop_price??''}"><small>填写后会覆盖系统结构止损，请谨慎确认</small></label></div><div class="holding-review"></div></div>`).join(''):'<p class="muted">当前没有持仓；空仓时可直接保存空列表。</p>';root.querySelectorAll('.holding-remove').forEach(b=>b.onclick=()=>{accountHoldings=collectHoldings();accountHoldings.splice(Number(b.dataset.index),1);renderHoldingEditor()});root.querySelectorAll('input').forEach(input=>input.addEventListener('input',updateAccountReview));updateAccountReview()}
+function renderHoldingEditor(){const root=document.getElementById('holdingEditor');root.innerHTML=accountHoldings.length?accountHoldings.map((x,i)=>`<div class="holding-row" data-index="${i}"><div class="holding-head"><strong>持仓 ${i+1}</strong><button class="secondary holding-remove" data-index="${i}">删除</button></div><div class="holding-fields"><label class="field"><span>股票代码 *</span><input data-field="code" aria-describedby="code-note-${i}" maxlength="6" inputmode="numeric" placeholder="6位代码" value="${esc(x.code||'')}"><small id="code-note-${i}">${esc(x.code_match_note||'请核对代码与名称')}</small></label><label class="field"><span>股票名称 *</span><input data-field="name" placeholder="股票名称" value="${esc(x.name||'')}"><small>用于显示，请与代码对应</small></label><label class="field"><span>持股数量（股）*</span><input data-field="quantity" type="number" min="0" step="100" placeholder="总持股" value="${x.quantity??''}"><small>账户实际总持股</small></label><label class="field"><span>可卖数量（股）*</span><input data-field="available_quantity" type="number" min="0" step="100" placeholder="当日可卖" value="${x.available_quantity??''}"><small>卖出建议不得超过此数</small></label><label class="field"><span>成本价（元）*</span><input data-field="cost_price" type="number" min="0" step="0.0001" placeholder="持仓成本" value="${x.cost_price??''}"><small>用于计算浮盈亏和止盈R值</small></label><label class="field"><span>截图现价（元）*</span><input data-field="current_price" type="number" min="0" step="0.0001" placeholder="截图显示现价" value="${x.current_price??''}"><small>仅用于核对；午间分析使用当日11:30行情</small></label><label class="field"><span>自定义止损价（元）· 可选</span><input data-field="stop_price" type="number" min="0" step="0.01" placeholder="不填则用系统结构止损" value="${x.stop_price??''}"><small>填写后会覆盖系统结构止损，请谨慎确认</small></label></div><div class="holding-review"></div></div>`).join(''):'<p class="muted">当前没有持仓；空仓时可直接保存空列表。</p>';root.querySelectorAll('.holding-remove').forEach(b=>b.onclick=()=>{accountHoldings=collectHoldings();accountDirty=true;accountHoldings.splice(Number(b.dataset.index),1);renderHoldingEditor()});root.querySelectorAll('input').forEach(input=>input.addEventListener('input',()=>{accountDirty=true;updateAccountReview()}));updateAccountReview()}
 function collectHoldings(){return [...document.querySelectorAll('.holding-row')].map(row=>{const get=k=>row.querySelector(`[data-field="${k}"]`).value.trim();return{code:get('code'),name:get('name'),quantity:Number(get('quantity')),available_quantity:Number(get('available_quantity')),cost_price:Number(get('cost_price')),current_price:get('current_price')===''?null:Number(get('current_price')),stop_price:get('stop_price')===''?null:Number(get('stop_price'))}})}
 function mergeHoldingDrafts(current,incoming){
   const merged=[],byIdentity=new Map(),byCode=new Map();
@@ -125,7 +156,7 @@ function mergeHoldingDrafts(current,incoming){
   });
   return merged;
 }
-function applyPrivateAccount(account){document.getElementById('accountEquity').value=account.equity??'';document.getElementById('availableCash').value=account.available_cash??'';document.getElementById('lastWeekPnl').value=account.last_week_pnl??'';document.getElementById('currentWeekPnl').value=account.current_week_pnl??'';accountSourceAsOf=account.source_as_of||null;accountHoldings=(account.holdings||[]).map(x=>({...x}));renderHoldingEditor()}
+function applyPrivateAccount(account){document.getElementById('accountEquity').value=account.equity??'';document.getElementById('availableCash').value=account.available_cash??'';document.getElementById('lastWeekPnl').value=account.last_week_pnl??'';document.getElementById('currentWeekPnl').value=account.current_week_pnl??'';accountSourceAsOf=account.source_as_of||null;accountHoldings=(account.holdings||[]).map(x=>({...x}));renderHoldingEditor();renderAccountSummary(account)}
 function renderHoldingAdvice(actions){document.getElementById('holdingAdvice').textContent=actions.length?actions.map(x=>`${x.code} ${x.name}｜持有${x.quantity}股，可卖${x.available_quantity}股｜成本${num(x.cost_price,4)}，午间参考价${num(x.reference_price,2)}，浮动${num(x.pnl_pct,2)}%\n行情截至：${x.quote_as_of||'上午数据待复核'}；行业：${x.sector_name||'待确认'}\n建议：${x.action}${x.sell_quantity?' '+x.sell_quantity+'股':''}；${x.reason}；结构止损${num(x.stop_price,2)}`).join('\n\n'):'暂无可用建议：请先确认持仓，或等待当日11:30上午行情完整。'}
 function planText(x){const trend=x.weekly_trend||{},pb=trend.pullback_plan;if(pb)return `回调支撑 ${num(pb.support_low,2)}-${num(pb.support_high,2)}；企稳后最高买价 ${num(pb.max_entry_price,2)}；失效 ${num(pb.stop_price,2)}；${esc(x.entry_gate?.reason||'等待回调企稳')}；持仓观察 ${esc(x.holding_plan?.label||'待复核')}；未入周度主选不执行`;const p=x.morning_plan||{},e=p.entry_zone||{},s=p.stop_zone||{},t=p.take_profit_zones||[];if(!p.levels_available)return esc(p.status||'暂无价位');return `进场 ${num(e.low,2)}-${num(e.high,2)}；止损 ${num(s.low,2)}-${num(s.high,2)}；止盈 ${num(t[0]?.low,2)} / ${num(t[1]?.low,2)}；${esc(p.execution_state||'等待触发')}`}
 async function loadPush(){try{
@@ -135,6 +166,7 @@ async function loadPush(){try{
   document.getElementById('pushMetrics').innerHTML=metric('计划编号',weekly.plan_id||'--',weekly.frozen?'已冻结':'待冻结')+metric('固定候选',(weekly.active_count??0)+'只','最多2主选+1备选')+metric('风险档位',rp.name||'--','总仓上限 '+num((rp.max_total_pct||0)*100,0)+'%')+metric('账户级闸门',account.can_open_new?'通过':'冻结',account.current_week_frozen?'本周亏损熔断':`已录入${account.holdings_count??0}只持仓`);
   document.getElementById('pushStatus').textContent=`状态：${s.state}\n开始：${s.started_at||'--'}\n完成：${s.completed_at||'--'}\n错误：${s.error||'无'}\n说明：${s.delivery_boundary}`;
   document.getElementById('pushAccount').textContent=`账户金额、盈亏、成本和股数在公开预览中已隐藏。\n风险档位：${rp.name||'--'}；总仓上限${num((rp.max_total_pct||0)*100,0)}%；单股目标上限${num((rp.max_stock_pct||0)*100,0)}%；单笔计划风险${num(rp.risk_per_trade,0)}元。\n结论：${account.can_open_new?'账户级闸门通过':'停止新增风险'}${(account.block_reasons||[]).length?'；'+account.block_reasons.join('；'):''}\n输入密钥后才能读取、更新持仓和查看午间建议。`;
+  renderOverview(p);
   // Public previews must never overwrite the private account editor.
   const scenarios=(weekly.event_scenarios||[]).map(x=>`${x.name}：${x.summary}\n触发：${(x.triggers||[]).join('、')}`).join('\n\n');document.getElementById('weeklyScenario').textContent=`${weekly.selection_policy||''}\n${scenarios||'事件情景数据不足。'}`;
   document.getElementById('weeklyRows').innerHTML=(weekly.selections||[]).length?weekly.selections.map(x=>{const t=x.weekly_trend||{},e=t.entry_zone||{},pos=x.position_plan||{},ev=x.fundamental_evidence||{};return `<tr><td><strong>${esc(x.role)}</strong></td><td><strong>${esc(x.code)}</strong><br>${esc(x.name)}<br><span class="muted">${esc(x.industry)}</span></td><td class="score">${num(x.weekly_score,1)}</td><td>趋势${num(t.trend_score,1)}<br>20日相对强度${num(t.relative_strength_pct,2)}%<br><span class="muted">市值${num(x.market_cap,1)}亿元<br>财报${esc(ev.report_date||'--')} / 公告${esc(ev.notice_date||'--')}</span></td><td>回调支撑${num(t.pullback_plan?.support_low,2)}-${num(t.pullback_plan?.support_high,2)}<br>企稳后最高买价${num(t.max_chase_price,2)}<br>失效${num(t.stop_price,2)}<br><strong>持仓观察${esc(x.holding_plan?.label||'待复核')}</strong><br><span class="muted">买入日起计，破位提前退出</span></td><td>${pos.quantity||0}股 / ${num(pos.position_pct,1)}%<br>约${num(pos.estimated_value,0)}元<br>计划亏损${num(pos.planned_loss,0)}元</td><td class="${x.status==='可执行'?'ok':x.status==='撤销'?'bad':'warn'}">${esc(x.status)}<br><span class="muted">${esc((pos.reasons||[]).join('；')||'全部闸门通过')}</span></td></tr>`}).join(''):'<tr><td colspan="7">本周没有股票通过全部闸门，保持空仓。</td></tr>';
@@ -146,14 +178,14 @@ async function loadPush(){try{
   document.getElementById('pushSectorRows').innerHTML=boards.length?boards.slice(0,12).map(x=>`<tr><td>${x.rank}</td><td><strong>${esc(x.name)}</strong><br>${esc(x.type)}</td><td>${num(x.main_net_inflow,2)}亿</td><td class="score">${num(x.rotation_score,0)}</td><td>${esc(x.effect)}</td><td>${(x.leaders||[]).map(y=>`${esc(y.name)}(${esc(y.leadership_role)})`).join('、')||'--'}</td></tr>`).join(''):'<tr><td colspan="6">暂无有效板块资金数据。</td></tr>';
   document.getElementById('pushHotRows').innerHTML=hot.length?hot.map((x,i)=>`<tr><td>${i+1}</td><td><strong>${esc(x.code)}</strong><br>${esc(x.name)}</td><td>${esc(x.board_name)} / ${esc(x.leadership_role)}</td><td class="score">${num(x.board_strength_score,0)}</td><td>${num(x.fundamental_score,0)}</td><td class="${x.trade_decision?.status?.startsWith('日度条件满足')?'ok':'warn'}">${esc(x.trade_decision?.status||x.state)}</td><td>${planText(x)}</td></tr>`).join(''):'<tr><td colspan="7">本次未形成强势板块龙头观察名单。</td></tr>';
   document.getElementById('pushRows').innerHTML=p.observations.length?p.observations.map(x=>`<tr><td>${x.rank}</td><td><strong>${esc(x.code)}</strong><br>${esc(x.name)}</td><td>${esc(x.selection_industry||x.industry||'行业待刷新')}</td><td class="score">${num(x.fundamental_score,0)} → ${num(x.sector_adjusted_fundamental_score,0)}</td><td>${esc(x.primary_board?.name||'未匹配')} / ${num(x.board_strength_score,0)}</td><td class="score" title="${esc(x.selection_score_explanation||'')}">${num(x.selection_score??x.combined_score)}<br><span class="muted">基本面66.67% · 板块16.67% · 上午资金16.67%</span></td><td class="${x.trade_decision?.status?.startsWith('日度条件满足')?'ok':'warn'}">${esc(x.trade_decision?.status||'等待确认')}</td><td>${planText(x)}</td></tr>`).join(''):'<tr><td colspan="8">当前没有达到基本面、板块和盘中条件的股票。</td></tr>';
-}catch(e){document.getElementById('pushStatus').textContent='读取失败：'+e.message}}
+}catch(e){document.getElementById('pushStatus').textContent='读取失败：'+e.message;document.getElementById('overviewRisk').textContent='数据读取失败，请稍后刷新';document.getElementById('overviewDate').textContent='暂不可用'}}
 document.getElementById('pushReload').onclick=loadPush;document.getElementById('pushRun').onclick=async()=>{const b=document.getElementById('pushRun');b.disabled=true;try{const secret=document.getElementById('pushSecret').value;if(!secret)throw Error('请先输入推送测试密钥');await api.post('/api/push/run',{}, {'Authorization':'Bearer '+secret});await loadPush()}catch(e){alert(e.message)}finally{b.disabled=false}};
-async function loadPrivateAccount(){const secret=document.getElementById('accountSecret').value;if(!secret)throw Error('请先输入持仓访问密码');const data=await api.getAuth('/api/account/analysis',secret);applyPrivateAccount(data.account||{});renderHoldingAdvice(data.holding_actions||[]);document.getElementById('accountDraftStatus').textContent=`密码验证成功，已读取${(data.account?.holdings||[]).length}只确认持仓；更新时间：${data.account?.updated_at||'--'}`}
-document.getElementById('accountLoad').onclick=async()=>{const b=document.getElementById('accountLoad');b.disabled=true;try{await loadPrivateAccount()}catch(e){alert('读取失败：'+e.message)}finally{b.disabled=false}};
-document.getElementById('holdingAdd').onclick=()=>{if(document.querySelector('.holding-row'))accountHoldings=collectHoldings();accountHoldings.push({code:'',name:'',quantity:0,available_quantity:0,cost_price:'',current_price:'',stop_price:''});renderHoldingEditor()};
-document.getElementById('accountExtract').onclick=async()=>{const b=document.getElementById('accountExtract'),files=[...document.getElementById('accountScreenshot').files],secret=document.getElementById('accountSecret').value;if(!files.length)return alert('请先选择一张或多张持仓截图');if(files.length>5)return alert('一次最多选择5张截图');if(!secret)return alert('请先输入持仓访问密码');if(files.some(file=>file.size>7_000_000))return alert('每张截图请压缩到7MB以内');b.disabled=true;try{let merged=document.querySelector('.holding-row')?collectHoldings():accountHoldings,times=[],warnings=[],firstEquity=null,firstCash=null;for(let i=0;i<files.length;i++){document.getElementById('accountDraftStatus').textContent=`正在识别第 ${i+1}/${files.length} 张截图：${files[i].name}`;const image=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(files[i])});const draft=await api.post('/api/account/extract',{image_data_url:image},{'Authorization':'Bearer '+secret});if(i===0){firstEquity=draft.equity;firstCash=draft.available_cash;if(firstEquity!==null)document.getElementById('accountEquity').value=firstEquity;if(firstCash!==null)document.getElementById('availableCash').value=firstCash}else{if(draft.equity!==null&&firstEquity!==null&&Math.abs(draft.equity-firstEquity)>0.01)warnings.push(`多张截图总资产不一致：${firstEquity} / ${draft.equity}`);if(draft.available_cash!==null&&firstCash!==null&&Math.abs(draft.available_cash-firstCash)>0.01)warnings.push(`多张截图可用资金不一致：${firstCash} / ${draft.available_cash}`)}merged=mergeHoldingDrafts(merged,(draft.holdings||[]).map(x=>({...x,stop_price:null})));if(draft.as_of)times.push(draft.as_of);if(draft.screen_warning)warnings.push(draft.screen_warning)}accountSourceAsOf=[...new Set(times)].join(' / ')||null;accountHoldings=merged;renderHoldingEditor();document.getElementById('accountDraftStatus').textContent=`已识别并合并 ${files.length} 张截图，共得到 ${accountHoldings.length} 只持仓，尚未保存。截图时间：${accountSourceAsOf||'未识别'}。${warnings.length?'警告：'+[...new Set(warnings)].join('；')+'。':''}\n必须逐只核对：总资产、可用资金、代码、持股、可卖、成本价和截图现价；代码与名称均一致时，以后一张截图的清晰非空值更新前一张。`}catch(e){alert('截图识别失败：'+e.message)}finally{b.disabled=false}};
-document.getElementById('accountSave').onclick=async()=>{const b=document.getElementById('accountSave');b.disabled=true;try{const equityInput=document.getElementById('accountEquity'),equity=Number(equityInput.value);if(!equityInput.value.trim()||!Number.isFinite(equity)||equity<=0){updateAccountReview();equityInput.focus();throw Error('请在上方填写大于0的账户总资产后再保存')}const body={equity,available_cash:Number(document.getElementById('availableCash').value),last_week_pnl:Number(document.getElementById('lastWeekPnl').value||0),current_week_pnl:Number(document.getElementById('currentWeekPnl').value||0),source_as_of:accountSourceAsOf,holdings_status:'已确认',holdings:collectHoldings()};const secret=document.getElementById('accountSecret').value;if(!secret)throw Error('请先输入持仓访问密码');const saved=await api.post('/api/account',body,{'Authorization':'Bearer '+secret});applyPrivateAccount(saved);document.getElementById('accountDraftStatus').textContent=`持仓已确认保存。${saved.persistence?.message||'仅保存到当前服务实例。'}`;await loadPrivateAccount();await loadPush()}catch(e){alert('账户持仓保存失败：'+e.message)}finally{b.disabled=false}};
-['accountEquity','availableCash','lastWeekPnl','currentWeekPnl'].forEach(id=>document.getElementById(id).addEventListener('input',updateAccountReview));renderHoldingEditor();
+async function loadPrivateAccount(){const secret=document.getElementById('accountSecret').value;if(!secret)throw Error('请先输入持仓访问密码');const data=await api.getAuth('/api/account/analysis',secret);applyPrivateAccount(data.account||{});renderHoldingAdvice(data.holding_actions||[]);accountDirty=false;document.getElementById('accountDraftStatus').textContent=`密码验证成功，已读取${(data.account?.holdings||[]).length}只确认持仓；更新时间：${data.account?.updated_at||'--'}`}
+document.getElementById('accountLoad').onclick=async()=>{const b=document.getElementById('accountLoad');b.disabled=true;try{if(accountDirty&&!confirm('读取已保存持仓会覆盖当前草稿，是否继续？'))return;await loadPrivateAccount()}catch(e){alert('读取失败：'+e.message)}finally{b.disabled=false}};
+document.getElementById('holdingAdd').onclick=()=>{if(document.querySelector('.holding-row'))accountHoldings=collectHoldings();accountDirty=true;accountHoldings.push({code:'',name:'',quantity:0,available_quantity:0,cost_price:'',current_price:'',stop_price:''});renderHoldingEditor()};
+document.getElementById('accountExtract').onclick=async()=>{const b=document.getElementById('accountExtract'),files=[...document.getElementById('accountScreenshot').files],secret=document.getElementById('accountSecret').value;if(!files.length)return alert('请先选择一张或多张持仓截图');if(files.length>5)return alert('一次最多选择5张截图');if(!secret)return alert('请先输入持仓访问密码');if(files.some(file=>file.size>7_000_000))return alert('每张截图请压缩到7MB以内');b.disabled=true;try{let merged=document.querySelector('.holding-row')?collectHoldings():accountHoldings,times=[],warnings=[],firstEquity=null,firstCash=null;for(let i=0;i<files.length;i++){document.getElementById('uploadStatus').textContent=`正在识别第 ${i+1}/${files.length} 张截图：${files[i].name}`;const image=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(files[i])});const draft=await api.post('/api/account/extract',{image_data_url:image},{'Authorization':'Bearer '+secret});if(i===0){firstEquity=draft.equity;firstCash=draft.available_cash;if(firstEquity!==null)document.getElementById('accountEquity').value=firstEquity;if(firstCash!==null)document.getElementById('availableCash').value=firstCash}else{if(draft.equity!==null&&firstEquity!==null&&Math.abs(draft.equity-firstEquity)>0.01)warnings.push(`多张截图总资产不一致：${firstEquity} / ${draft.equity}`);if(draft.available_cash!==null&&firstCash!==null&&Math.abs(draft.available_cash-firstCash)>0.01)warnings.push(`多张截图可用资金不一致：${firstCash} / ${draft.available_cash}`)}merged=mergeHoldingDrafts(merged,(draft.holdings||[]).map(x=>({...x,stop_price:null})));if(draft.as_of)times.push(draft.as_of);if(draft.screen_warning)warnings.push(draft.screen_warning)}accountSourceAsOf=[...new Set(times)].join(' / ')||null;accountDirty=true;accountHoldings=merged;renderHoldingEditor();showImportStep('review');document.getElementById('accountDraftStatus').textContent=`已识别并合并 ${files.length} 张截图，共得到 ${accountHoldings.length} 只持仓，尚未保存。截图时间：${accountSourceAsOf||'未识别'}。${warnings.length?'警告：'+[...new Set(warnings)].join('；')+'。':''}\n必须逐只核对：总资产、可用资金、代码、持股、可卖、成本价和截图现价；代码与名称均一致时，以后一张截图的清晰非空值更新前一张。`}catch(e){document.getElementById('uploadStatus').textContent='截图识别失败：'+e.message}finally{b.disabled=false}};
+document.getElementById('accountSave').onclick=async()=>{const b=document.getElementById('accountSave');b.disabled=true;try{const equityInput=document.getElementById('accountEquity'),equity=Number(equityInput.value);if(!equityInput.value.trim()||!Number.isFinite(equity)||equity<=0){updateAccountReview();equityInput.focus();throw Error('请在上方填写大于0的账户总资产后再保存')}const body={equity,available_cash:Number(document.getElementById('availableCash').value),last_week_pnl:Number(document.getElementById('lastWeekPnl').value||0),current_week_pnl:Number(document.getElementById('currentWeekPnl').value||0),source_as_of:accountSourceAsOf,holdings_status:'已确认',holdings:collectHoldings()};const secret=document.getElementById('accountSecret').value;if(!secret)throw Error('请先输入持仓访问密码');const saved=await api.post('/api/account',body,{'Authorization':'Bearer '+secret});applyPrivateAccount(saved);accountDirty=false;document.getElementById('saveStatus').textContent=`持仓已确认保存。${saved.persistence?.message||'仅保存到当前服务实例。'}`;showImportStep('saved');try{await loadPrivateAccount()}catch(e){document.getElementById('saveStatus').textContent+='\n持仓保存成功，建议刷新失败：'+e.message}await loadPush()}catch(e){alert('账户持仓保存失败：'+e.message)}finally{b.disabled=false}};
+['accountEquity','availableCash','lastWeekPnl','currentWeekPnl'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{accountDirty=true;updateAccountReview()}));renderHoldingEditor();
 
 function renderFund(){const q=document.getElementById('fundSearch').value.trim().toLowerCase();const rows=fundData.filter(x=>!q||String(x.code).includes(q)||String(x.name).toLowerCase().includes(q)).slice(0,300);document.getElementById('fundRows').innerHTML=rows.map(x=>`<tr><td>${x.fundamental_rank}</td><td><strong>${esc(x.code)}</strong><br>${esc(x.name)}</td><td>${esc(x.report_date||'--')}<br><span class="muted">公告/更新 ${esc(x.notice_date||'--')}<br>${esc(x.data_source||'--')}</span></td><td class="score" title="${esc(x.score_explanation||'质量×35% + 成长×30% + 估值×20% + 现金流×15%')}">${num(x.fundamental_score,0)}<br><span class="muted">${esc(x.score_explanation||'查看评分细则')}</span></td><td>${num(x.quality_score,0)}</td><td>${num(x.growth_score,0)}</td><td>${num(x.valuation_score,0)}</td><td>${num(x.cashflow_score,0)}</td><td>${num(x.annualized_roe)}%</td><td>${num(x.revenue_growth)}%</td><td>${num(x.profit_growth)}%</td><td>${num(x.pe)}/${num(x.pb)}</td><td title="${esc((x.evidence||'')+'；'+(x.risk||''))}">${esc(x.risk)}</td></tr>`).join('')||'<tr><td colspan="13">尚无基本面快照</td></tr>'}
 async function loadFund(){try{const d=await api.get('/api/fundamental');fundData=d.rows||[];const s=d.summary||{},r=s.scoring_rules||{};document.getElementById('fundMetrics').innerHTML=metric('初筛池',s.pool_count??'--','只')+metric('有效财务',s.financial_success_count??'--','只')+metric('达到基准',s.qualified_count??'--',`≥${s.minimum_score??60}`)+metric('更新时间',s.generated_at??'--');document.getElementById('fundStatus').textContent=`任务：${d.task?.state||s.state||'快照'} · ${d.task?.progress?.message||s.message||s.purpose||''}`;document.getElementById('fundRules').textContent=`${r.total||'基本面总分 = 质量×35% + 成长×30% + 估值×20% + 现金流×15%'}\n${r.quality||'质量：ROE与毛利率'}\n${r.growth||'成长：营收与净利同比'}\n${r.valuation||'估值：PE与PB分档'}\n${r.cashflow||'现金流：经营现金流对每股收益的覆盖'}\n证据：${s.data_source||'东方财富已披露财务指标与行情估值快照'}。${s.news_policy||'新闻不参与基本面评分；新闻仅用于外盘与事件情景分析。'}`;renderFund()}catch(e){document.getElementById('fundStatus').textContent='读取失败：'+e.message}}
@@ -161,5 +193,5 @@ document.getElementById('fundSearch').oninput=renderFund;document.getElementById
 
 api.get('/api/status').then(()=>document.getElementById('live').textContent='● 服务正常').catch(()=>{document.getElementById('live').textContent='● 服务异常';document.getElementById('live').className='bad'});loadPush();loadFund();
 </script>
-<script src="/static/paper.js"></script>
+<script src="/static/paper.js?v=mobile-20261003"></script>
 </body></html>
