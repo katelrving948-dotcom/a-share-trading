@@ -24,6 +24,7 @@ from research_core import (
 from account_vision import extract_account_screenshot
 from weekly_strategy import ACCOUNT_STATE_FILE, load_account_state, save_account_update
 from paper_trading import load_state as load_paper_state
+from news_snapshot import load_news_snapshot
 
 
 ROOT = Path(__file__).resolve().parent
@@ -238,6 +239,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self._send_static(path)
             if path == "/api/status":
                 return self._json({"status": "ok", "system": "weekly-trend-risk", "time": _now()})
+            if path == "/api/research/news":
+                payload = load_news_snapshot()
+                if not payload:
+                    return self._json({"error": "尚无美股和新闻快照，请等待定时采集完成"}, 503)
+                return self._json(payload)
             if path in ("/api/push/status", "/api/cron/daily-email/status"):
                 return self._json(self._push_status())
             if path == "/api/push/preview":

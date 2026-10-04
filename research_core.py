@@ -47,6 +47,7 @@ PUBLIC_SNAPSHOT_BASE = os.getenv(
 ).rstrip("/")
 _snapshot_sync_lock = threading.Lock()
 _snapshot_sync_checked_at = 0.0
+_snapshot_background_lock = threading.Lock()
 
 
 def _clean(value):
@@ -96,10 +97,20 @@ def _replace_bytes(path: Path, content: bytes) -> None:
     temporary.replace(path)
 
 
-def sync_public_snapshots(force: bool = False) -> None:
+def sync_public_snapshots(force: bool = False, background: bool = False) -> None:
     """Refresh committed daily snapshots without requiring a Render redeploy."""
     global _snapshot_sync_checked_at
     if os.getenv("SNAPSHOT_REMOTE_ENABLED", "1") == "0":
+        return
+    if background:
+        if not _snapshot_background_lock.acquire(blocking=False):
+            return
+        def update():
+            try:
+                sync_public_snapshots(force=force)
+            finally:
+                _snapshot_background_lock.release()
+        threading.Thread(target=update, daemon=True).start()
         return
     interval = max(60, int(os.getenv("SNAPSHOT_SYNC_INTERVAL", "300")))
     with _snapshot_sync_lock:
@@ -112,6 +123,15 @@ def sync_public_snapshots(force: bool = False) -> None:
             remote_fundamental = json.loads(remote_fundamental_bytes.decode("utf-8"))
             if _generated_at(remote_fundamental) > _generated_at(_read_json(FUNDAMENTAL_FILE)):
                 _replace_bytes(FUNDAMENTAL_FILE, remote_fundamental_bytes)
+        except (OSError, ValueError, json.JSONDecodeError):
+            pass
+
+        try:
+            content = _download_public("research/market_news.json")
+            remote = json.loads(content.decode("utf-8"))
+            news_path = RESEARCH_DIR / "market_news.json"
+            if remote.get("schema_version") == 1 and isinstance(remote.get("news"), dict) and _generated_at(remote) > _generated_at(_read_json(news_path)):
+                _replace_bytes(news_path, content)
         except (OSError, ValueError, json.JSONDecodeError):
             pass
 

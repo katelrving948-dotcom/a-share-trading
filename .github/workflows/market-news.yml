@@ -1,0 +1,37 @@
+name: Hourly news and US closing snapshot
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every hour, including weekends and Chinese market holidays.
+    - cron: "17 * * * *"
+
+concurrency:
+  group: market-news-snapshot
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Collect public news and post-close US indices
+        run: python news_snapshot.py
+      - name: Publish snapshot
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/research/market_news.json
+          git diff --cached --quiet && exit 0
+          git commit -m "data: update hourly news and US closing snapshot"
+          git pull --rebase origin main
+          git push origin HEAD:main

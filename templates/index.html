@@ -18,7 +18,7 @@ main{padding:28px;max-width:1500px;width:100%;min-width:0;margin:auto}.page{disp
 @media(max-width:850px){.field-grid,.holding-fields{grid-template-columns:1fr 1fr}}@media(max-width:520px){.field-grid,.holding-fields{grid-template-columns:1fr}}
 button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:3px}#page-paper button{min-height:44px}#paperChart svg{display:block;width:100%;height:auto}#paperStatus{margin-bottom:14px}
 </style>
-<link rel="stylesheet" href="/static/ui.css?v=mobile-20261003">
+<link rel="stylesheet" href="/static/ui.css?v=news-20261004">
 </head>
 <body data-ui-version="mobile-20261003">
 <a class="skip-link" href="#mainContent">跳到内容</a>
@@ -82,14 +82,20 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
 </section>
 <section class="page" id="page-research" aria-label="研究">
   <div class="hero"><h1>研究</h1><p>辅助研究用于查看证据，不决定本周买入名单。</p></div>
-  <div class="tabbar research-tabs" aria-label="研究分类"><button data-research="fundamental">基本面</button><button class="active" data-research="sectors" aria-pressed="true">板块资金</button><button data-research="hot">核心观察</button><button data-research="observations">研究池</button><button data-research="external">外盘事件</button></div>
+  <div class="tabbar research-tabs" aria-label="研究分类"><button data-research="fundamental">基本面</button><button class="active" data-research="sectors" aria-pressed="true">板块资金</button><button data-research="hot">核心观察</button><button data-research="observations">研究池</button><button data-research="external">美股行情</button><button data-research="news">新闻快讯</button></div>
   <div id="research-sectors" class="research-panel">    <div class="card"><h2>辅助研究 · 资金强度、板块效应与龙头</h2><div class="status" id="capitalStatus">读取中…</div><div class="scroll" style="margin-top:10px"><table><thead><tr><th>#</th><th>板块</th><th>主力净流入</th><th>强度</th><th>板块效应</th><th>龙头/次龙头</th></tr></thead><tbody id="pushSectorRows"></tbody></table></div></div>
 </div>
   <div id="research-hot" class="research-panel" hidden>    <div class="card"><h2>热门核心观察池 · 强势板块龙头/次龙头</h2><div class="scroll"><table><thead><tr><th>#</th><th>股票</th><th>板块/角色</th><th>板块强度</th><th>基本面</th><th>结论</th><th>进场/止损/止盈</th></tr></thead><tbody id="pushHotRows"></tbody></table></div></div>
 </div>
   <div id="research-observations" class="research-panel" hidden>    <div class="card"><h2>辅助研究池 · 不是本周买入名单</h2><p class="muted" id="pushRule"></p><div class="scroll"><table><thead><tr><th>#</th><th>股票</th><th>行业</th><th>基本面<br>原始→行业校准</th><th>板块</th><th>日度研究分</th><th>结论</th><th>旧午间价位</th></tr></thead><tbody id="pushRows"></tbody></table></div></div>
 </div>
-  <div id="research-external" class="research-panel" hidden>    <div class="card"><h2>外盘、美股与事件影响</h2><div class="status" id="pushExternal">读取中…</div></div>
+  <div id="research-external" class="research-panel" hidden>
+    <div class="card"><h2>美股行情 · 三大指数</h2><p class="data-date muted" id="usMarketStatus" role="status">读取收盘快照…</p><div class="grid us-index-grid" id="usMarketQuotes"></div><p class="muted boundary">美股收盘后采集一次，展示最近可得行情。涨跌同时标注文字和符号；行情源时间见各指数。</p></div>
+    <div class="card"><h2>美股市场快讯</h2><p class="data-date muted" id="usNewsStatus" role="status">读取中…</p><div class="news-list" id="usNewsList"></div></div>
+    <details class="card"><summary>其他外盘参考 · 午间研究快照</summary><p class="muted boundary">中概股、港股、原油与黄金等沿用午间研究快照，各项行情时间单独标注。</p><div class="status" id="externalOtherMarkets">尚无午间外盘参考快照。</div></details>
+  </div>
+  <div id="research-news" class="research-panel" hidden>
+    <div class="card"><div class="page-heading"><h2>新闻快讯</h2><button class="secondary" id="newsReload">刷新快照</button></div><p class="muted boundary">每小时采集，周末及节假日照常更新。按发布时间倒序展示，分类依据标题与摘要关键词。</p><div class="tabbar news-tabs" aria-label="新闻分类"><button class="active" data-news-filter="all" aria-pressed="true">全部</button><button data-news-filter="geopolitics" aria-pressed="false">地缘局势</button><button data-news-filter="domestic" aria-pressed="false">国内金融</button></div><p class="data-date muted" id="newsStatus" role="status">读取中…</p><div class="news-list" id="newsList"></div><button class="secondary" id="newsMore" hidden>查看更多</button></div>
 </div>
 </section>
   <section class="page" id="page-fundamental">
@@ -171,9 +177,7 @@ async function loadPush(){try{
   const scenarios=(weekly.event_scenarios||[]).map(x=>`${x.name}：${x.summary}\n触发：${(x.triggers||[]).join('、')}`).join('\n\n');document.getElementById('weeklyScenario').textContent=`${weekly.selection_policy||''}\n${scenarios||'事件情景数据不足。'}`;
   document.getElementById('weeklyRows').innerHTML=(weekly.selections||[]).length?weekly.selections.map(x=>{const t=x.weekly_trend||{},e=t.entry_zone||{},pos=x.position_plan||{},ev=x.fundamental_evidence||{};return `<tr><td><strong>${esc(x.role)}</strong></td><td><strong>${esc(x.code)}</strong><br>${esc(x.name)}<br><span class="muted">${esc(x.industry)}</span></td><td class="score">${num(x.weekly_score,1)}</td><td>趋势${num(t.trend_score,1)}<br>20日相对强度${num(t.relative_strength_pct,2)}%<br><span class="muted">市值${num(x.market_cap,1)}亿元<br>财报${esc(ev.report_date||'--')} / 公告${esc(ev.notice_date||'--')}</span></td><td>回调支撑${num(t.pullback_plan?.support_low,2)}-${num(t.pullback_plan?.support_high,2)}<br>企稳后最高买价${num(t.max_chase_price,2)}<br>失效${num(t.stop_price,2)}<br><strong>持仓观察${esc(x.holding_plan?.label||'待复核')}</strong><br><span class="muted">买入日起计，破位提前退出</span></td><td>${pos.quantity||0}股 / ${num(pos.position_pct,1)}%<br>约${num(pos.estimated_value,0)}元<br>计划亏损${num(pos.planned_loss,0)}元</td><td class="${x.status==='可执行'?'ok':x.status==='撤销'?'bad':'warn'}">${esc(x.status)}<br><span class="muted">${esc((pos.reasons||[]).join('；')||'全部闸门通过')}</span></td></tr>`}).join(''):'<tr><td colspan="7">本周没有股票通过全部闸门，保持空仓。</td></tr>';
   document.getElementById('pushRule').textContent=(p.rules.entry_policy||'基本面合格 + 上升趋势 + 回调企稳')+'；市值下限'+num(p.rules.market_cap_min_yi,0)+'亿元；'+(p.rules.weekly_formula||'周度分 = 基本面40% + 中期趋势30% + 板块15% + 国际事件10% + 估值/拥挤度5%')+'；以下日度研究池仅保留证据，不决定本周名单。';
-  const markets=(ext.markets||[]).map(x=>`${x.name} ${Number(x.change_pct||0)>=0?'+':''}${num(x.change_pct,2)}%（${x.as_of||'--'}）`).join(' · ');
-  const events=(ext.events||[]).map(x=>`${x.name||x.event||'事件'}：${x.impact_summary||'等待A股资金确认'}`).join('\n');
-  document.getElementById('pushExternal').textContent=`覆盖：${ext.coverage||'暂不可用'}\n${markets||'外盘行情暂不可用'}\n${events||'暂无事件信号'}\n边界：外部变化必须由A股资金和板块扩散确认。`;
+  document.getElementById('externalOtherMarkets').textContent=(ext.markets||[]).filter(x=>x.category!=='美股').map(x=>`${x.name} ${x.change_pct==null?'涨跌待更新':(Number(x.change_pct)>0?'+':'')+num(x.change_pct,2)+'%'}（行情时间 ${x.as_of||'未提供'}）`).join('\n')||'暂无有效的其他外盘行情。';
   document.getElementById('capitalStatus').textContent=`资金强度：${c.label||'--'}；强板块：${c.strong_board_count??0}个；前三主力净流入合计：${num(c.top_three_main_net_inflow,2)}亿元。\n${c.method||''}`;
   document.getElementById('pushSectorRows').innerHTML=boards.length?boards.slice(0,12).map(x=>`<tr><td>${x.rank}</td><td><strong>${esc(x.name)}</strong><br>${esc(x.type)}</td><td>${num(x.main_net_inflow,2)}亿</td><td class="score">${num(x.rotation_score,0)}</td><td>${esc(x.effect)}</td><td>${(x.leaders||[]).map(y=>`${esc(y.name)}(${esc(y.leadership_role)})`).join('、')||'--'}</td></tr>`).join(''):'<tr><td colspan="6">暂无有效板块资金数据。</td></tr>';
   document.getElementById('pushHotRows').innerHTML=hot.length?hot.map((x,i)=>`<tr><td>${i+1}</td><td><strong>${esc(x.code)}</strong><br>${esc(x.name)}</td><td>${esc(x.board_name)} / ${esc(x.leadership_role)}</td><td class="score">${num(x.board_strength_score,0)}</td><td>${num(x.fundamental_score,0)}</td><td class="${x.trade_decision?.status?.startsWith('日度条件满足')?'ok':'warn'}">${esc(x.trade_decision?.status||x.state)}</td><td>${planText(x)}</td></tr>`).join(''):'<tr><td colspan="7">本次未形成强势板块龙头观察名单。</td></tr>';
@@ -193,5 +197,6 @@ document.getElementById('fundSearch').oninput=renderFund;document.getElementById
 
 api.get('/api/status').then(()=>document.getElementById('live').textContent='● 服务正常').catch(()=>{document.getElementById('live').textContent='● 服务异常';document.getElementById('live').className='bad'});loadPush();loadFund();
 </script>
+<script src="/static/research-news.js?v=news-20261004"></script>
 <script src="/static/paper.js?v=mobile-20261003"></script>
 </body></html>
