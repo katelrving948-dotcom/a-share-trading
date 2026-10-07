@@ -19,6 +19,7 @@ main{padding:28px;max-width:1500px;width:100%;min-width:0;margin:auto}.page{disp
 button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:3px}#page-paper button{min-height:44px}#paperChart svg{display:block;width:100%;height:auto}#paperStatus{margin-bottom:14px}
 </style>
 <link rel="stylesheet" href="/static/ui.css?v=news-20261004">
+<link rel="stylesheet" href="/static/paper.css?v=paper-20261007">
 </head>
 <body data-ui-version="mobile-20261003">
 <a class="skip-link" href="#mainContent">跳到内容</a>
@@ -123,13 +124,16 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
       <div class="status" id="pushStatus">读取中…</div>
     </div>
 </section>
-  <section class="page" id="page-paper">
-    <button class="text-button" data-page="more">← 返回更多</button><div class="hero"><h1>双模式模拟仓</h1><p>同一套选股与开仓条件，两种资金管理方式。只记录启用后的模拟成交，目标不代表实际收益。</p></div>
-    <div class="toolbar"><button id="paperReload">刷新模拟仓</button><label for="paperSecret">管理密钥</label><input type="password" id="paperSecret" autocomplete="off" placeholder="仅手动触发时需要"><button class="secondary" id="paperRun">运行今日模拟</button></div>
-    <div class="status" id="paperStatus" role="status" aria-live="polite">读取中…</div>
-    <div class="grid g2" id="paperAccounts" style="margin-top:14px"></div>
-    <div class="card"><h2>累计收益曲线 · 两账户从0%比较</h2><div id="paperChart"></div><p class="muted">实线：5万元全仓模式；虚线：50万元分仓模式。按每日模拟检查时点估值，并非收盘净值；缺行情时沿用上次估值并标记。</p><details><summary>查看净值明细</summary><div class="scroll"><table><thead><tr><th>账户</th><th>时间</th><th>总资产</th><th>累计收益</th><th>估值</th></tr></thead><tbody id="paperCurveRows"></tbody></table></div></details></div>
-    <div class="card"><h2>模拟规则</h2><p id="paperRules" class="muted"></p><p class="muted">5万元：一只主选，预留费用后尽可能满仓；止盈后不补仓。50万元：单股最多20%、总仓最多60%、单笔初始风险最多0.6%；当前每周最多两只主选，不强行为分散凑股。两模式周亏损达到2%后暂停新开仓，仍处理退出。</p><p class="muted">退出复用结构止损和趋势失效规则；1.5R、2.5R各兑现原始股数约1/3，记录已成交阶段。剩余仓位按10日均线与近3日低点较低者上移止损。非实时盯盘，盘中触线后反弹可能不会成交。模拟账户公开展示，与真实持仓隔离。</p></div>
+  <section class="page" id="page-paper" aria-label="双模式模拟仓">
+    <button class="text-button" data-page="more">← 返回更多</button>
+    <div class="p-heading"><h1>双模式模拟仓</h1><button class="secondary" id="paperReload">刷新</button></div>
+    <p class="p-intro">同一套选股与开仓条件，两种资金管理方式。只记录启用后的模拟成交，目标不代表实际收益。</p>
+    <div class="p-state" id="paperStatus" role="status" aria-live="polite">读取中…</div>
+    <div class="p-switch" id="paperAccountSwitch" role="group" aria-label="选择模拟账户" hidden></div>
+    <div class="p-accounts" id="paperAccounts"></div>
+    <section class="p-card"><h2>累计收益对比</h2><div class="p-legend"><span>5万元全仓 · 实线</span><span>50万元分仓 · 虚线</span></div><div id="paperChart"></div><p class="p-note">两账户从0%比较。按每日模拟检查时点估值，并非收盘净值；缺行情时沿用上次估值并标记。</p><details><summary>查看净值明细</summary><div class="scroll"><table><thead><tr><th>账户</th><th>时间</th><th>总资产</th><th>累计收益</th><th>估值</th></tr></thead><tbody id="paperCurveRows"></tbody></table></div></details></section>
+    <details class="p-card p-detail"><summary>模拟规则与风险说明</summary><p id="paperRules"></p><p>5万元：一只主选，预留费用后尽可能满仓；止盈后不补仓。50万元：单股最多20%、总仓最多60%、单笔初始风险最多0.6%；当前每周最多两只主选，不强行为分散凑股。两模式周亏损达到2%后暂停新开仓，仍处理退出。</p><p>退出复用结构止损和趋势失效规则；1.5R、2.5R各兑现原始股数约1/3，记录已成交阶段。剩余仓位按10日均线与近3日低点较低者上移止损。非实时盯盘，盘中触线后反弹可能不会成交。模拟账户公开展示，与真实持仓隔离。</p></details>
+    <details class="p-card p-detail" id="paperManagement"><summary>管理操作</summary><div class="p-manage"><label for="paperSecret">管理密钥</label><input type="password" id="paperSecret" autocomplete="off" placeholder="仅手动触发时需要"><button id="paperRun">运行今日模拟</button></div></details>
   </section>
 
 </main></div>
@@ -217,5 +221,5 @@ document.getElementById('fundSearch').oninput=renderFund;document.getElementById
 api.get('/api/status').then(()=>document.getElementById('live').textContent='● 服务正常').catch(()=>{document.getElementById('live').textContent='● 服务异常';document.getElementById('live').className='bad'});loadPush();loadFund();
 </script>
 <script src="/static/research-news.js?v=cache-20261007"></script>
-<script src="/static/paper.js?v=mobile-20261003"></script>
+<script src="/static/paper.js?v=paper-20261007"></script>
 </body></html>
