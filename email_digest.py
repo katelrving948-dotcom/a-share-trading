@@ -14,7 +14,7 @@ from email.message import EmailMessage
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from research_core import build_push_payload, freeze_weekly_plan, save_selection_snapshot
+from research_core import build_push_payload, freeze_weekly_plan, save_selection_snapshot, save_website_snapshot
 
 
 def _number(value, digits=1, suffix="") -> str:
@@ -434,16 +434,19 @@ def main() -> None:
     quality_path.parent.mkdir(parents=True, exist_ok=True)
     quality_path.write_text(json.dumps(quality, ensure_ascii=False, indent=2), encoding="utf-8")
     print("[EmailQuality] " + json.dumps(quality, ensure_ascii=False))
-    if os.getenv("REQUIRE_BOARD_DATA", "true").lower() == "true" and (
+    collection_valid = not (
             not boards or not quality["sector_count"] or not quality["rendered_board_names"]
             or any(board.get("member_count") == 0 for board in boards)
-            or quality["holding_ready_count"] != quality["holding_count"]):
+            or quality["holding_ready_count"] != quality["holding_count"])
+    if os.getenv("REQUIRE_BOARD_DATA", "true").lower() == "true" and not collection_valid:
         raise RuntimeError("板块数据、持仓上午行情或邮件渲染校验未通过，停止本次发送")
     if os.getenv("EMAIL_PREVIEW_ONLY", "").lower() == "true":
         print("邮件预览验证完成，未发送")
         return
     save_selection_snapshot(payload)
     freeze_weekly_plan(payload)
+    if collection_valid:
+        save_website_snapshot(payload)
     send_email(message)
     if os.getenv("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:

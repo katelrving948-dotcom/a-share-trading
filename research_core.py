@@ -40,6 +40,7 @@ SHANGHAI = ZoneInfo("Asia/Shanghai")
 RESEARCH_DIR = Path(os.getenv("RESEARCH_OUTPUT_DIR", "output/research"))
 QUANT_DIR = Path(os.getenv("QUANT_OUTPUT_DIR", "output/quant"))
 FUNDAMENTAL_FILE = RESEARCH_DIR / "fundamental_latest.json"
+WEBSITE_SNAPSHOT_FILE = RESEARCH_DIR / "website_snapshot.json"
 SELECTION_SNAPSHOT_FILE = RESEARCH_DIR / "selection_snapshot.json"
 PUBLIC_SNAPSHOT_BASE = os.getenv(
     "SNAPSHOT_PUBLIC_BASE_URL",
@@ -136,6 +137,14 @@ def sync_public_snapshots(force: bool = False, background: bool = False) -> None
             pass
 
         try:
+            content = _download_public("research/website_snapshot.json")
+            remote = json.loads(content.decode("utf-8"))
+            if valid_website_snapshot(remote) and _generated_at(remote) > _generated_at(_read_json(WEBSITE_SNAPSHOT_FILE)):
+                _replace_bytes(WEBSITE_SNAPSHOT_FILE, json.dumps(public_push_payload(remote), ensure_ascii=False).encode("utf-8"))
+        except (OSError, ValueError, json.JSONDecodeError):
+            pass
+
+        try:
             remote_weekly_bytes = _download_public("research/weekly_plan.json")
             remote_weekly = json.loads(remote_weekly_bytes.decode("utf-8"))
             if str(remote_weekly.get("plan_id") or "") > str(_read_json(WEEKLY_PLAN_FILE).get("plan_id") or ""):
@@ -162,7 +171,7 @@ def refresh_fundamental(universe_limit: int | None = None, progress_callback=Non
 
 
 def load_fundamental() -> dict:
-    sync_public_snapshots()
+    sync_public_snapshots(background=True)
     if not FUNDAMENTAL_FILE.exists():
         return {"summary": {"state": "missing", "message": "尚未生成基本面快照"}, "rows": []}
     try:
@@ -1129,3 +1138,54 @@ def freeze_weekly_plan(payload: dict, path: Path = WEEKLY_PLAN_FILE) -> dict:
     if not plan.get("plan_id"):
         raise ValueError("周度计划缺少plan_id，不能冻结")
     return save_weekly_plan(plan, path)
+
+
+def public_push_payload(payload: dict) -> dict:
+    public = json.loads(json.dumps(payload, ensure_ascii=False))
+    account = public.get("account") or {}
+    holdings = account.pop("holdings", None)
+    if holdings is not None:
+        account["holdings_count"] = len(holdings)
+    public.pop("holding_actions", None)
+    for key in (
+        "equity", "available_cash", "last_week_pnl", "last_week_return_pct",
+        "current_week_pnl", "current_week_return_pct", "holdings_value",
+        "holdings_pct", "holdings_planned_risk", "updated_at", "source_as_of",
+    ):
+        account.pop(key, None)
+    weekly = public.get("weekly_plan") or {}
+    weekly["holding_actions"] = []
+    weekly_account = weekly.get("account") or {}
+    weekly_account.pop("holdings", None)
+    for key in (
+        "equity", "available_cash", "last_week_pnl", "last_week_return_pct",
+        "current_week_pnl", "current_week_return_pct", "holdings_value",
+        "holdings_pct", "holdings_planned_risk", "updated_at", "source_as_of",
+    ):
+        weekly_account.pop(key, None)
+    return public
+
+
+def valid_website_snapshot(payload: dict) -> bool:
+    return (isinstance(payload, dict) and bool(payload.get("generated_at"))
+            and isinstance(payload.get("observations"), list)
+            and isinstance(payload.get("rotation_boards"), list)
+            and isinstance(payload.get("rules"), dict))
+
+
+def save_website_snapshot(payload: dict, path: Path | None = None) -> dict:
+    if not valid_website_snapshot(payload):
+        raise ValueError("页面快照结构不完整，保留原有快照")
+    snapshot = public_push_payload(_clean(payload))
+    snapshot["snapshot_mode"] = True
+    _replace_bytes(path or WEBSITE_SNAPSHOT_FILE,
+                   json.dumps(snapshot, ensure_ascii=False, indent=2).encode("utf-8"))
+    return snapshot
+
+
+def load_website_snapshot() -> dict:
+    sync_public_snapshots(background=True)
+    payload = _read_json(WEBSITE_SNAPSHOT_FILE)
+    if not valid_website_snapshot(payload):
+        return {}
+    return public_push_payload(payload)

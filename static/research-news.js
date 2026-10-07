@@ -55,11 +55,19 @@ async function loadResearchNews() {
   const button = document.getElementById('newsReload');
   button.disabled = true;
   try {
-    researchNews = await api.get('/api/research/news');
-    renderResearchNews();
-    renderUSMarket();
-  } catch (error) {
-    ['newsStatus', 'usMarketStatus', 'usNewsStatus'].forEach(id => document.getElementById(id).textContent = `快照读取失败：${error.message}`);
+    await loadPublicSnapshot('/api/research/news', (data, state) => {
+      researchNews = data;
+      renderResearchNews();
+      renderUSMarket();
+      if (state.cached) ['newsStatus', 'usMarketStatus', 'usNewsStatus'].forEach(id => {
+        document.getElementById(id).textContent += '\n本机保存的快照 · 正在检查更新';
+      });
+    }, (error, cached) => {
+      ['newsStatus', 'usMarketStatus', 'usNewsStatus'].forEach(id => {
+        const el = document.getElementById(id);
+        el.textContent = (cached ? el.textContent.replace(' · 正在检查更新', '') + '\n检查更新失败，保留本机快照：' : '快照读取失败：') + error.message;
+      });
+    });
   } finally { button.disabled = false; }
 }
 

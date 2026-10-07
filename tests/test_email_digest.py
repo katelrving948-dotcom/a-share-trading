@@ -99,6 +99,35 @@ class EmailDigestTest(unittest.TestCase):
         build.assert_not_called()
         send.assert_not_called()
 
+    def test_valid_collection_saves_snapshot_even_if_email_send_fails(self):
+        from email_digest import main
+        data = payload()
+        data["market"]["sector_flow"] = [{"name": "电子"}]
+        with patch("email_digest.market_closed_reason", return_value=""), \
+                patch.dict("os.environ", {"EMAIL_PREVIEW_ONLY": "false"}), \
+                patch("email_digest.build_push_payload", return_value=data), \
+                patch("email_digest.Path.write_text"), \
+                patch("email_digest.freeze_weekly_plan"), \
+                patch("email_digest.save_selection_snapshot"), \
+                patch("email_digest.save_website_snapshot") as save, \
+                patch("email_digest.send_email", side_effect=RuntimeError("SMTP unavailable")):
+            with self.assertRaisesRegex(RuntimeError, "SMTP unavailable"):
+                main()
+            save.assert_called_once_with(data)
+
+    def test_forced_incomplete_email_cannot_overwrite_public_snapshot(self):
+        from email_digest import main
+        data = payload()
+        data["rotation_boards"] = []
+        with patch("email_digest.market_closed_reason", return_value=""), \
+                patch.dict("os.environ", {"EMAIL_PREVIEW_ONLY": "false", "REQUIRE_BOARD_DATA": "false"}), \
+                patch("email_digest.build_push_payload", return_value=data), \
+                patch("email_digest.Path.write_text"), patch("email_digest.save_selection_snapshot"), \
+                patch("email_digest.freeze_weekly_plan"), patch("email_digest.save_website_snapshot") as save, \
+                patch("email_digest.send_email"):
+            main()
+            save.assert_not_called()
+
     def test_derived_board_values_are_labeled_with_morning_time(self):
         data = payload()
         data["rotation_boards"][0].update(main_net_estimated=True, as_of="2026-09-24 11:30",

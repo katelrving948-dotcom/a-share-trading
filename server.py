@@ -18,7 +18,8 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from research_core import (
-    build_account_holding_actions, build_push_payload, load_fundamental,
+    build_account_holding_actions, load_website_snapshot, load_fundamental,
+    public_push_payload as _public_push_payload,
     refresh_fundamental, sync_public_snapshots,
 )
 from account_vision import extract_account_screenshot
@@ -149,30 +150,6 @@ def _sync_account_state_secret() -> dict:
     return {"state": "synced", "message": "已写入GitHub加密Secret，将用于下一次邮件推送"}
 
 
-def _public_push_payload(payload: dict) -> dict:
-    public = json.loads(json.dumps(payload, ensure_ascii=False))
-    account = public.get("account") or {}
-    holdings = account.pop("holdings", [])
-    account["holdings_count"] = len(holdings)
-    for key in (
-        "equity", "available_cash", "last_week_pnl", "last_week_return_pct",
-        "current_week_pnl", "current_week_return_pct", "holdings_value",
-        "holdings_pct", "holdings_planned_risk", "updated_at", "source_as_of",
-    ):
-        account.pop(key, None)
-    weekly = public.get("weekly_plan") or {}
-    weekly["holding_actions"] = []
-    weekly_account = weekly.get("account") or {}
-    weekly_account.pop("holdings", None)
-    for key in (
-        "equity", "available_cash", "last_week_pnl", "last_week_return_pct",
-        "current_week_pnl", "current_week_return_pct", "holdings_value",
-        "holdings_pct", "holdings_planned_risk", "updated_at", "source_as_of",
-    ):
-        weekly_account.pop(key, None)
-    return public
-
-
 def _run_push_dispatch(force: bool = False) -> None:
     _update(_push_state, state="running", started_at=_now(), completed_at=None, error=None)
     try:
@@ -247,7 +224,10 @@ class ApiHandler(BaseHTTPRequestHandler):
             if path in ("/api/push/status", "/api/cron/daily-email/status"):
                 return self._json(self._push_status())
             if path == "/api/push/preview":
-                return self._json(_public_push_payload(build_push_payload(refresh=False)))
+                payload = load_website_snapshot()
+                if not payload:
+                    return self._json({"error": "尚未保存页面快照，请等待午间采集任务完成"}, 503)
+                return self._json(payload)
             if path == "/api/fundamental":
                 payload = load_fundamental()
                 payload["task"] = _snapshot(_fundamental_state)

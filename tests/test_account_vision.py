@@ -11,13 +11,17 @@ from account_vision import complete_missing_codes, extract_account_screenshot
 class AccountVisionTest(unittest.TestCase):
     def test_public_preview_cannot_clear_private_account_fields(self):
         html = (Path(__file__).resolve().parents[1] / "templates/index.html").read_text(encoding="utf-8")
-        function = re.search(r"async function loadPush\(.*?(?=\ndocument.getElementById\('pushReload'\))", html, re.S).group()
+        function = re.search(r"function renderPush\(.*?(?=\ndocument.getElementById\('pushReload'\))", html, re.S).group()
         script = """
 const assert=require('node:assert/strict');
 const fields={accountEquity:{value:'51857.79'},lastWeekPnl:{value:'100'},currentWeekPnl:{value:'200'}};
 const document={getElementById:id=>fields[id]||(fields[id]={})};
 const api={get:async()=>({account:{},rules:{}})};
 const metric=()=>'',num=()=>'',esc=x=>x;
+const renderOverview=()=>{},snapshotLabel=()=>'';
+const loadPublicSnapshot=async(path,render)=>{
+  for(const cached of [true,false])render({account:{},rules:{},observations:[]},{cached});
+};
 """ + function + """
 (async()=>{await loadPush();
 assert.equal(fields.accountEquity.value,'51857.79');
