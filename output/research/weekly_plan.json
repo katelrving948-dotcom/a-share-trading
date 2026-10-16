@@ -2,7 +2,7 @@
   "plan_id": "2026-W42",
   "week_start": "2026-10-12",
   "week_end": "2026-10-16",
-  "generated_at": "2026-10-15 12:03:30",
+  "generated_at": "2026-10-16 12:02:56",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：COMEX黄金",
+      "summary": "相对偏强市场：道琼斯、标普500、纳斯达克100",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -39,7 +39,7 @@
     },
     {
       "name": "利空情景",
-      "summary": "相对偏弱市场：道琼斯、标普500、纳斯达克100",
+      "summary": "相对偏弱市场：NYMEX原油",
       "triggers": [
         "外部风险扩大",
         "A股相关板块破位或候选股相对强度转负"
@@ -61,12 +61,12 @@
       "industry": "医药制造业",
       "role": "主选",
       "status": "当前价格不在允许买入区，继续等待",
-      "market_cap": 219.13,
+      "market_cap": 226.99,
       "entry_gate": {
         "passed": false,
         "state": "confirmed",
         "reason": "当前价格不在允许买入区，继续等待",
-        "reference_price": 24.81
+        "reference_price": 25.7
       },
       "holding_plan": {
         "style": "中小市值趋势波段",
@@ -76,78 +76,78 @@
         "label": "3-10个交易日",
         "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
       },
-      "weekly_score": 77.59,
+      "weekly_score": 77.55,
       "score_components": {
-        "fundamental": 76.0,
+        "fundamental": 63.4,
         "trend": 100.0,
-        "board": 76.0,
-        "external_event": 42.0,
-        "valuation_crowding": 31.77
+        "board": 92.0,
+        "external_event": 62.0,
+        "valuation_crowding": 43.81
       },
       "primary_board": {
         "type": "行业",
         "code": "sina:hangye_ZC27",
         "name": "医药制造业",
-        "change_pct": 0.08,
-        "main_net_inflow": 15.47,
-        "recent_main_net_inflow": 5.15,
-        "positive_days": 2,
+        "change_pct": 2.48,
+        "main_net_inflow": 43.94,
+        "recent_main_net_inflow": 43.22,
+        "positive_days": 3,
         "history_days": 5,
-        "flow_score": 85,
+        "flow_score": 100,
         "source": "新浪证监会行业11:30分时（主力净额按源内占比换算，约值）",
-        "trade_date": "2026-10-15",
-        "as_of": "2026-10-15 11:30",
+        "trade_date": "2026-10-16",
+        "as_of": "2026-10-16 11:30",
         "main_net_estimated": true,
-        "external_score": 42,
+        "external_score": 62,
         "external_confidence": "中",
         "external_signal_count": 1,
         "external_reasons": [
-          "纳斯达克中国金龙-1.39%"
+          "纳斯达克中国金龙+1.96%"
         ],
         "member_count": 327,
         "leaders": [
           {
-            "code": "301569",
-            "name": "N联亚",
+            "code": "688235",
+            "name": "百济神州",
             "role": "龙头",
             "leadership_role": "龙头",
             "board_rank": 1,
-            "leadership_score": 89,
-            "price": 29.76,
-            "change_pct": 325.14,
-            "market_cap": 265.34,
-            "amount": 2112058567.0,
-            "main_net": 0.0,
-            "main_net_pct": 0.0
+            "leadership_score": 93,
+            "price": 263.31,
+            "change_pct": 7.04,
+            "market_cap": 4060.99,
+            "amount": 1123583599.0,
+            "main_net": 0.79,
+            "main_net_pct": 6.99
           },
           {
-            "code": "600276",
-            "name": "恒瑞医药",
+            "code": "002422",
+            "name": "科伦药业",
             "role": "次龙头",
             "leadership_role": "次龙头",
             "board_rank": 2,
-            "leadership_score": 85,
-            "price": 46.06,
-            "change_pct": 1.25,
-            "market_cap": 3057.09,
-            "amount": 1529963486.0,
-            "main_net": 0.0,
-            "main_net_pct": 0.0
+            "leadership_score": 90,
+            "price": 41.04,
+            "change_pct": 4.67,
+            "market_cap": 652.86,
+            "amount": 665851190.51,
+            "main_net": 0.57,
+            "main_net_pct": 8.57
           }
         ],
-        "rotation_score": 76,
+        "rotation_score": 92,
         "rise_count": null,
         "fall_count": null,
         "effect": "资金流入且板块上涨",
-        "rank": 3
+        "rank": 2
       },
-      "fundamental_score": 76.0,
+      "fundamental_score": 63.4,
       "fundamental_evidence": {
         "report_date": "2026-06-30",
         "notice_date": "2026-08-21",
         "source": "东方财富财务指标 API",
         "summary": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
-        "risk_note": "估值异常或偏高"
+        "risk_note": "未触发财务量化警示，仍需核验公告"
       },
       "financial_risk": {
         "hard_block": false,
@@ -176,7 +176,7 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-10-14",
+        "as_of": "2026-10-15",
         "qualified": true,
         "trend_qualified": true,
         "pullback_plan": {
@@ -192,19 +192,19 @@
           "state": "confirmed",
           "touched_on": "2026-10-12",
           "confirmed_on": "2026-10-13",
-          "elapsed_sessions": 3,
-          "as_of": "2026-10-14"
+          "elapsed_sessions": 4,
+          "as_of": "2026-10-15"
         },
         "trend_score": 100.0,
-        "close": 24.88,
-        "ma20": 23.69,
-        "ma60": 23.25,
-        "atr": 1.187,
-        "atr_pct": 4.77,
-        "return_20_pct": 8.74,
-        "benchmark_return_20_pct": -7.48,
-        "relative_strength_pct": 16.22,
-        "extension_pct": 5.01,
+        "close": 24.55,
+        "ma20": 23.76,
+        "ma60": 23.24,
+        "atr": 1.214,
+        "atr_pct": 4.94,
+        "return_20_pct": 6.0,
+        "benchmark_return_20_pct": -8.89,
+        "relative_strength_pct": 14.89,
+        "extension_pct": 3.31,
         "overextended": false,
         "checks": {
           "above_ma20": true,
@@ -240,16 +240,17 @@
         ]
       },
       "position_plan": {
-        "quantity": 100,
-        "estimated_value": 2481.0,
-        "position_pct": 4.78,
-        "planned_loss": 296.0,
+        "quantity": 0,
+        "estimated_value": 0.0,
+        "position_pct": 0.0,
+        "planned_loss": 0.0,
         "risk_budget": 300.0,
-        "reference_price": 24.81,
+        "reference_price": 25.7,
         "minimum_quantity": 100,
-        "per_share_risk": 2.96,
+        "per_share_risk": 3.85,
         "executable": false,
         "reasons": [
+          "100股最小买入量超过当前仓位或风险预算",
           "当前价格不在允许买入区，继续等待"
         ],
         "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
