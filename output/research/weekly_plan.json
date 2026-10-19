@@ -1,10 +1,10 @@
 {
-  "plan_id": "2026-W42",
-  "week_start": "2026-10-12",
-  "week_end": "2026-10-16",
-  "generated_at": "2026-10-16 12:02:56",
+  "plan_id": "2026-W43",
+  "week_start": "2026-10-19",
+  "week_end": "2026-10-23",
+  "generated_at": "2026-10-19 12:03:30",
   "frozen": true,
-  "state": "冻结执行",
+  "state": "空仓",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
   "account": {
     "equity": 51857.79,
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：道琼斯、标普500、纳斯达克100",
+      "summary": "相对偏强市场：恒生指数、COMEX黄金、COMEX铜",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -39,7 +39,7 @@
     },
     {
       "name": "利空情景",
-      "summary": "相对偏弱市场：NYMEX原油",
+      "summary": "相对偏弱市场：道琼斯、标普500、纳斯达克100",
       "triggers": [
         "外部风险扩大",
         "A股相关板块破位或候选股相对强度转负"
@@ -54,216 +54,8 @@
     "external_event": 0.1,
     "valuation_crowding": 0.05
   },
-  "selections": [
-    {
-      "code": "300199",
-      "name": "翰宇药业",
-      "industry": "医药制造业",
-      "role": "主选",
-      "status": "当前价格不在允许买入区，继续等待",
-      "market_cap": 226.99,
-      "entry_gate": {
-        "passed": false,
-        "state": "confirmed",
-        "reason": "当前价格不在允许买入区，继续等待",
-        "reference_price": 25.7
-      },
-      "holding_plan": {
-        "style": "中小市值趋势波段",
-        "min_sessions": 3,
-        "max_sessions": 10,
-        "review_after_sessions": 3,
-        "label": "3-10个交易日",
-        "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
-      },
-      "weekly_score": 77.55,
-      "score_components": {
-        "fundamental": 63.4,
-        "trend": 100.0,
-        "board": 92.0,
-        "external_event": 62.0,
-        "valuation_crowding": 43.81
-      },
-      "primary_board": {
-        "type": "行业",
-        "code": "sina:hangye_ZC27",
-        "name": "医药制造业",
-        "change_pct": 2.48,
-        "main_net_inflow": 43.94,
-        "recent_main_net_inflow": 43.22,
-        "positive_days": 3,
-        "history_days": 5,
-        "flow_score": 100,
-        "source": "新浪证监会行业11:30分时（主力净额按源内占比换算，约值）",
-        "trade_date": "2026-10-16",
-        "as_of": "2026-10-16 11:30",
-        "main_net_estimated": true,
-        "external_score": 62,
-        "external_confidence": "中",
-        "external_signal_count": 1,
-        "external_reasons": [
-          "纳斯达克中国金龙+1.96%"
-        ],
-        "member_count": 327,
-        "leaders": [
-          {
-            "code": "688235",
-            "name": "百济神州",
-            "role": "龙头",
-            "leadership_role": "龙头",
-            "board_rank": 1,
-            "leadership_score": 93,
-            "price": 263.31,
-            "change_pct": 7.04,
-            "market_cap": 4060.99,
-            "amount": 1123583599.0,
-            "main_net": 0.79,
-            "main_net_pct": 6.99
-          },
-          {
-            "code": "002422",
-            "name": "科伦药业",
-            "role": "次龙头",
-            "leadership_role": "次龙头",
-            "board_rank": 2,
-            "leadership_score": 90,
-            "price": 41.04,
-            "change_pct": 4.67,
-            "market_cap": 652.86,
-            "amount": 665851190.51,
-            "main_net": 0.57,
-            "main_net_pct": 8.57
-          }
-        ],
-        "rotation_score": 92,
-        "rise_count": null,
-        "fall_count": null,
-        "effect": "资金流入且板块上涨",
-        "rank": 2
-      },
-      "fundamental_score": 63.4,
-      "fundamental_evidence": {
-        "report_date": "2026-06-30",
-        "notice_date": "2026-08-21",
-        "source": "东方财富财务指标 API",
-        "summary": "2026-06-30财务指标，公告/更新日2026-08-21；来源：东方财富财务指标 API；新闻未计分",
-        "risk_note": "未触发财务量化警示，仍需核验公告"
-      },
-      "financial_risk": {
-        "hard_block": false,
-        "risks": [],
-        "warnings": [
-          "资产负债率75.7%偏高",
-          "货币资金不足总负债10%",
-          "综合快讯未匹配到直接风险，不等于交易所公告已完整核验"
-        ],
-        "balance_sheet": {
-          "code": "300199",
-          "available": true,
-          "data_source": "东方财富资产负债表 API",
-          "report_date": "2026-06-30",
-          "notice_date": "2026-08-21",
-          "debt_asset_ratio": 75.65,
-          "current_ratio": 46.05,
-          "total_assets": 35.52,
-          "total_liabilities": 26.87,
-          "monetary_funds": 1.51,
-          "accounts_receivable": 1.45,
-          "inventory": 4.03
-        },
-        "matched_news": [],
-        "evidence_boundary": "财务指标和资产负债表来自东方财富已披露数据；减持、质押、解禁和监管事项仍需以交易所/公司公告复核。"
-      },
-      "weekly_trend": {
-        "available": true,
-        "as_of": "2026-10-15",
-        "qualified": true,
-        "trend_qualified": true,
-        "pullback_plan": {
-          "version": 1,
-          "formed_on": "2026-10-09",
-          "support_low": 22.87,
-          "support_high": 23.9,
-          "anchor_high": 24.93,
-          "anchor_atr": 1.0385714285714294,
-          "stop_price": 21.85,
-          "max_entry_price": 24.42,
-          "valid_sessions": 5,
-          "state": "confirmed",
-          "touched_on": "2026-10-12",
-          "confirmed_on": "2026-10-13",
-          "elapsed_sessions": 4,
-          "as_of": "2026-10-15"
-        },
-        "trend_score": 100.0,
-        "close": 24.55,
-        "ma20": 23.76,
-        "ma60": 23.24,
-        "atr": 1.214,
-        "atr_pct": 4.94,
-        "return_20_pct": 6.0,
-        "benchmark_return_20_pct": -8.89,
-        "relative_strength_pct": 14.89,
-        "extension_pct": 3.31,
-        "overextended": false,
-        "checks": {
-          "above_ma20": true,
-          "ma20_above_ma60": true,
-          "ma20_rising": true,
-          "relative_strength_positive": true
-        },
-        "entry_zone": {
-          "low": 22.87,
-          "high": 24.42
-        },
-        "max_chase_price": 24.42,
-        "stop_price": 21.85,
-        "stop_distance_pct": 7.59,
-        "take_profit": [
-          {
-            "name": "第一止盈",
-            "price": 26.34,
-            "sell_fraction": "1/3",
-            "risk_reward": 1.5
-          },
-          {
-            "name": "第二止盈",
-            "price": 28.13,
-            "sell_fraction": "1/3",
-            "risk_reward": 2.5
-          }
-        ],
-        "time_stop": "5个交易日未出现相对强势，减仓或退出",
-        "trailing_rule": "剩余仓位按10日线、前低或周线结构跟踪；止损不得下移",
-        "reasons": [
-          "结构止损距离7.6%不在4%-7%范围"
-        ]
-      },
-      "position_plan": {
-        "quantity": 0,
-        "estimated_value": 0.0,
-        "position_pct": 0.0,
-        "planned_loss": 0.0,
-        "risk_budget": 300.0,
-        "reference_price": 25.7,
-        "minimum_quantity": 100,
-        "per_share_risk": 3.85,
-        "executable": false,
-        "reasons": [
-          "100股最小买入量超过当前仓位或风险预算",
-          "当前价格不在允许买入区，继续等待"
-        ],
-        "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
-      },
-      "invalidation": [
-        "跌破结构止损",
-        "板块趋势或相对强度转弱",
-        "重大公告或国际事件破坏核心逻辑"
-      ],
-      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作"
-    }
-  ],
-  "active_count": 1,
+  "selections": [],
+  "active_count": 0,
   "strategy_version": "fundamental-trend-pullback-v1",
   "execution_note": "基本面原始及行业分均≥60、上升趋势、回调企稳必须同时满足，再复核实时价格和账户风险；股数是目标上限，不是追加量。持仓期限从实际买入日起计，破位提前退出。"
 }
