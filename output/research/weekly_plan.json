@@ -2,7 +2,7 @@
   "plan_id": "2026-W44",
   "week_start": "2026-10-26",
   "week_end": "2026-10-30",
-  "generated_at": "2026-10-27 12:03:11",
+  "generated_at": "2026-10-28 12:03:22",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -39,7 +39,7 @@
     },
     {
       "name": "利空情景",
-      "summary": "相对偏弱市场：恒生指数、NYMEX原油、COMEX黄金",
+      "summary": "相对偏弱市场：纳斯达克中国金龙、COMEX黄金",
       "triggers": [
         "外部风险扩大",
         "A股相关板块破位或候选股相对强度转负"
@@ -61,11 +61,11 @@
       "industry": "医药制造业",
       "role": "主选",
       "status": "撤销",
-      "market_cap": 211.01,
+      "market_cap": 205.27,
       "entry_gate": {
         "passed": false,
-        "state": "waiting_confirmation",
-        "reason": "等待企稳",
+        "state": "trend_failed",
+        "reason": "上升趋势未通过",
         "reference_price": null
       },
       "holding_plan": {
@@ -76,22 +76,78 @@
         "label": "3-10个交易日",
         "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
       },
-      "weekly_score": 59.09,
+      "weekly_score": 69.92,
       "score_components": {
-        "fundamental": 67.4,
-        "trend": 80.0,
-        "board": 0.0,
-        "external_event": 50.0,
-        "valuation_crowding": 62.69
+        "fundamental": 71.9,
+        "trend": 78.28,
+        "board": 75.0,
+        "external_event": 49.0,
+        "valuation_crowding": 30.58
       },
-      "primary_board": null,
-      "fundamental_score": 67.4,
+      "primary_board": {
+        "type": "行业",
+        "code": "sina:hangye_ZC27",
+        "name": "医药制造业",
+        "change_pct": 1.26,
+        "main_net_inflow": 28.79,
+        "recent_main_net_inflow": 10.26,
+        "positive_days": 3,
+        "history_days": 5,
+        "flow_score": 81,
+        "source": "新浪证监会行业11:30分时（主力净额按源内占比换算，约值）",
+        "trade_date": "2026-10-28",
+        "as_of": "2026-10-28 11:30",
+        "main_net_estimated": true,
+        "external_score": 49,
+        "external_confidence": "低",
+        "external_signal_count": 1,
+        "external_reasons": [
+          "纳斯达克中国金龙-0.11%"
+        ],
+        "member_count": 327,
+        "leaders": [
+          {
+            "code": "600276",
+            "name": "恒瑞医药",
+            "role": "龙头",
+            "leadership_role": "龙头",
+            "board_rank": 1,
+            "leadership_score": 90,
+            "price": 48.55,
+            "change_pct": 6.59,
+            "market_cap": 3222.36,
+            "amount": 5175341534.0,
+            "main_net": 0.0,
+            "main_net_pct": 0.0
+          },
+          {
+            "code": "002821",
+            "name": "凯莱英",
+            "role": "次龙头",
+            "leadership_role": "次龙头",
+            "board_rank": 2,
+            "leadership_score": 87,
+            "price": 137.16,
+            "change_pct": 4.3,
+            "market_cap": 496.45,
+            "amount": 734491974.0,
+            "main_net": 0.0,
+            "main_net_pct": 0.0
+          }
+        ],
+        "rotation_score": 75,
+        "rise_count": null,
+        "fall_count": null,
+        "effect": "资金流入且板块上涨",
+        "rank": 8
+      },
+      "fundamental_score": 71.9,
       "fundamental_evidence": {
         "report_date": "2026-09-30",
         "notice_date": "2026-10-27",
         "source": "东方财富财务指标 API",
         "summary": "2026-09-30财务指标，公告/更新日2026-10-27；来源：东方财富财务指标 API；新闻未计分",
-        "risk_note": "未触发财务量化警示，仍需核验公告"
+        "risk_note": "估值异常或偏高"
       },
       "financial_risk": {
         "hard_block": false,
@@ -120,9 +176,9 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-10-26",
-        "qualified": true,
-        "trend_qualified": true,
+        "as_of": "2026-10-27",
+        "qualified": false,
+        "trend_qualified": false,
         "pullback_plan": {
           "version": 1,
           "formed_on": "2026-10-23",
@@ -134,21 +190,21 @@
           "max_entry_price": 26.03,
           "valid_sessions": 5,
           "state": "waiting_confirmation",
-          "touched_on": "2026-10-26",
+          "touched_on": "2026-10-27",
           "confirmed_on": null,
-          "elapsed_sessions": 1,
-          "as_of": "2026-10-26"
+          "elapsed_sessions": 2,
+          "as_of": "2026-10-27"
         },
-        "trend_score": 80.0,
-        "close": 24.44,
-        "ma20": 24.54,
-        "ma60": 23.68,
-        "atr": 1.567,
-        "atr_pct": 6.41,
-        "return_20_pct": 4.0,
-        "benchmark_return_20_pct": -8.96,
-        "relative_strength_pct": 12.96,
-        "extension_pct": -0.41,
+        "trend_score": 78.28,
+        "close": 23.2,
+        "ma20": 24.52,
+        "ma60": 23.71,
+        "atr": 1.547,
+        "atr_pct": 6.67,
+        "return_20_pct": -1.65,
+        "benchmark_return_20_pct": -10.79,
+        "relative_strength_pct": 9.14,
+        "extension_pct": -5.38,
         "overextended": false,
         "checks": {
           "above_ma20": false,
@@ -180,6 +236,7 @@
         "time_stop": "5个交易日未出现相对强势，减仓或退出",
         "trailing_rule": "剩余仓位按10日线、前低或周线结构跟踪；止损不得下移",
         "reasons": [
+          "周度趋势或相对强度未完全确认",
           "结构止损距离8.7%不在4%-7%范围"
         ]
       },
@@ -195,13 +252,16 @@
         "executable": false,
         "reasons": [
           "100股最小买入量超过当前仓位或风险预算",
-          "等待企稳",
-          "板块周度确认不足55分"
+          "上升趋势未通过",
+          "周度趋势或相对强度未完全确认",
+          "结构止损距离8.7%不在4%-7%范围",
+          "本周已撤销的计划不重新启用"
         ],
         "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
       },
       "invalidation": [
-        "板块周度确认不足55分",
+        "周度趋势或相对强度未完全确认",
+        "结构止损距离8.7%不在4%-7%范围",
         "跌破结构止损",
         "板块趋势或相对强度转弱",
         "重大公告或国际事件破坏核心逻辑"
