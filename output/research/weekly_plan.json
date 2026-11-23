@@ -1,10 +1,10 @@
 {
-  "plan_id": "2026-W47",
-  "week_start": "2026-11-16",
-  "week_end": "2026-11-20",
-  "generated_at": "2026-11-20 20:32:51",
+  "plan_id": "2026-W48",
+  "week_start": "2026-11-23",
+  "week_end": "2026-11-27",
+  "generated_at": "2026-11-23 22:05:41",
   "frozen": true,
-  "state": "空仓",
+  "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
   "account": {
     "equity": 51857.79,
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "暂未取得明确的外盘利好共振证据。",
+      "summary": "相对偏强市场：COMEX黄金",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -54,8 +54,212 @@
     "external_event": 0.1,
     "valuation_crowding": 0.05
   },
-  "selections": [],
-  "active_count": 0,
+  "selections": [
+    {
+      "code": "002415",
+      "name": "海康威视",
+      "industry": "计算机、通信和其",
+      "role": "主选",
+      "status": "等待回调",
+      "market_cap": 3221.45,
+      "entry_gate": {
+        "passed": false,
+        "state": "waiting_pullback",
+        "reason": "等待回调",
+        "reference_price": null
+      },
+      "holding_plan": {
+        "style": "趋势波段",
+        "min_sessions": 5,
+        "max_sessions": 20,
+        "review_after_sessions": 5,
+        "label": "5-20个交易日",
+        "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
+      },
+      "weekly_score": 79.76,
+      "score_components": {
+        "fundamental": 85.09,
+        "trend": 87.99,
+        "board": 85.0,
+        "external_event": 25.0,
+        "valuation_crowding": 81.53
+      },
+      "primary_board": {
+        "type": "行业",
+        "code": "sina:hangye_ZC39",
+        "name": "计算机、通信和其",
+        "change_pct": 0.17,
+        "main_net_inflow": 146.31,
+        "recent_main_net_inflow": 170.54,
+        "positive_days": 4,
+        "history_days": 5,
+        "flow_score": 100,
+        "source": "新浪证监会行业11:30分时（主力净额按源内占比换算，约值）",
+        "trade_date": "2026-11-23",
+        "as_of": "2026-11-23 11:30",
+        "main_net_estimated": true,
+        "external_score": 25,
+        "external_confidence": "高",
+        "external_signal_count": 2,
+        "external_reasons": [
+          "纳斯达克100-5.28%",
+          "道琼斯/标普500-2.81%"
+        ],
+        "member_count": 680,
+        "leaders": [
+          {
+            "code": "300502",
+            "name": "新易盛",
+            "role": "龙头",
+            "leadership_role": "龙头",
+            "board_rank": 1,
+            "leadership_score": 92,
+            "price": 181.36,
+            "change_pct": 9.91,
+            "market_cap": 2529.5,
+            "amount": 20560996538.0,
+            "main_net": 0.0,
+            "main_net_pct": 0.0
+          },
+          {
+            "code": "300394",
+            "name": "天孚通信",
+            "role": "次龙头",
+            "leadership_role": "次龙头",
+            "board_rank": 2,
+            "leadership_score": 91,
+            "price": 116.3,
+            "change_pct": 13.82,
+            "market_cap": 1268.63,
+            "amount": 8475187118.0,
+            "main_net": 0.0,
+            "main_net_pct": 0.0
+          }
+        ],
+        "rotation_score": 85,
+        "rise_count": null,
+        "fall_count": null,
+        "effect": "资金流入且板块上涨",
+        "rank": 3
+      },
+      "fundamental_score": 85.09,
+      "fundamental_evidence": {
+        "report_date": "2026-09-30",
+        "notice_date": "2026-10-17",
+        "source": "东方财富财务指标 API",
+        "summary": "2026-09-30财务指标，公告/更新日2026-10-17；来源：东方财富财务指标 API；新闻未计分",
+        "risk_note": "未触发财务量化警示，仍需核验公告"
+      },
+      "financial_risk": {
+        "hard_block": false,
+        "risks": [],
+        "warnings": [
+          "综合快讯未匹配到直接风险，不等于交易所公告已完整核验"
+        ],
+        "balance_sheet": {
+          "code": "002415",
+          "available": true,
+          "data_source": "东方财富资产负债表 API",
+          "report_date": "2026-09-30",
+          "notice_date": "2026-10-17",
+          "debt_asset_ratio": 33.84,
+          "current_ratio": 242.26,
+          "total_assets": 1413.91,
+          "total_liabilities": 478.45,
+          "monetary_funds": 370.84,
+          "accounts_receivable": 283.66,
+          "inventory": 333.34
+        },
+        "matched_news": [],
+        "evidence_boundary": "财务指标和资产负债表来自东方财富已披露数据；减持、质押、解禁和监管事项仍需以交易所/公司公告复核。"
+      },
+      "weekly_trend": {
+        "available": true,
+        "as_of": "2026-11-23",
+        "qualified": true,
+        "trend_qualified": true,
+        "pullback_plan": {
+          "version": 1,
+          "formed_on": "2026-11-23",
+          "support_low": 34.53,
+          "support_high": 35.28,
+          "anchor_high": 35.8,
+          "anchor_atr": 0.75,
+          "stop_price": 33.58,
+          "max_entry_price": 35.66,
+          "valid_sessions": 5,
+          "state": "waiting_pullback",
+          "touched_on": null,
+          "confirmed_on": null,
+          "elapsed_sessions": 0,
+          "as_of": "2026-11-23"
+        },
+        "trend_score": 87.99,
+        "close": 35.15,
+        "ma20": 34.9,
+        "ma60": 34.07,
+        "atr": 0.75,
+        "atr_pct": 2.13,
+        "return_20_pct": 0.46,
+        "benchmark_return_20_pct": -3.54,
+        "relative_strength_pct": 4.0,
+        "extension_pct": 0.71,
+        "overextended": false,
+        "checks": {
+          "above_ma20": true,
+          "ma20_above_ma60": true,
+          "ma20_rising": true,
+          "relative_strength_positive": true
+        },
+        "entry_zone": {
+          "low": 34.53,
+          "high": 35.66
+        },
+        "max_chase_price": 35.66,
+        "stop_price": 33.58,
+        "stop_distance_pct": 4.32,
+        "take_profit": [
+          {
+            "name": "第一止盈",
+            "price": 37.37,
+            "sell_fraction": "1/3",
+            "risk_reward": 1.5
+          },
+          {
+            "name": "第二止盈",
+            "price": 38.88,
+            "sell_fraction": "1/3",
+            "risk_reward": 2.5
+          }
+        ],
+        "time_stop": "5个交易日未出现相对强势，减仓或退出",
+        "trailing_rule": "剩余仓位按10日线、前低或周线结构跟踪；止损不得下移",
+        "reasons": []
+      },
+      "position_plan": {
+        "quantity": 100,
+        "estimated_value": 3566.0,
+        "position_pct": 6.88,
+        "planned_loss": 208.0,
+        "risk_budget": 300.0,
+        "reference_price": 35.66,
+        "minimum_quantity": 100,
+        "per_share_risk": 2.08,
+        "executable": false,
+        "reasons": [
+          "等待回调"
+        ],
+        "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
+      },
+      "invalidation": [
+        "跌破结构止损",
+        "板块趋势或相对强度转弱",
+        "重大公告或国际事件破坏核心逻辑"
+      ],
+      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作"
+    }
+  ],
+  "active_count": 1,
   "strategy_version": "fundamental-trend-pullback-v1",
   "execution_note": "基本面原始及行业分均≥60、上升趋势、回调企稳必须同时满足，再复核实时价格和账户风险；股数是目标上限，不是追加量。持仓期限从实际买入日起计，破位提前退出。"
 }
