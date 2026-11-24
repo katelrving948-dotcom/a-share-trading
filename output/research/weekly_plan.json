@@ -2,7 +2,7 @@
   "plan_id": "2026-W48",
   "week_start": "2026-11-23",
   "week_end": "2026-11-27",
-  "generated_at": "2026-11-23 22:05:41",
+  "generated_at": "2026-11-24 22:37:46",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -31,7 +31,7 @@
     },
     {
       "name": "利好情景",
-      "summary": "相对偏强市场：COMEX黄金",
+      "summary": "相对偏强市场：NYMEX原油",
       "triggers": [
         "外部利好延续",
         "A股板块资金和上涨扩散同步确认"
@@ -60,12 +60,12 @@
       "name": "海康威视",
       "industry": "计算机、通信和其",
       "role": "主选",
-      "status": "等待回调",
-      "market_cap": 3221.45,
+      "status": "等待企稳",
+      "market_cap": 3193.96,
       "entry_gate": {
         "passed": false,
-        "state": "waiting_pullback",
-        "reason": "等待回调",
+        "state": "waiting_confirmation",
+        "reason": "等待企稳",
         "reference_price": null
       },
       "holding_plan": {
@@ -76,73 +76,73 @@
         "label": "5-20个交易日",
         "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
       },
-      "weekly_score": 79.76,
+      "weekly_score": 70.97,
       "score_components": {
-        "fundamental": 85.09,
-        "trend": 87.99,
-        "board": 85.0,
-        "external_event": 25.0,
-        "valuation_crowding": 81.53
+        "fundamental": 85.0,
+        "trend": 67.74,
+        "board": 58.0,
+        "external_event": 38.0,
+        "valuation_crowding": 83.03
       },
       "primary_board": {
         "type": "行业",
         "code": "sina:hangye_ZC39",
         "name": "计算机、通信和其",
-        "change_pct": 0.17,
-        "main_net_inflow": 146.31,
-        "recent_main_net_inflow": 170.54,
-        "positive_days": 4,
+        "change_pct": 2.92,
+        "main_net_inflow": -162.48,
+        "recent_main_net_inflow": 494.5,
+        "positive_days": 5,
         "history_days": 5,
-        "flow_score": 100,
+        "flow_score": 63,
         "source": "新浪证监会行业11:30分时（主力净额按源内占比换算，约值）",
-        "trade_date": "2026-11-23",
-        "as_of": "2026-11-23 11:30",
+        "trade_date": "2026-11-24",
+        "as_of": "2026-11-24 11:30",
         "main_net_estimated": true,
-        "external_score": 25,
-        "external_confidence": "高",
+        "external_score": 38,
+        "external_confidence": "中",
         "external_signal_count": 2,
         "external_reasons": [
-          "纳斯达克100-5.28%",
-          "道琼斯/标普500-2.81%"
+          "纳斯达克100-1.77%",
+          "道琼斯/标普500-0.70%"
         ],
         "member_count": 680,
         "leaders": [
           {
-            "code": "300502",
-            "name": "新易盛",
+            "code": "688347",
+            "name": "华虹宏力",
             "role": "龙头",
             "leadership_role": "龙头",
             "board_rank": 1,
             "leadership_score": 92,
-            "price": 181.36,
-            "change_pct": 9.91,
-            "market_cap": 2529.5,
-            "amount": 20560996538.0,
+            "price": 209.39,
+            "change_pct": 10.36,
+            "market_cap": 4038.08,
+            "amount": 7280998287.0,
             "main_net": 0.0,
             "main_net_pct": 0.0
           },
           {
-            "code": "300394",
-            "name": "天孚通信",
+            "code": "601138",
+            "name": "工业富联",
             "role": "次龙头",
             "leadership_role": "次龙头",
             "board_rank": 2,
-            "leadership_score": 91,
-            "price": 116.3,
-            "change_pct": 13.82,
-            "market_cap": 1268.63,
-            "amount": 8475187118.0,
+            "leadership_score": 90,
+            "price": 40.96,
+            "change_pct": 6.97,
+            "market_cap": 8128.14,
+            "amount": 11708071336.0,
             "main_net": 0.0,
             "main_net_pct": 0.0
           }
         ],
-        "rotation_score": 85,
+        "rotation_score": 58,
         "rise_count": null,
         "fall_count": null,
-        "effect": "资金流入且板块上涨",
-        "rank": 3
+        "effect": "资金流出，板块效应偏弱",
+        "rank": 7
       },
-      "fundamental_score": 85.09,
+      "fundamental_score": 85.0,
       "fundamental_evidence": {
         "report_date": "2026-09-30",
         "notice_date": "2026-10-17",
@@ -175,7 +175,7 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-11-23",
+        "as_of": "2026-11-24",
         "qualified": true,
         "trend_qualified": true,
         "pullback_plan": {
@@ -188,25 +188,25 @@
           "stop_price": 33.58,
           "max_entry_price": 35.66,
           "valid_sessions": 5,
-          "state": "waiting_pullback",
-          "touched_on": null,
+          "state": "waiting_confirmation",
+          "touched_on": "2026-11-24",
           "confirmed_on": null,
-          "elapsed_sessions": 0,
-          "as_of": "2026-11-23"
+          "elapsed_sessions": 1,
+          "as_of": "2026-11-24"
         },
-        "trend_score": 87.99,
-        "close": 35.15,
-        "ma20": 34.9,
-        "ma60": 34.07,
-        "atr": 0.75,
+        "trend_score": 67.74,
+        "close": 34.85,
+        "ma20": 34.93,
+        "ma60": 34.08,
+        "atr": 0.743,
         "atr_pct": 2.13,
-        "return_20_pct": 0.46,
-        "benchmark_return_20_pct": -3.54,
-        "relative_strength_pct": 4.0,
-        "extension_pct": 0.71,
+        "return_20_pct": 1.75,
+        "benchmark_return_20_pct": -2.12,
+        "relative_strength_pct": 3.87,
+        "extension_pct": -0.24,
         "overextended": false,
         "checks": {
-          "above_ma20": true,
+          "above_ma20": false,
           "ma20_above_ma60": true,
           "ma20_rising": true,
           "relative_strength_positive": true
@@ -247,7 +247,7 @@
         "per_share_risk": 2.08,
         "executable": false,
         "reasons": [
-          "等待回调"
+          "等待企稳"
         ],
         "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
       },
