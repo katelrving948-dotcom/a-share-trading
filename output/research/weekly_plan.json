@@ -2,7 +2,7 @@
   "plan_id": "2026-W48",
   "week_start": "2026-11-23",
   "week_end": "2026-11-27",
-  "generated_at": "2026-11-26 21:35:44",
+  "generated_at": "2026-11-27 21:33:13",
   "frozen": true,
   "state": "冻结执行",
   "selection_policy": "每周最多2只主选、1只备选；周内只允许撤销，不因排行变化新增股票",
@@ -61,10 +61,12 @@
       "industry": "计算机、通信和其",
       "role": "主选",
       "status": "撤销",
-      "market_cap": 3193.96,
+      "market_cap": 3139.88,
       "entry_gate": {
         "passed": false,
-        "reason": "候选数据不可用"
+        "state": "trend_failed",
+        "reason": "上升趋势未通过",
+        "reference_price": null
       },
       "holding_plan": {
         "style": "趋势波段",
@@ -74,73 +76,73 @@
         "label": "5-20个交易日",
         "rule": "从实际买入日起计；复核日仍未恢复强势则减仓或退出，破位提前退出，到期复核，不承诺涨幅或持有到期"
       },
-      "weekly_score": 70.97,
+      "weekly_score": 63.63,
       "score_components": {
-        "fundamental": 85.0,
-        "trend": 67.74,
-        "board": 58.0,
-        "external_event": 38.0,
-        "valuation_crowding": 83.03
+        "fundamental": 74.4,
+        "trend": 40.0,
+        "board": 89.0,
+        "external_event": 46.0,
+        "valuation_crowding": 78.46
       },
       "primary_board": {
         "type": "行业",
         "code": "sina:hangye_ZC39",
         "name": "计算机、通信和其",
-        "change_pct": 2.92,
-        "main_net_inflow": -162.48,
-        "recent_main_net_inflow": 494.5,
-        "positive_days": 5,
+        "change_pct": 4.56,
+        "main_net_inflow": 290.88,
+        "recent_main_net_inflow": 197.42,
+        "positive_days": 4,
         "history_days": 5,
-        "flow_score": 63,
+        "flow_score": 100,
         "source": "新浪证监会行业11:30分时（主力净额按源内占比换算，约值）",
-        "trade_date": "2026-11-24",
-        "as_of": "2026-11-24 11:30",
+        "trade_date": "2026-11-27",
+        "as_of": "2026-11-27 11:30",
         "main_net_estimated": true,
-        "external_score": 38,
-        "external_confidence": "中",
+        "external_score": 46,
+        "external_confidence": "低",
         "external_signal_count": 2,
         "external_reasons": [
-          "纳斯达克100-1.77%",
-          "道琼斯/标普500-0.70%"
+          "纳斯达克100-0.62%",
+          "道琼斯/标普500+0.04%"
         ],
         "member_count": 680,
         "leaders": [
           {
-            "code": "688347",
-            "name": "华虹宏力",
+            "code": "002384",
+            "name": "东山精密",
             "role": "龙头",
             "leadership_role": "龙头",
             "board_rank": 1,
-            "leadership_score": 92,
-            "price": 209.39,
-            "change_pct": 10.36,
-            "market_cap": 4038.08,
-            "amount": 7280998287.0,
-            "main_net": 0.0,
-            "main_net_pct": 0.0
+            "leadership_score": 99,
+            "price": 79.77,
+            "change_pct": 10.0,
+            "market_cap": 1553.13,
+            "amount": 12178013651.25,
+            "main_net": 28.56,
+            "main_net_pct": 23.46
           },
           {
-            "code": "601138",
-            "name": "工业富联",
+            "code": "600183",
+            "name": "生益科技",
             "role": "次龙头",
             "leadership_role": "次龙头",
             "board_rank": 2,
-            "leadership_score": 90,
-            "price": 40.96,
-            "change_pct": 6.97,
-            "market_cap": 8128.14,
-            "amount": 11708071336.0,
-            "main_net": 0.0,
-            "main_net_pct": 0.0
+            "leadership_score": 99,
+            "price": 68.04,
+            "change_pct": 10.01,
+            "market_cap": 1652.69,
+            "amount": 8610174218.0,
+            "main_net": 15.51,
+            "main_net_pct": 18.02
           }
         ],
-        "rotation_score": 58,
+        "rotation_score": 89,
         "rise_count": null,
         "fall_count": null,
-        "effect": "资金流出，板块效应偏弱",
-        "rank": 7
+        "effect": "资金流入且板块上涨",
+        "rank": 3
       },
-      "fundamental_score": 85.0,
+      "fundamental_score": 74.4,
       "fundamental_evidence": {
         "report_date": "2026-09-30",
         "notice_date": "2026-10-17",
@@ -173,9 +175,9 @@
       },
       "weekly_trend": {
         "available": true,
-        "as_of": "2026-11-24",
-        "qualified": true,
-        "trend_qualified": true,
+        "as_of": "2026-11-27",
+        "qualified": false,
+        "trend_qualified": false,
         "pullback_plan": {
           "version": 1,
           "formed_on": "2026-11-23",
@@ -186,28 +188,29 @@
           "stop_price": 33.58,
           "max_entry_price": 35.66,
           "valid_sessions": 5,
-          "state": "waiting_confirmation",
-          "touched_on": "2026-11-24",
+          "state": "invalidated",
+          "touched_on": "2026-11-25",
           "confirmed_on": null,
-          "elapsed_sessions": 1,
-          "as_of": "2026-11-24"
+          "elapsed_sessions": 4,
+          "as_of": "2026-11-27",
+          "invalidated_on": "2026-11-26"
         },
-        "trend_score": 67.74,
-        "close": 34.85,
-        "ma20": 34.93,
-        "ma60": 34.08,
-        "atr": 0.743,
-        "atr_pct": 2.13,
-        "return_20_pct": 1.75,
-        "benchmark_return_20_pct": -2.12,
-        "relative_strength_pct": 3.87,
-        "extension_pct": -0.24,
+        "trend_score": 40.0,
+        "close": 34.26,
+        "ma20": 34.84,
+        "ma60": 34.03,
+        "atr": 0.846,
+        "atr_pct": 2.47,
+        "return_20_pct": -0.84,
+        "benchmark_return_20_pct": 1.95,
+        "relative_strength_pct": -2.79,
+        "extension_pct": -1.67,
         "overextended": false,
         "checks": {
           "above_ma20": false,
           "ma20_above_ma60": true,
-          "ma20_rising": true,
-          "relative_strength_positive": true
+          "ma20_rising": false,
+          "relative_strength_positive": false
         },
         "entry_zone": {
           "low": 34.53,
@@ -232,7 +235,9 @@
         ],
         "time_stop": "5个交易日未出现相对强势，减仓或退出",
         "trailing_rule": "剩余仓位按10日线、前低或周线结构跟踪；止损不得下移",
-        "reasons": []
+        "reasons": [
+          "周度趋势或相对强度未完全确认"
+        ]
       },
       "position_plan": {
         "quantity": 100,
@@ -245,17 +250,19 @@
         "per_share_risk": 2.08,
         "executable": false,
         "reasons": [
-          "等待企稳"
+          "上升趋势未通过",
+          "周度趋势或相对强度未完全确认",
+          "本周已撤销的计划不重新启用"
         ],
         "formula": "按最新复核价（缺失时用买入上限）计算，单笔风险不超账户0.6%，受单股、总仓和现金上限约束；科创板至少200股"
       },
       "invalidation": [
+        "周度趋势或相对强度未完全确认",
         "跌破结构止损",
         "板块趋势或相对强度转弱",
         "重大公告或国际事件破坏核心逻辑"
       ],
-      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作",
-      "withdraw_reason": "本周更新中已无法取得候选数据或硬性资格失效"
+      "t_rule": "默认关闭；仅已有底仓可用20%-30%做T，不扩大总仓，不在周熔断后操作"
     }
   ],
   "active_count": 0,
